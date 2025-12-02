@@ -7,36 +7,35 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="card">
-    <h1>BadgeHub — Claim your badge</h1>
 
-    <label for="name">Your display name or fid</label>
-    <input id="name" placeholder="e.g. 12345 or @builder" />
+<main class="card">
+  <h1>BadgeHub — Claim your badge</h1>
 
-    <label for="type">Badge type</label>
-    <select id="type">
-      <option>Daily Check-in</option>
-      <option>Top Helper</option>
-      <option>Creator</option>
-      <option>OG</option>
-    </select>
+  <label>Your display name or fid</label>
+  <input id="name" placeholder="e.g. 12345 or @builder" />
 
-    <button id="claim">Claim Daily Badge</button>
+  <label>Badge type</label>
+  <select id="type">
+    <option>Daily Check-in</option>
+    <option>Top Helper</option>
+    <option>Creator</option>
+    <option>OG</option>
+  </select>
 
-    <div id="previewWrap" class="hidden">
-      <h2>Badge preview</h2>
-      <div id="badgeContainer"></div>
-      <div class="controls">
-        <button id="download">Download PNG</button>
-        <button id="copyCaption">Copy Caption</button>
-      </div>
-      <small>After copying caption, paste into a Farcaster cast to share your badge.</small>
-    </div>
+  <button id="claim">Claim Daily Badge</button>
 
-    <div id="msg" class="msg"></div>
-  </main>
+  <div id="previewWrap" class="hidden">
+    <h2>Badge preview</h2>
+    <div id="badgeContainer"></div>
+    <button id="download">Download PNG</button>
+    <button id="copyCaption">Copy Caption</button>
+    <small>After copying caption, paste into Farcaster cast.</small>
+  </div>
 
-  <script>
+  <div id="msg" class="msg"></div>
+</main>
+
+<script>
 const nameInput = document.getElementById('name');
 const typeSelect = document.getElementById('type');
 const claimBtn = document.getElementById('claim');
@@ -46,48 +45,50 @@ const downloadBtn = document.getElementById('download');
 const copyCaptionBtn = document.getElementById('copyCaption');
 const msg = document.getElementById('msg');
 
-function escapeXml(unsafe) {
-  return (unsafe + '').replace(/[<>&'"]/g, c => ({
-    '<':'&lt;', '>':'&gt;', '&':'&amp;', "'":'&apos;', '"':'&quot;'
-  }[c]));
+function escapeXml(t) {
+  return (t+"").replace(/[<>&'"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
 }
 
-function makeBadgeSVG(displayName, badgeType) {
+function makeBadgeSVG(name, type) {
   const date = new Date().toLocaleDateString();
   return 
-    <svg class="badge" xmlns="http://www.w3.org/2000/svg" width="720" height="360">
-      <rect width="720" height="360" rx="24" fill="#fff"/>
-      <rect x="24" y="24" width="672" height="312" rx="16" fill="#0b5fff"/>
-      <circle cx="120" cy="180" r="72" fill="#ffd166"/>
-      <text x="220" y="145" font-size="34" fill="#fff" font-weight="700">${escapeXml(displayName)}</text>
-      <text x="220" y="190" font-size="24" fill="#e6f0ff">${escapeXml(badgeType)}</text>
-      <text x="220" y="230" font-size="16" fill="#cfe0ff">${escapeXml(date)}</text>
-    </svg>;
+  <svg xmlns="http://www.w3.org/2000/svg" width="720" height="360">
+    <rect width="720" height="360" rx="24" fill="#fff"/>
+    <rect x="24" y="24" width="672" height="312" rx="16" fill="#0b5fff"/>
+    <circle cx="120" cy="180" r="72" fill="#ffd166"/>
+    <text x="220" y="145" font-size="34" fill="#fff" font-weight="700">${escapeXml(name)}</text>
+    <text x="220" y="190" font-size="24" fill="#e6f0ff">${escapeXml(type)}</text>
+    <text x="220" y="230" font-size="16" fill="#cfe0ff">${escapeXml(date)}</text>
+  </svg>;
 }
 
-claimBtn.addEventListener('click', () => {
-  const name = nameInput.value.trim() || 'Anonymous';
-  const badgeType = typeSelect.value;
-
-  const svg = makeBadgeSVG(name, badgeType);
+claimBtn.onclick = () => {
+  const name = nameInput.value.trim() || "Anonymous";
+  const type = typeSelect.value;
+  const svg = makeBadgeSVG(name, type);
   badgeContainer.innerHTML = svg;
-  previewWrap.classList.remove('hidden');
-  msg.textContent = "Badge ready — download or copy caption.";
+  previewWrap.classList.remove("hidden");
+  msg.textContent = "Badge ready.";
+};
 
-  downloadBtn.onclick = () => {
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = ${name}_${badgeType}.svg;
-    a.click();
-  };
+downloadBtn.onclick = () => {
+  const svg = badgeContainer.innerHTML;
+  const blob = new Blob([svg], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "badge.svg";
+  a.click();
+};
 
-  copyCaptionBtn.onclick = () => {
-    navigator.clipboard.writeText(🏅 ${badgeType} badge earned!\n${name}\n#BadgeHub)
-      .then(() => msg.textContent = "Caption copied!");
-  };
-});
+copyCaptionBtn.onclick = () => {
+  const type = typeSelect.value;
+  const caption = 🏅 ${type} badge earned!\n#BadgeHub;
+  navigator.clipboard.writeText(caption).then(()=>{
+    msg.textContent="Caption copied!";
+  });
+};
 </script>
+
 </body>
 </html>
