@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BadgeHub — Simple Farcaster Badge</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>BadgeHub — Claim your badge</h1>
+
+    <label for="name">Your display name or fid</label>
+    <input id="name" placeholder="e.g. 12345 or @builder" />
+
+    <label for="type">Badge type</label>
+    <select id="type">
+      <option>Daily Check-in</option>
+      <option>Top Helper</option>
+      <option>Creator</option>
+      <option>OG</option>
+    </select>
+
+    <button id="claim">Claim Daily Badge</button>
+
+    <div id="previewWrap" class="hidden">
+      <h2>Badge preview</h2>
+      <div id="badgeContainer"></div>
+      <div class="controls">
+        <button id="download">Download PNG</button>
+        <button id="copyCaption">Copy Caption</button>
+      </div>
+      <small>After copying caption, paste into a Farcaster cast to share your badge.</small>
+    </div>
+
+    <div id="msg" class="msg"></div>
+  </main>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
