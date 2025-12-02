@@ -1,3 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BadgeHub — Simple Farcaster Badge</title>
+  <style>
+    /* Minimal inline CSS so page looks okay even if style.css missing */
+    body{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:#f6f7fb;margin:0;display:flex;align-items:center;justify-content:center;height:100vh}
+    .card{background:#fff;padding:28px;border-radius:14px;box-shadow:0 6px 24px rgba(10,20,50,0.08);width:580px;max-width:92%}
+    input,select,button{display:block;width:100%;padding:12px;margin-top:10px;border-radius:8px;border:1px solid #e6eefb;font-size:15px}
+    button{background:#1070ff;color:#fff;border:none;cursor:pointer}
+    .hidden{display:none}
+    #badgeContainer{margin-top:14px}
+    .msg{margin-top:10px;color:#333}
+  </style>
+</head>
+<body>
+
+<main class="card">
+  <h1>BadgeHub — Claim your badge</h1>
+
+  <label>Your display name or fid</label>
+  <input id="name" placeholder="e.g. 12345 or @builder" />
+
+  <label>Badge type</label>
+  <select id="type">
+    <option>Daily Check-in</option>
+    <option>Top Helper</option>
+    <option>Creator</option>
+    <option>OG</option>
+  </select>
+
+  <button id="claim">Claim Daily Badge</button>
+
+  <div id="previewWrap" class="hidden">
+    <h2>Badge preview</h2>
+    <div id="badgeContainer"></div>
+    <button id="download">Download SVG</button>
+    <button id="copyCaption">Copy Caption</button>
+    <small>After copying caption, paste into Farcaster cast.</small>
+  </div>
+
+  <div id="msg" class="msg"></div>
+</main>
+
 <script>
 (function(){
   const nameInput = document.getElementById('name');
@@ -60,3 +106,6 @@
 
 })();
 </script>
+
+</body>
+</html>
