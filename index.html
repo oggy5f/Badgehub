@@ -1,61 +1,86 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BadgeHub — Claim your badge</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BadgeHub — Claim Your Badge</title>
 
-  <!-- agar tumhare repo me style.css hai toh yeh theek rahega -->
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Minimal fallback styles agar style.css missing ho to page thoda sahi dikh sake -->
   <style>
-    /* chhoti si fallback styling */
-    body { font-family: Inter, system-ui, Arial, Helvetica, sans-serif; background:#f4f6f8; margin:0; padding:24px; }
-    .card { max-width:820px; margin:0 auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-    label { display:block; margin-top:12px; color:#333; font-size:14px; }
-    input, select, button { display:block; width:100%; padding:12px; margin-top:8px; border-radius:8px; border:1px solid #e0e6ea; box-sizing:border-box; }
-    button { background:#1070ff; color:#fff; border:none; cursor:pointer; }
-    .hidden { display:none; }
-    #badgeContainer { margin-top:14px; }
-    .controls button { margin-top:8px; width:48%; display:inline-block; }
-    .controls { display:flex; gap:8px; }
-    .msg { margin-top:10px; color:#333; font-size:14px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 480px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #eef3ff;
+    }
+    .hidden { display: none; }
+    .box {
+      background: #fff;
+      padding: 16px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    svg.badge {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+    button {
+      background: #0b5fff;
+      color: #fff;
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
+
 <body>
 
-<main class="card">
-  <h1>BadgeHub — Claim your badge</h1>
+  <h2>🎖️ BadgeHub</h2>
 
-  <label for="name">Your display name or fid</label>
-  <input id="name" placeholder="e.g. 12345 or @builder" />
+  <div class="box">
+    <label>Your Name</label>
+    <input id="name" type="text" placeholder="Enter your name" />
 
-  <label for="type">Badge type</label>
-  <select id="type">
-    <option>Daily Check-in</option>
-    <option>Top Helper</option>
-    <option>Creator</option>
-    <option>OG</option>
-  </select>
+    <br><br>
 
-  <button id="claim">Claim Daily Badge</button>
+    <label>Badge Type</label>
+    <select id="type">
+      <option>Daily Check-in</option>
+      <option>Top Helper</option>
+      <option>Creator</option>
+      <option>OG</option>
+    </select>
 
-  <div id="previewWrap" class="hidden">
-    <h2>Badge preview</h2>
-    <div id="badgeContainer"></div>
+    <br><br>
 
-    <div class="controls">
-      <button id="download">Download SVG</button>
-      <button id="copyCaption">Copy Caption</button>
-    </div>
-    <small>After copying caption, paste into Farcaster cast.</small>
+    <button id="claim">Claim Daily Badge</button>
+
+    <p id="msg" style="color:#0b5fff; margin-top:10px;"></p>
   </div>
 
-  <div id="msg" class="msg"></div>
-</main>
+  <div id="previewWrap" class="box hidden">
+    <h3>Badge Preview</h3>
+    <div id="badgeContainer"></div>
 
-<!-- External JS — tumhara script.js yahin load hoga -->
-<script src="script.js" defer></script>
+    <br>
+
+    <button id="download">Download SVG</button>
+    <button id="copyCaption">Copy Caption</button>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
