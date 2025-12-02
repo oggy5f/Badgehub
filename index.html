@@ -1,62 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BadgeHub — Claim Your Badge</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BadgeHub — Claim your badge</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 480px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #eef3ff;
-    }
-    .hidden { display: none; }
-    .box {
-      background: #fff;
-      padding: 16px;
-      margin-bottom: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    svg.badge {
-      width: 100%;
-      border-radius: 12px;
-      margin-top: 10px;
-    }
-    button {
-      background: #0b5fff;
-      color: #fff;
-      padding: 10px 16px;
-      border: none;
-      cursor: pointer;
-      border-radius: 8px;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
+    body{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:20px;background:#f4f6f8}
+    main{max-width:760px;margin:0 auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+    label{display:block;margin-top:12px;font-weight:600}
+    input,select,button{display:block;width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:6px}
+    button{cursor:pointer;background:#0a6df0;color:#fff;border:0}
+    .controls{display:flex;gap:10px;margin-top:12px}
+    .controls button{flex:1;padding:10px}
+    .hidden{display:none}
+    #badgeContainer svg{max-width:100%;height:auto}
+    #msg{margin-top:12px;color:#333}
   </style>
 </head>
-
 <body>
+  <main>
+    <h1>BadgeHub — Claim your badge</h1>
 
-  <h2>🎖️ BadgeHub</h2>
+    <label for="name">Your display name or fid</label>
+    <input id="name" placeholder="e.g. 12345 or @builder" />
 
-  <div class="box">
-    <label>Your Name</label>
-    <input id="name" type="text" placeholder="Enter your name" />
-
-    <br><br>
-
-    <label>Badge Type</label>
+    <label for="type">Badge type</label>
     <select id="type">
       <option>Daily Check-in</option>
       <option>Top Helper</option>
@@ -64,23 +32,24 @@
       <option>OG</option>
     </select>
 
-    <br><br>
-
     <button id="claim">Claim Daily Badge</button>
 
-    <p id="msg" style="color:#0b5fff; margin-top:10px;"></p>
-  </div>
+    <div id="previewWrap" class="hidden" style="margin-top:16px;">
+      <h2>Badge preview</h2>
+      <div id="badgeContainer"></div>
 
-  <div id="previewWrap" class="box hidden">
-    <h3>Badge Preview</h3>
-    <div id="badgeContainer"></div>
+      <div class="controls">
+        <button id="download">Download SVG</button>
+        <button id="copyCaption">Copy Caption</button>
+      </div>
 
-    <br>
+      <small>After copying caption, paste into Farcaster cast.</small>
+    </div>
 
-    <button id="download">Download SVG</button>
-    <button id="copyCaption">Copy Caption</button>
-  </div>
+    <div id="msg" class="msg"></div>
+  </main>
 
-  <script src="script.js"></script>
+  <!-- external script -->
+  <script src="script.js" defer></script>
 </body>
 </html>
