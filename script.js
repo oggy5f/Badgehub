@@ -1,4 +1,4 @@
-// BadgeHub – script.js (FINAL FIXED VERSION)
+// BadgeHub — script.js (FINAL WORKING VERSION)
 
 // Helper
 const $ = (id) => document.getElementById(id);
@@ -13,51 +13,54 @@ const downloadBtn = $('download');
 const copyCaptionBtn = $('copyCaption');
 const msg = $('msg');
 
-// Escape text
-function escapeXml(str = '') {
+// Escape text (avoid breaking SVG)
+function escapeXml(str = "") {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 // SVG maker
 function makeBadgeSVG(displayName, badgeType) {
   const date = new Date().toLocaleDateString();
-  const bgColor = '#0b5fff';
-  const accent = '#ffd166';
+  const bgColor = "#0b5fff";
+  const accent = "#ffd166";
 
   return 
 <svg class="badge" xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
 <title>Badge for ${escapeXml(displayName)}</title>
+
 <rect width="720" height="360" rx="24" fill="#ffffff"/>
-<rect x="24" y="24" width="672" height="312" rx="16" fill="${bgColor}"/>
-<circle cx="120" cy="180" r="72" fill="${accent}"/>
-<text x="220" y="145" font-size="34" fill="#fff" font-weight="700"
-font-family="Inter, system-ui, Arial, Helvetica, sans-serif">${escapeXml(displayName)}</text>
+<rect x="24" y="24" width="672" height="312" rx="16" fill="${bgColor}" />
+<circle cx="120" cy="180" r="72" fill="${accent}" />
+
+<text x="220" y="145" font-size="34" fill="#fff" font-weight="700" font-family="Inter, Arial">${escapeXml(displayName)}</text>
 <text x="220" y="190" font-size="24" fill="#fff">${escapeXml(badgeType)}</text>
 <text x="220" y="230" font-size="16" fill="#cfe0ff">${escapeXml(date)}</text>
+
 </svg>
-  .trim();
+.trim();
 }
 
-// Claim
+// -------------------- Claim badge --------------------
 if (claimBtn) {
-  claimBtn.addEventListener('click', () => {
+  claimBtn.addEventListener("click", () => {
     const name = nameInput.value.trim() || "Anonymous";
     const badgeType = typeSelect.value || "Daily Check-in";
 
     const svg = makeBadgeSVG(name, badgeType);
 
     badgeContainer.innerHTML = svg;
-    previewWrap.classList.remove('hidden');
+    previewWrap.classList.remove("hidden");
+
     msg.textContent = "Badge ready — download or copy caption.";
   });
 }
 
-// Download
+// -------------------- Download SVG --------------------
 if (downloadBtn) {
-  downloadBtn.addEventListener('click', () => {
+  downloadBtn.addEventListener("click", () => {
     const svg = badgeContainer.innerHTML;
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
@@ -71,9 +74,9 @@ if (downloadBtn) {
   });
 }
 
-// Copy Caption
+// -------------------- Copy Caption --------------------
 if (copyCaptionBtn) {
-  copyCaptionBtn.addEventListener('click', () => {
+  copyCaptionBtn.addEventListener("click", () => {
     const badgeType = typeSelect.value;
     const name = nameInput.value.trim() || "Anonymous";
 
