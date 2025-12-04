@@ -3,24 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BadgeHub — Claim your badge</title>
+  <title>BadgeHub - Demo</title>
   <style>
-    body{font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:20px;background:#f4f6f8}
-    main{max-width:760px;margin:0 auto;background:#fff;padding:18px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.06)}
-    label{display:block;margin-top:12px;font-weight:600}
-    input,select,button{display:block;width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:6px}
-    button{cursor:pointer;background:#0a6df0;color:#fff;border:0}
-    .controls{display:flex;gap:10px;margin-top:12px}
-    .controls button{flex:1;padding:10px}
-    .hidden{display:none}
-    #badgeContainer svg{max-width:100%;height:auto}
-    #msg{margin-top:12px;color:#333}
+    body { font-family: Inter, system-ui, Arial, sans-serif; padding: 20px; }
+    main { max-width: 720px; margin: 0 auto; }
+    #previewWrap.hidden { display: none; }
+    #badgeContainer svg { width: 100%; height: auto; }
+    .controls { margin-top: 12px; }
   </style>
 </head>
 <body>
   <main>
-    <h1>BadgeHub — Claim your badge</h1>
-
     <label for="name">Your display name or fid</label>
     <input id="name" placeholder="e.g. 12345 or @builder" />
 
@@ -34,7 +27,7 @@
 
     <button id="claim">Claim Daily Badge</button>
 
-    <div id="previewWrap" class="hidden" style="margin-top:16px;">
+    <div id="previewWrap" class="hidden">
       <h2>Badge preview</h2>
       <div id="badgeContainer"></div>
 
@@ -42,14 +35,13 @@
         <button id="download">Download SVG</button>
         <button id="copyCaption">Copy Caption</button>
       </div>
-
       <small>After copying caption, paste into Farcaster cast.</small>
     </div>
 
     <div id="msg" class="msg"></div>
   </main>
 
-  <!-- external script -->
+  <!-- load script with defer so DOM exists -->
   <script src="script.js" defer></script>
 </body>
 </html>
