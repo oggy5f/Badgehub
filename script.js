@@ -1,299 +1,250 @@
-// ------------------------------
-// BadgeHub — Upgraded script.js
-// Paste this entire file into script.js (replace old) - no backticks used
-// ------------------------------
+// script.js - Crypto UI BadgeHub (single-file logic)
+// Small helper
+const $ = id => document.getElementById(id);
 
-/* helpers */
-function $id(id){ return document.getElementById(id); }
-function safeText(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function randFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+// DOM
+const nameInput = $('nameInput');
+const typeSelect = $('typeSelect');
+const shapeSelect = $('shapeSelect');
+const claimBtn = $('claimBtn');
+const svgWrap = $('svgWrap');
+const downloadBtn = $('downloadBtn');
+const copyBtn = $('copyBtn');
+const shareBtn = $('shareBtn');
+const farcasterBtn = $('farcasterBtn');
+const mintBtn = $('mintBtn');
+const captionPreview = $('captionPreview');
+const sizeRange = $('sizeRange');
+const sizeVal = $('sizeVal');
+const randomColor = $('randomColor');
+const autoCopy = $('autoCopy');
+const autoDownload = $('autoDownload');
+const streakCountEl = $('streakCount');
+const themeSelect = $('themeSelect');
 
-/* DOM (may be missing some elements in older HTML; checks included) */
-var nameInput = $id('nameInput');
-var typeSelect = $id('typeSelect');
-var shapeSelect = $id('shapeSelect');
-var claimBtn = $id('claimBtn');
-var svgwrap = $id('svgwrap');
-var downloadBtn = $id('downloadBtn');
-var copyCaptionBtn = $id('copyCaption');
-var shareBtn = $id('shareBtn');
-var captionPreview = $id('captionPreview');
-var streakDisplay = $id('streakDisplay');
+let currentSVGString = '';
+let streak = 0;
 
-var themeSelect = $id('theme');        // optional
-var sizeScale = $id('sizeScale') || $id('sizeScale') || $id('sizeScale') || $id('sizeScale'); // try common ids
-// also try alternative slider id 'sizeScale' or 'scaleRange' or 'scaleRange'
-if(!sizeScale) sizeScale = $id('scaleRange') || $id('sizeScale') || $id('size') || null;
-
-var randomColorCheck = $id('randomColor') || $id('randColors') || $id('randColor');
-var autoCopyCheck = $id('autoCopy') || $id('auto-copy') || null;
-
-/* persistence keys */
-var THEME_KEY = 'badgehub_theme';
-var STREAK_KEY = 'badgehub_streak';
-
-/* palettes */
-var BG_COLORS = ['#ffe2a8','#c6f0ff','#ffc6e3','#d4ffcf','#fff3b0','#fbe6ff','#e0f7ff'];
-var ACCENT_COLORS = ['#ffb07a','#ff9fb5','#7cc1ff','#4bd6a1','#ffb94c'];
-
-/* Theme handling (set data-theme on html root) */
-function applyTheme(name){
-  var root = document.documentElement;
-  var t = name || 'dark';
-  root.setAttribute('data-theme', t);
-  try { localStorage.setItem(THEME_KEY, t); } catch(e){}
-  // Also, if there are CSS classes you want, you can add here (kept simple)
+// Themes: apply to <html> as data-theme
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('bh:theme', theme);
 }
-function loadTheme(){
-  var saved = null;
-  try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
-  if(!saved) saved = (themeSelect && themeSelect.value) ? themeSelect.value : 'dark';
-  applyTheme(saved);
-  if(themeSelect) themeSelect.value = saved;
-}
-if(themeSelect){
-  themeSelect.addEventListener('change', function(e){
-    applyTheme(e.target.value);
-  });
-}
-loadTheme();
+themeSelect.addEventListener('change', e=>{
+  applyTheme(e.target.value);
+});
+const savedTheme = localStorage.getItem('bh:theme') || 'dark';
+themeSelect.value = savedTheme;
+applyTheme(savedTheme);
 
-/* Streak handling */
-function readStreak(){
-  var s = 0;
-  try { s = parseInt(localStorage.getItem(STREAK_KEY),10) || 0; } catch(e){ s = 0; }
-  return s;
-}
-function writeStreak(n){
-  try { localStorage.setItem(STREAK_KEY, String(n)); } catch(e){}
-}
-function showStreak(){
-  var s = readStreak();
-  if(streakDisplay) streakDisplay.textContent = 'Streak: ' + s + ' 🔥';
-}
-function bumpStreak(){
-  var s = readStreak() || 0;
-  s = s + 1;
-  writeStreak(s);
-  showStreak();
-}
-showStreak();
+// size slider
+sizeRange.addEventListener('input', ()=>{
+  sizeVal.textContent = sizeRange.value;
+});
 
-/* utility: compute final scale (user slider * 1.3, capped at 1) */
-function computeFinalScalePercent(userPercent){
-  var p = Number(userPercent) || 100;
-  p = Math.max(10, Math.min(200, p)); // clamp
-  var final = p * 1.3;
-  if(final > 100) final = 100;
-  return final; // percent (10..100)
-}
-
-/* SVG shape builders (coordinates use original 720x360 viewBox; we scale via width/height) */
-function shapeElementFor(shape, accent){
-  if(shape === 'square'){
-    return '<rect x="48" y="108" width="144" height="144" rx="18" fill="'+accent+'"/>';
+// streak logic
+function loadStreak(){
+  const data = JSON.parse(localStorage.getItem('bh:streak') || '{}');
+  const last = data.lastClaim;
+  streak = data.streak || 0;
+  // if last claim was yesterday/earlier, keep streak; if more than 24h gap, reset (simple)
+  if(last){
+    const diff = Date.now() - (new Date(last)).getTime();
+    if(diff > (48 * 3600 * 1000)){ // more than 48h break
+      streak = 0;
+    }
   }
-  if(shape === 'diamond'){
-    return '<polygon points="120,108 192,180 120,252 48,180" fill="'+accent+'"/>';
-  }
-  if(shape === 'hex'){
-    // regular hex around center (120,180) radius 80
-    return '<polygon points="200,180 160,244 80,244 40,180 80,116 160,116" fill="'+accent+'"/>';
-  }
-  if(shape === 'star'){
-    // simple 5-point star path scaled approx
-    return '<path d="M120 100 L139 156 L198 156 L149 190 L165 246 L120 210 L74 246 L90 190 L41 156 L100 156 Z" fill="'+accent+'"/>';
-  }
-  // default circle
-  return '<circle cx="120" cy="180" r="72" fill="'+accent+'"/>';
+  streakCountEl.textContent = streak;
+}
+function saveStreak(){
+  localStorage.setItem('bh:streak', JSON.stringify({streak, lastClaim: new Date().toISOString()}));
 }
 
-/* Create a stylish SVG using concatenation (no template backticks) */
-function makeBadgeSVG(name, type, shape, bgColor, accentColor, userScalePercent){
-  var finalPercent = computeFinalScalePercent(userScalePercent || 100); // percent
-  var scale = finalPercent / 100; // 0..1
-  var W = Math.round(720 * scale);
-  var H = Math.round(360 * scale);
+// helper: random color
+function randColor(){
+  const pool = ['#ff7ab6','#a17cff','#6be4ff','#ffd16b','#ff9b6b','#8affb0'];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
 
-  // build defs: gradient + subtle inner shadow filter
-  var defs = '';
-  defs += '<defs>';
-  defs += '<linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">';
-  defs += '<stop offset="0" stop-color="'+bgColor+'"/>';
-  defs += '<stop offset="1" stop-color="#ffffff" stop-opacity="0.06"/>';
-  defs += '</linearGradient>';
-  defs += '<radialGradient id="r1" cx="20%" cy="30%">';
-  defs += '<stop offset="0" stop-color="'+accentColor+'" stop-opacity="0.95"/>';
-  defs += '<stop offset="1" stop-color="'+accentColor+'" stop-opacity="0.5"/>';
-  defs += '</radialGradient>';
-  // drop shadow filter (soft)
-  defs += '<filter id="ds" x="-20%" y="-20%" width="140%" height="140%">';
-  defs += '<feDropShadow dx="0" dy="8" stdDeviation="18" flood-color="#000" flood-opacity="0.35"/>';
-  defs += '</filter>';
-  defs += '</defs>';
+// SVG maker
+function makeBadgeSVG(displayName, badgeType, shape, scalePct=100, bgColor='#0b5fff'){
+  const date = new Date().toLocaleDateString();
+  const s = Number(scalePct) / 100;
+  // base card size scaled (720x360 base)
+  const width = 720 * s;
+  const height = 360 * s;
+  const circleSize = 120 * s;
+  // shape content: circle, square, hex
+  let shapeSvg = '';
+  if(shape === 'circle'){
+    shapeSvg = <circle cx="${120*s}" cy="${180*s}" r="${circleSize/2}" fill="${bgColor}" />;
+  } else if(shape === 'square'){
+    const size = circleSize;
+    shapeSvg = <rect x="${120*s - size/2}" y="${180*s - size/2}" width="${size}" height="${size}" rx="${size*0.12}" fill="${bgColor}" />;
+  } else { // hex
+    const r = circleSize/2;
+    const cx = 120*s, cy = 180*s;
+    const points = Array.from({length:6}).map((_,i)=>{
+      const a = Math.PI/3*i - Math.PI/6;
+      return ${cx + r*Math.cos(a)},${cy + r*Math.sin(a)};
+    }).join(' ');
+    shapeSvg = <polygon points="${points}" fill="${bgColor}" />;
+  }
 
-  // shape element
-  var shapeFrag = shapeElementFor(shape, accentColor);
-
-  // ribbon / label decoration
-  var ribbon = '';
-  ribbon += '<g transform="translate(0,0)">';
-  ribbon += '<rect x="12" y="12" width="220" height="44" rx="10" fill="'+accentColor+'" opacity="0.9"/>';
-  ribbon += '<text x="26" y="42" font-size="16" fill="#fff" font-weight="700" font-family="Inter, system-ui, Arial">'+ safeText(type) +'</text>';
-  ribbon += '</g>';
-
-  // title text and subtext coordinates are in viewBox coords (0..720,0..360)
-  var textName = '<text x="220" y="150" font-size="34" fill="#111" font-weight="800" font-family="Inter, system-ui, Arial">'+ safeText(name) +'</text>';
-  var textType = '<text x="220" y="190" font-size="20" fill="#333">'+ safeText(type) +'</text>';
-  var dateStr = new Date().toLocaleDateString();
-  var textDate = '<text x="220" y="226" font-size="14" fill="#666">'+ safeText(dateStr) +'</text>';
-
-  // build SVG via concatenation
-  var svg = '';
-  svg += '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 720 360" role="img" aria-label="Badge for '+ safeText(name) +'">';
-  svg += defs;
-  svg += '<rect width="720" height="360" rx="24" fill="#fff"/>';
-  svg += '<rect x="24" y="24" width="672" height="312" rx="16" fill="url(#g1)" filter="url(#ds)"/>';
-  // accent shape using radial gradient
-  svg += shapeFrag.replace(/fill="[^"]*"/, 'fill="url(#r1)"');
-  // small emblem circle top-left using accent color
-  svg += '<circle cx="572" cy="72" r="34" fill="'+accentColor+'" opacity="0.12"/>';
-  svg += ribbon;
-  svg += textName;
-  svg += textType;
-  svg += textDate;
-  // subtle border
-  svg += '<rect x="24" y="24" width="672" height="312" rx="16" fill="none" stroke="#000000" stroke-opacity="0.04"/>';
-  svg += '</svg>';
+  // use template literal (multi-line)
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${720} ${360}">
+    <defs>
+      <filter id="soft">
+        <feDropShadow dx="0" dy="8" stdDeviation="16" flood-opacity="0.12"/>
+      </filter>
+    </defs>
+    <rect width="720" height="360" rx="24" fill="#0b0f14" />
+    <rect x="24" y="24" width="672" height="312" rx="16" fill="#0f1720"/>
+    <!-- circular/square/hex shape -->
+    ${shapeSvg}
+    <text x="${220}" y="${145}" font-size="${34}" fill="#fff" font-weight="800" font-family="Inter, system-ui, Arial">
+      ${escapeXml(displayName)}
+    </text>
+    <text x="${220}" y="${190}" font-size="${22}" fill="#cfe0ff">${escapeXml(badgeType)}</text>
+    <text x="${220}" y="${230}" font-size="${16}" fill="#9fbff0">${escapeXml(date)}</text>
+  </svg>`.trim();
 
   return svg;
 }
 
-/* caption builder (styled preview + plain) */
-function buildCaption(name, type){
-  var plain = name + ' — ' + type + ' badge earned! #BadgeHub';
-  var html = '';
-  html += '<div style="font-family:Inter,system-ui,Arial">';
-  html += '<div style="font-size:18px;font-weight:800">🏅 ' + safeText(name) + '</div>';
-  html += '<div style="font-size:13px;color:rgba(0,0,0,0.6);margin-top:6px">' + safeText(type) + ' • <span style="color:rgba(0,0,0,0.5)">#BadgeHub</span></div>';
-  html += '</div>';
-  return { plain: plain, html: html };
+// small xml escape to keep safe
+function escapeXml(str=''){
+  return String(str||'').replace(/[&<>"']/g, function (s) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'})[s];
+  });
 }
 
-/* render + animate (add both class names to match different CSS variants) */
-function renderAndAnimate(svgString){
-  if(!svgwrap) return;
-  svgwrap.innerHTML = svgString;
-  var svgEl = svgwrap.querySelector('svg');
-  if(!svgEl) return;
-  // try both common class names used in our CSS examples
-  svgEl.classList.remove('badge-pop','badge-animate','anim-pop','anim-pop2');
-  void svgEl.offsetWidth;
-  svgEl.classList.add('badge-pop','badge-animate');
-  // remove after animation end so it can replay
-  svgEl.addEventListener('animationend', function(){ svgEl.classList.remove('badge-pop','badge-animate'); }, { once: true });
+// render svg into DOM
+function renderSVG(svgString){
+  currentSVGString = svgString;
+  svgWrap.classList.remove('empty');
+  svgWrap.innerHTML = svgString;
+  // add animation (pop)
+  const svgEl = svgWrap.querySelector('svg');
+  if(svgEl){
+    svgEl.classList.remove('pop');
+    // force reflow then add
+    void svgEl.offsetWidth;
+    svgEl.classList.add('pop');
+  }
 }
 
-/* download helper */
-function downloadSVGFromElement(svgEl, filename){
-  var svgText = new XMLSerializer().serializeToString(svgEl);
-  var blob = new Blob([svgText], { type: 'image/svg+xml' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
+// download helper
+function downloadSVG(name='badge.svg'){
+  if(!currentSVGString) return;
+  const blob = new Blob([currentSVGString], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
   a.href = url;
-  a.download = filename || 'badge.svg';
-  document.body.appendChild(a);
-  a.click();
+  a.download = name;
+  document.body.appendChild(a); a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
 }
 
-/* init: set safe defaults if some elements missing */
-if(!nameInput) {
-  // create a fallback input so code doesn't break (not shown in UI)
-  nameInput = { value: 'Anonymous' };
-}
-if(!typeSelect) {
-  typeSelect = { value: 'Daily Check-in' };
-}
-if(!shapeSelect) {
-  shapeSelect = { value: 'circle' };
+// copy caption
+function copyCaption(text){
+  navigator.clipboard?.writeText(text).then(()=>{}, ()=>{});
 }
 
-/* Claim button logic (defensive) */
-if(claimBtn){
-  claimBtn.addEventListener('click', function(){
-    var name = (nameInput && nameInput.value) ? nameInput.value.trim() : 'Anonymous';
-    var type = (typeSelect && typeSelect.value) ? typeSelect.value : 'Daily Check-in';
-    var shape = (shapeSelect && shapeSelect.value) ? shapeSelect.value : 'circle';
-    // size slider
-    var sliderVal = 100;
-    if(sizeScale && sizeScale.value) sliderVal = Number(sizeScale.value);
-    // random color
-    var bg = randFrom(BG_COLORS);
-    var accent = randFrom(ACCENT_COLORS);
-    if(randomColorCheck && randomColorCheck.checked){
-      bg = randFrom(BG_COLORS);
-      accent = randFrom(ACCENT_COLORS);
-    }
-    // create svg
-    var svg = makeBadgeSVG(name, type, shape, bg, accent, sliderVal);
-    renderAndAnimate(svg);
-    // caption preview
-    if(captionPreview) {
-      var cap = buildCaption(name, type);
-      captionPreview.innerHTML = cap.html;
-    }
-    // auto-copy caption if requested
-    if(autoCopyCheck && autoCopyCheck.checked && navigator.clipboard){
-      try { navigator.clipboard.writeText(buildCaption(name,type).plain); } catch(e){}
-    }
-    // bump streak
-    bumpStreak();
-  });
+// share twitter (simple text only, images not attached)
+function shareTwitter(text){
+  const url = https://twitter.com/intent/tweet?text=${encodeURIComponent(text)};
+  window.open(url,'_blank','noopener');
 }
 
-/* Download */
-if(downloadBtn){
-  downloadBtn.addEventListener('click', function(){
-    var svgEl = svgwrap ? svgwrap.querySelector('svg') : null;
-    if(!svgEl) return alert('No badge to download — claim first');
-    downloadSVGFromElement(svgEl, 'badge.svg');
-  });
+// farcaster share placeholder: we cannot POST to Farcaster from client w/o auth — provide a copied caption
+function shareFarcaster(text){
+  // copy to clipboard and open farcaster.com (user can paste)
+  copyCaption(text);
+  alert('Caption copied. Open your Farcaster app and paste to share. (Automated Farcaster posting requires auth.)');
 }
 
-/* Copy caption (plain text) */
-if(copyCaptionBtn){
-  copyCaptionBtn.addEventListener('click', function(){
-    var name = (nameInput && nameInput.value) ? nameInput.value.trim() : 'Anonymous';
-    var type = (typeSelect && typeSelect.value) ? typeSelect.value : 'Daily Check-in';
-    var plain = buildCaption(name,type).plain;
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(plain).then(function(){ alert('Caption copied'); }).catch(function(){ prompt('Copy this caption', plain); });
-    } else {
-      prompt('Copy this caption', plain);
-    }
-  });
+// caption generator
+function makeCaption(name,type){
+  return I just earned a ${type} badge on BadgeHub 🎉 — ${name} #BadgeHub;
 }
 
-/* Share to Farcaster (Warpcast compose) */
-if(shareBtn){
-  shareBtn.addEventListener('click', function(){
-    var name = (nameInput && nameInput.value) ? nameInput.value.trim() : 'Anonymous';
-    var type = (typeSelect && typeSelect.value) ? typeSelect.value : 'Daily Check-in';
-    var plain = buildCaption(name,type).plain;
-    var url = 'https://warpcast.com/~/compose?text=' + encodeURIComponent(plain);
-    window.open(url, '_blank');
-  });
+// load previous settings
+function loadSettings(){
+  sizeVal.textContent = sizeRange.value;
+  const sTheme = localStorage.getItem('bh:theme') || 'dark';
+  if(sTheme) themeSelect.value = sTheme;
 }
+loadSettings();
+loadStreak();
 
-/* keyboard: Enter in name input triggers claim */
-if($id('nameInput')){
-  $id('nameInput').addEventListener('keydown', function(e){
-    if(e.key === 'Enter' && claimBtn) claimBtn.click();
-  });
-}
+// Claim button action
+claimBtn.addEventListener('click', ()=>{
+  const name = nameInput.value.trim() || 'Anonymous';
+  const type = typeSelect.value;
+  const shape = shapeSelect.value;
+  const scale = sizeRange.value;
+  const color = randomColor.checked ? randColor() : '#ff9b6b'; // fallback
 
-/* finalize: ensure UI shows current theme & streak on load */
-loadTheme();
-showStreak();
+  const svg = makeBadgeSVG(name, type, shape, scale, color);
+  renderSVG(svg);
+
+  // update streak
+  streak = (parseInt(streak) || 0) + 1;
+  streakCountEl.textContent = streak;
+  saveStreak();
+
+  const caption = makeCaption(name, type);
+  captionPreview.textContent = caption;
+
+  if(autoCopy.checked){
+    copyCaption(caption);
+  }
+  if(autoDownload.checked){
+    downloadSVG(${name.replace(/\s+/g,'_')}_${type.replace(/\s+/g,'_')}.svg);
+  }
+});
+
+// download button
+downloadBtn.addEventListener('click', ()=>{
+  downloadSVG('badge.svg');
+});
+
+// copy caption
+copyBtn.addEventListener('click', ()=>{
+  const name = nameInput.value.trim() || 'Anonymous';
+  const type = typeSelect.value;
+  const text = makeCaption(name,type);
+  copyCaption(text);
+  captionPreview.textContent = 'Caption copied to clipboard ✔';
+});
+
+// share
+shareBtn.addEventListener('click', ()=>{
+  const name = nameInput.value.trim() || 'Anonymous';
+  const type = typeSelect.value;
+  const text = makeCaption(name,type);
+  shareTwitter(text);
+});
+farcasterBtn.addEventListener('click', ()=>{
+  const name = nameInput.value.trim() || 'Anonymous';
+  const type = typeSelect.value;
+  const text = makeCaption(name,type);
+  shareFarcaster(text);
+});
+
+// Mint placeholder
+mintBtn.addEventListener('click', ()=>{
+  alert('Mint integration placeholder — requires API + wallet connection.');
+});
+
+// quick keyboard: press Enter to claim
+nameInput.addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ claimBtn.click();}
+});
+
+// load last known theme from localStorage already applied earlier
+
+// If a saved SVG is in localStorage we could load it (optional) - not implemented by default.
