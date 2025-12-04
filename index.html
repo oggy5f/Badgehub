@@ -1,59 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BadgeHub</title>
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: #fff;
-        text-align: center;
-        padding: 20px;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BadgeHub — Upgraded</title>
+  <style>
+    :root {
+      --bg: #071022;
+      --panel: #0b1220;
+      --text: #e6eef8;
+      --accent: #0b5fff;
+      --glass: rgba(255,255,255,0.03);
+    }
+    [data-theme="light"] {
+      --bg: #f5f8ff;
+      --panel: #ffffff;
+      --text: #0a1220;
+      --accent: #0b5fff;
+      --glass: rgba(10,18,30,0.02);
     }
 
-    input, select, button {
-        padding: 10px;
-        margin: 6px;
-        border-radius: 6px;
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071022,#071628);color:var(--text)}
+    .wrap{max-width:1100px;margin:28px auto;padding:16px;display:grid;grid-template-columns:380px 1fr;gap:18px}
+    .panel{background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,0.6)}
+    h2{margin:0 0 10px 0;font-size:18px}
+    label{display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:6px}
+    input[type="text"], select, input[type="range"]{width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text);box-sizing:border-box}
+    .row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    button{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;background:var(--accent);color:#fff;font-weight:600}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+    .small{font-size:13px;color:rgba(255,255,255,0.7)}
+    .svgwrap{background:var(--glass);border-radius:12px;padding:12px;min-height:360px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .caption{margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;color:var(--text);min-height:64px}
+    .streak{margin-left:auto;background:#fff1cc;color:#111;padding:6px 10px;border-radius:10px;font-weight:700}
+
+    /* transform rules so SVG transform-origin works */
+    .svgwrap svg {
+      display:block;
+      transform-box: fill-box; /* IMPORTANT */
+      transform-origin: 50% 50%;
+      will-change: transform;
+      filter: drop-shadow(0 12px 20px rgba(0,0,0,0.45));
     }
 
-    #svgwrap {
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
+    /* base visual scale (we apply real size via width/height too) */
+    .anim-pop {
+      animation: pop 480ms cubic-bezier(.2,.9,.3,1.1);
+    }
+    @keyframes pop {
+      0% { transform: scale(0.88) rotate(0deg); opacity:0; }
+      50% { transform: scale(1.18) rotate(-3deg); opacity:1; }
+      85% { transform: scale(1.05) rotate(2deg); }
+      100% { transform: scale(1.0) rotate(0deg); }
     }
 
-    /* --- Badge SIZE (30% bigger) --- */
-    #svgwrap svg {
-        transform: scale(1.3);
-        transform-origin: center center;
-        transition: transform 0.25s ease;
-        will-change: transform;
-    }
-
-    /* Pop animation class */
-    #svgwrap svg.popped {
-        transform: scale(1.45);
-    }
-</style>
+    /* small screen */
+    @media(max-width:980px){ .wrap{grid-template-columns:1fr; padding:10px} .svgwrap{min-height:260px} }
+  </style>
 </head>
-
 <body>
+  <div class="wrap" id="rootWrap" data-theme="dark">
+    <div class="panel">
+      <h2>BadgeHub Controls</h2>
 
-<h1>BadgeHub</h1>
+      <div class="row">
+        <div style="flex:1">
+          <label>Your name / fid</label>
+          <input id="name" type="text" placeholder="@you or fid" value="@you">
+        </div>
+      </div>
 
-<input id="name" placeholder="Your name" />
-<select id="type">
-    <option>Daily Check-in</option>
-</select>
+      <div class="row">
+        <div style="flex:1">
+          <label>Badge type</label>
+          <select id="type">
+            <option>Daily Check-in</option>
+            <option>Builder</option>
+            <option>Contributor</option>
+            <option>OG</option>
+          </select>
+        </div>
+      </div>
 
-<button id="claim">Claim Badge</button>
+      <div class="row">
+        <div style="flex:1">
+          <label>Shape</label>
+          <select id="shape">
+            <option value="circle">Circle</option>
+            <option value="square">Square</option>
+            <option value="diamond">Diamond</option>
+          </select>
+        </div>
+      </div>
 
-<div id="svgwrap"></div>
+      <div class="row">
+        <div style="flex:1">
+          <label>Output scale (%) — visual size (slider)</label>
+          <input id="scaleRange" type="range" min="10" max="100" value="30">
+          <div class="small" id="scaleValue">30%</div>
+        </div>
+      </div>
 
-<script src="script.js"></script>
+      <div class="row">
+        <div style="flex:1">
+          <label>Randomize</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="small"><input id="randColors" type="checkbox"> Random colors</label>
+            <label class="small"><input id="randShape" type="checkbox"> Random shape</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>After claim</label>
+          <div style="display:flex;gap:8px">
+            <label class="small"><input id="autoCopy" type="checkbox"> Auto-copy caption</label>
+            <label class="small"><input id="autoDL" type="checkbox"> Auto-download SVG</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Theme</label>
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:10px">
+        <button id="claim">Claim Badge</button>
+        <button id="download" class="ghost">Download SVG</button>
+        <button id="copyCaption" class="ghost">Copy caption</button>
+        <button id="shareWarp" class="ghost">Share (Farcaster)</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        <button id="mint" class="ghost">Mint (placeholder)</button>
+        <div class="streak">Streak: <span id="streakDisplay">0</span></div>
+      </div>
+
+      <div class="small" style="margin-top:12px">Tip: Output scale controls actual SVG width/height. Default 30% + 30% boost applied automatically for visibility.</div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0">Preview</h2>
+      <div id="svgwrap" class="svgwrap">No badge yet — click Claim</div>
+      <div id="caption" class="caption">Caption will appear here.</div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
