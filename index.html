@@ -3,40 +3,131 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BadgeHub — Upgraded</title>
+  <title>BadgeHub — UI Upgrade 2.0</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
-      --bg:#f5f8ff; --card:#ffffff; --muted:#6b7280; --accent:#0b5fff;
+      --bg:#0f1724;
+      --panel:#0b1220;
+      --muted:#9fb3d6;
+      --card:#0f1724;
+      --glass: rgba(255,255,255,0.04);
+      --accent-1: linear-gradient(90deg,#7c5cff,#2dd4bf);
+      --accent:#6a8cff;
+      --success:#22c55e;
+      --radius:16px;
     }
-    [data-theme="dark"]{ --bg:#09111f; --card:#0f1a32; --muted:#b7c6df; --accent:#ffb86b; }
-    [data-theme="blue"]{ --bg:#e8f3ff; --card:#ffffff; --muted:#4a6b88; --accent:#0077ff; }
 
-    body{margin:0;background:var(--bg);font-family:Inter,Arial;padding:20px;}
-    .card{max-width:900px;margin:auto;background:var(--card);padding:20px;border-radius:16px;box-shadow:0 10px 35px rgba(0,0,0,0.07);}
-    .row{display:flex;gap:10px;flex-wrap:wrap;}
-    label{font-size:13px;color:var(--muted);}
-    input,select{padding:10px;border-radius:8px;border:1px solid #dfe6f1;font-size:15px;width:100%;}
-    .btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;}
-    .primary{background:var(--accent);color:white;}
-    .secondary{background:#eef3ff;color:var(--accent);border:1px solid #ddebff;}
-    #badgeContainer{text-align:center;color:#7b8a9c;}
-    #caption{background:#f7faff;padding:10px;border-radius:8px;min-height:80px;}
-    .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:8px 12px;border-radius:6px;display:none;}
-    .streak{background:#fff1cc;border:1px dashed #e3c37a;padding:6px 10px;border-radius:8px;margin-left:auto;}
-    .svg-wrap{background:#f3f8ff;padding:10px;border-radius:10px;height:250px;display:flex;align-items:center;justify-content:center;}
+    [data-theme="light"]{
+      --bg:#f5f8ff;
+      --panel:#ffffff;
+      --muted:#56687f;
+      --card:#ffffff;
+      --glass: rgba(10,18,30,0.03);
+      --accent-1: linear-gradient(90deg,#0b5fff,#00d4ff);
+      --accent:#0b5fff;
+      --success:#16a34a;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(180deg,#071022 0%, #071628 50%);color:#e6eef8}
+
+    .wrap{max-width:1100px;margin:36px auto;padding:20px}
+
+    .topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:48px;height:48px;border-radius:12px;
+      background:var(--accent-1);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;color:#fff;font-size:18px;
+    }
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .card{
+      display:grid;
+      grid-template-columns:1fr 380px;
+      gap:20px;
+      background: rgba(255,255,255,0.02);
+      border-radius:var(--radius);
+      padding:20px;
+      border:1px solid rgba(255,255,255,0.04);
+    }
+
+    label.small{font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
+    input,select{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.08);
+      color:inherit;
+      font-size:15px;
+    }
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      padding:12px 14px;
+      border-radius:12px;border:0;cursor:pointer;font-weight:600;
+      transition:transform .15s ease, box-shadow .15s ease;
+      background:var(--accent);color:white;
+    }
+    .btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.4)}
+    .btn.secondary{background:transparent;color:var(--accent);border:1px solid rgba(255,255,255,0.1)}
+
+    .svgwrap{
+      width:320px;height:220px;border-radius:12px;
+      background:var(--glass);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 10px 30px rgba(0,0,0,0.4);
+      transition:transform .35s cubic-bezier(.2,.9,.3,1);
+    }
+
+    .svgwrap.pop{transform:scale(1.05)}
+
+    .caption{background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;font-size:14px;color:var(--muted);min-height:80px}
+
+    .streak{
+      background:#fff1cc;color:#333;padding:6px 10px;border-radius:8px;font-size:13px;border:1px dashed #e3c37a;
+      width:max-content;
+    }
+
+    .toast{
+      position:fixed;right:20px;bottom:20px;background:#000;padding:10px 14px;border-radius:10px;display:none;color:white;
+      opacity:0;transform:translateY(10px);transition:all .2s ease;
+    }
+    .toast.show{display:block;opacity:1;transform:translateY(0)}
+
+    @media(max-width:980px){
+      .card{grid-template-columns:1fr}
+      .svgwrap{width:100%}
+    }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <div class="row">
-      <div style="flex:1">
-        <label>Your Name</label>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">BH</div>
+        <div>
+          <h1>BadgeHub</h1>
+          <p class="lead">Create & share badges — now shinier ✨</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>
+        <label class="small">Your Name</label>
         <input id="name" type="text" placeholder="@you or fid" />
 
-        <div class="row" style="margin-top:10px">
+        <div class="row" style="display:flex;gap:10px;margin-top:10px">
           <div style="flex:1">
-            <label>Badge Type</label>
+            <label class="small">Badge Type</label>
             <select id="type">
               <option>Daily Check-in</option>
               <option>Builder</option>
@@ -46,7 +137,7 @@
           </div>
 
           <div style="width:140px">
-            <label>Shape</label>
+            <label class="small">Shape</label>
             <select id="shape">
               <option value="circle">Circle</option>
               <option value="shield">Shield</option>
@@ -55,38 +146,37 @@
             </select>
           </div>
         </div>
-      </div>
 
-      <div style="width:350px">
-        <label>Theme</label>
-        <select id="theme">
-          <option value="default">Light</option>
-          <option value="dark">Dark</option>
-          <option value="blue">Blue</option>
-        </select>
-
-        <div class="streak" id="streakDisplay">Streak: 0 🔥</div>
-
-        <div class="row" style="margin-top:12px">
-          <button id="claim" class="btn primary">Claim Badge</button>
+        <div class="actions">
+          <button id="claim" class="btn">Claim</button>
           <button id="download" class="btn secondary">Download</button>
           <button id="copyCaption" class="btn secondary">Copy</button>
           <button id="share" class="btn secondary">Share</button>
         </div>
 
-        <label><input id="autoCopy" type="checkbox"> Auto copy</label>
-        <label><input id="autoDownload" type="checkbox"> Auto download</label>
-        <label><input id="randomColor" type="checkbox" checked> Random Colors</label>
-      </div>
-    </div>
+        <div class="row" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)">
+          <label><input id="autoCopy" type="checkbox"> Auto-copy</label>
+          <label><input id="autoDownload" type="checkbox"> Auto-download</label>
+          <label><input id="randomColor" type="checkbox" checked> Random colors</label>
 
-    <div class="row" style="margin-top:20px">
-      <div class="svg-wrap" style="flex:1">
-        <div id="badgeContainer">No badge yet</div>
+          <select id="theme" style="margin-left:auto;border-radius:10px;padding:6px">
+            <option value="default">Light</option>
+            <option value="dark">Dark</option>
+            <option value="blue">Blue</option>
+          </select>
+        </div>
       </div>
-      <div style="width:300px">
-        <label>Caption</label>
-        <pre id="caption">No caption</pre>
+
+      <div>
+        <div class="svgwrap" id="svgwrap">
+          <div id="badgeContainer" style="color:#8895aa">No badge yet</div>
+        </div>
+
+        <div class="caption" id="caption">No caption</div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <div class="streak" id="streakDisplay">Streak: 0 🔥</div>
+        </div>
       </div>
     </div>
   </div>
@@ -94,5 +184,17 @@
   <div class="toast" id="toast">Copied!</div>
 
   <script src="script.js"></script>
+
+  <script>
+    var svgwrap = document.getElementById("svgwrap");
+    var badgeC = document.getElementById("badgeContainer");
+
+    var obs = new MutationObserver(function(){
+      svgwrap.classList.remove("pop");
+      void svgwrap.offsetWidth;
+      svgwrap.classList.add("pop");
+    });
+    obs.observe(badgeC, { childList:true, subtree:true });
+  </script>
 </body>
 </html>
