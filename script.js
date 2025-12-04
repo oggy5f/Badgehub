@@ -1,64 +1,65 @@
-// helpers
-var $ = function(id){ return document.getElementById(id); };
+// ========= DOM ELEMENTS =========
+var nameInput = document.getElementById("name");
+var typeSelect = document.getElementById("type");
+var shapeSel = document.getElementById("shape");
+var themeSel = document.getElementById("theme");
+var claimBtn = document.getElementById("claim");
+var badgeContainer = document.getElementById("badgeContainer");
+var downloadBtn = document.getElementById("download");
+var copyCaptionBtn = document.getElementById("copyCaption");
+var shareBtn = document.getElementById("share");
+var captionEl = document.getElementById("caption");
+var toast = document.getElementById("toast");
+var autoCopyChk = document.getElementById("autoCopy");
+var autoDownloadChk = document.getElementById("autoDownload");
+var randomColorChk = document.getElementById("randomColor");
+var streakDisplay = document.getElementById("streakDisplay");
+var svgwrap = document.getElementById("svgwrap");
 
-var nameInput = $("name"),
-    typeSelect = $("type"),
-    shapeSel = $("shape"),
-    themeSel = $("theme"),
-    claimBtn = $("claim"),
-    badgeContainer = $("badgeContainer"),
-    downloadBtn = $("download"),
-    copyCaptionBtn = $("copyCaption"),
-    shareBtn = $("share"),
-    captionEl = $("caption"),
-    toast = $("toast"),
-    autoCopyChk = $("autoCopy"),
-    autoDownloadChk = $("autoDownload"),
-    randomColorChk = $("randomColor"),
-    streakDisplay = $("streakDisplay");
-
-// localStorage keys
-var LS_THEME = "bh_theme";
-var LS_STREAK = "bh_streak";
-var LS_LAST = "bh_last";
-
-// escape helper
-function escapeXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-// theme
+// ========= THEME SETUP =========
 function applyTheme(t){
-  if(t==="default") document.documentElement.removeAttribute("data-theme");
-  else document.documentElement.setAttribute("data-theme", t);
-  localStorage.setItem(LS_THEME, t);
+  if(t==="default"){
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", t);
+  }
+  localStorage.setItem("bh_theme", t);
 }
-var savedTheme = localStorage.getItem(LS_THEME) || "default";
+var savedTheme = localStorage.getItem("bh_theme") || "default";
 themeSel.value = savedTheme;
 applyTheme(savedTheme);
 themeSel.addEventListener("change", ()=> applyTheme(themeSel.value));
 
-// streak
+// ========= STREAK LOGIC =========
 function updateStreak(){
-  var s = parseInt(localStorage.getItem(LS_STREAK)||"0",10);
-  streakDisplay.textContent = "Streak: "+s+" 🔥";
+  var s = parseInt(localStorage.getItem("bh_streak")||"0",10);
+  streakDisplay.textContent = "Streak: " + s + " 🔥";
 }
 function incrementStreak(){
-  var now = new Date().toDateString();
-  var last = localStorage.getItem(LS_LAST);
-  var s = parseInt(localStorage.getItem(LS_STREAK)||"0",10);
-  if(last !== now) s += 1;
-  localStorage.setItem(LS_STREAK, s);
-  localStorage.setItem(LS_LAST, now);
+  var today = new Date().toDateString();
+  var last = localStorage.getItem("bh_last");
+  var s = parseInt(localStorage.getItem("bh_streak")||"0",10);
+  if(last !== today) s += 1;
+  localStorage.setItem("bh_streak", s);
+  localStorage.setItem("bh_last", today);
   updateStreak();
 }
 updateStreak();
 
-// random color
-function randomColor(){
-  var h = Math.floor(Math.random()*360);
-  return "hsl("+h+",70%,70%)";
+// ========= ESCAPE XML =========
+function escapeXml(s){
+  return String(s).replace(/&/g,"&amp;")
+                  .replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;");
 }
 
-// SVG generator (no backticks)
+// ========= RANDOM COLORS =========
+function randomColor(){
+  var h = Math.floor(Math.random()*360);
+  return "hsl(" + h + ",70%,70%)";
+}
+
+// ========= SVG BUILDER =========
 function makeSVG(name,type,bg,ac,shape){
   var date = new Date().toLocaleDateString();
   var svg = "";
@@ -68,12 +69,15 @@ function makeSVG(name,type,bg,ac,shape){
 
   if(shape==="circle"){
     svg += '<circle cx="120" cy="180" r="72" fill="'+ac+'"/>';
-  } else if(shape==="shield"){
+  }
+  else if(shape==="shield"){
     svg += '<path d="M120 80 L180 140 L180 240 Q120 300 60 240 L60 140 Z" fill="'+ac+'"/>';
-  } else if(shape==="ribbon"){
+  }
+  else if(shape==="ribbon"){
     svg += '<rect x="36" y="46" width="200" height="110" rx="12" fill="'+ac+'"/>';
     svg += '<path d="M36 156 L76 190 L116 156 Z" fill="'+ac+'"/>';
-  } else if(shape==="hex"){
+  }
+  else if(shape==="hex"){
     svg += '<polygon points="120,108 170,138 170,222 120,252 70,222 70,138" fill="'+ac+'"/>';
   }
 
@@ -85,29 +89,32 @@ function makeSVG(name,type,bg,ac,shape){
   return svg;
 }
 
-// toast
+// ========= TOAST =========
 function showToast(t){
   toast.textContent = t;
-  toast.style.display = "block";
-  setTimeout(()=> toast.style.display="none", 1500);
+  toast.classList.add("show");
+  setTimeout(()=> toast.classList.remove("show"),1500);
 }
 
-// caption
+// ========= CAPTION =========
 function buildCaption(n,t){
-  return "🏅 "+n+" — "+t+" badge earned! #BadgeHub";
+  return "🏅 " + n + " — " + t + " badge earned! #BadgeHub";
 }
 
-// download
-function downloadSvg(txt,name){
-  var blob = new Blob([txt],{type:"image/svg+xml"});
+// ========= DOWNLOAD SVG =========
+function downloadSvg(text,name){
+  var blob = new Blob([text],{type:"image/svg+xml"});
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
-  a.href=url; a.download=name; document.body.appendChild(a);
-  a.click(); a.remove();
+  a.href = url; 
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
-// claim
+// ========= CLAIM BADGE =========
 claimBtn.addEventListener("click", function(){
   var name = nameInput.value || "User";
   var type = typeSelect.value || "Daily Check-in";
@@ -116,8 +123,8 @@ claimBtn.addEventListener("click", function(){
   var ac = randomColorChk.checked ? randomColor() : "#ffd166";
 
   var svg = makeSVG(name,type,bg,ac,shapeSel.value);
-  badgeContainer.innerHTML = svg;
 
+  badgeContainer.innerHTML = svg;
   captionEl.textContent = buildCaption(name,type);
 
   incrementStreak();
@@ -129,24 +136,29 @@ claimBtn.addEventListener("click", function(){
     downloadSvg(svg,"badge.svg");
   }
 
+  // Animation
+  svgwrap.classList.remove("pop");
+  void svgwrap.offsetWidth;
+  svgwrap.classList.add("pop");
+
   showToast("Badge Ready!");
 });
 
-// copy caption
+// ========= COPY CAPTION =========
 copyCaptionBtn.addEventListener("click", ()=> {
   navigator.clipboard.writeText(captionEl.textContent);
-  showToast("Copied!");
+  showToast("Caption Copied!");
 });
 
-// download
+// ========= DOWNLOAD =========
 downloadBtn.addEventListener("click", ()=>{
   var svg = badgeContainer.querySelector("svg");
   if(svg) downloadSvg(svg.outerHTML,"badge.svg");
 });
 
-// FARCASTER SHARE
-shareBtn.addEventListener("click",()=>{
+// ========= SHARE TO FARCASTER =========
+shareBtn.addEventListener("click", ()=>{
   var text = captionEl.textContent || "";
-  var url = "https://warpcast.com/~/compose?text="+encodeURIComponent(text);
-  window.open(url,"_blank");
+  var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(text);
+  window.open(url, "_blank");
 });
