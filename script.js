@@ -1,64 +1,53 @@
-// simple helper
-const $ = (id) => document.getElementById(id);
+console.log("script.js loaded");
 
-// SVG maker (returns an SVG string)
-function makeBadgeSVG(displayName = 'Anonymous', badgeType = 'Daily Check-in') {
-  const date = new Date().toLocaleDateString();
-  const bg = '#f6d6f0';
-  const accent = '#f6a26b';
-  const textColor = '#ffffff';
-
-  return `
-  <svg class="badge" xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
-    <rect width="720" height="360" rx="24" fill="#0f1720" />
-    <rect x="16" y="16" width="688" height="328" rx="20" fill="${bg}" />
-    <circle cx="120" cy="120" r="48" fill="${accent}" />
-    <text x="260" y="150" font-size="48" fill="${textColor}" font-weight="700" font-family="Inter, system-ui, Arial, Helvetica, sans-serif">${escapeXml(displayName)}</text>
-    <text x="260" y="200" font-size="20" fill="#fff" opacity="0.9">${escapeXml(badgeType)}</text>
-    <text x="260" y="230" font-size="14" fill="#fff" opacity="0.7">${escapeXml(date)}</text>
-  </svg>
-  `.trim();
+// Escape text safely
+function escapeXML(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }
 
-// simple XML escape helper
-function escapeXml(str='') {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+// Generate SVG badge
+function makeBadgeSVG(name, type) {
+    const date = new Date().toLocaleDateString();
+    const bg = "#ffb5ff";
+    const accent = "#ff9966";
+
+    // SVG as plain string (NO BACKTICKS)
+    let svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">' +
+        '<rect width="720" height="360" rx="24" fill="#ffffff"/>' +
+        '<rect x="24" y="24" width="672" height="312" rx="16" fill="' + bg + '"/>' +
+        '<circle cx="120" cy="180" r="72" fill="' + accent + '"/>' +
+        '<text x="220" y="145" font-size="34" fill="#fff" font-weight="700">' + escapeXML(name) + '</text>' +
+        '<text x="220" y="190" font-size="24" fill="#fff">' + escapeXML(type) + '</text>' +
+        '<text x="220" y="230" font-size="16" fill="#ffe0ff">' + escapeXML(date) + '</text>' +
+        '</svg>';
+
+    return svg;
 }
 
-// Insert SVG into page and trigger animation
-function showBadge(displayName, badgeType) {
-  const wrapper = $('svgwrap');
-  wrapper.innerHTML = makeBadgeSVG(displayName, badgeType);
+// DOM
+const claimBtn = document.getElementById("claim");
+const nameInput = document.getElementById("name");
+const typeSelect = document.getElementById("type");
+const svgwrap = document.getElementById("svgwrap");
 
-  // get svg element we just inserted
-  const svg = wrapper.querySelector('svg');
-  if (!svg) return;
+// Claim button click
+claimBtn.addEventListener("click", () => {
+    const name = nameInput.value.trim() || "User";
+    const type = typeSelect.value || "Daily Check-in";
 
-  // ensure no leftover class
-  svg.classList.remove('anim-pop');
+    const svg = makeBadgeSVG(name, type);
 
-  // force reflow so animation will run when we add class
-  // (reading offsetWidth triggers reflow)
-  void svg.offsetWidth;
+    // Put SVG into wrapper
+    svgwrap.innerHTML = svg;
 
-  // add class -> animation starts
-  svg.classList.add('anim-pop');
-
-  // remove the class after animation to allow replay next time
-  svg.addEventListener('animationend', () => {
-    svg.classList.remove('anim-pop');
-  }, { once: true });
-}
-
-// UI binding
-if ($('claim')) {
-  $('claim').addEventListener('click', () => {
-    const name = $('name').value.trim() || 'Anonymous';
-    const type = $('type').value || 'Daily Check-in';
-    showBadge(name, type);
-  });
-}
+    // POP ANIMATION
+    const badge = svgwrap.querySelector("svg");
+    if (badge) {
+        badge.classList.add("popped");
+        setTimeout(() => badge.classList.remove("popped"), 220);
+    }
+});
