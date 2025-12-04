@@ -6,104 +6,92 @@
   <title>BadgeHub — Upgraded</title>
   <style>
     :root{
-      --bg:#f5f8ff; --card:#ffffff; --muted:#6b7280; --accent:#0b5fff; --radius:14px;
+      --bg:#f5f8ff; --card:#ffffff; --muted:#6b7280; --accent:#0b5fff;
     }
-    [data-theme="dark"]{ --bg:#0b1220; --card:#071226; --muted:#9fb3d6; --accent:#ffb86b; }
-    [data-theme="blue"]{ --bg:#eaf4ff; --card:#ffffff; --muted:#376787; --accent:#0077ff; }
+    [data-theme="dark"]{ --bg:#09111f; --card:#0f1a32; --muted:#b7c6df; --accent:#ffb86b; }
+    [data-theme="blue"]{ --bg:#e8f3ff; --card:#ffffff; --muted:#4a6b88; --accent:#0077ff; }
 
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#072034}
-    .app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
-    .card{width:920px;max-width:96%;background:var(--card);border-radius:18px;padding:20px;box-shadow:0 14px 40px rgba(12,20,40,0.08)}
-    .header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-    .left{flex:1;min-width:320px}
-    .right{width:420px;min-width:280px}
-    label.small{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type="text"], select{width:100%;padding:10px;border-radius:10px;border:1px solid #e6edf6;font-size:15px}
-    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
-    .secondary{background:#eef3ff;color:var(--accent);border:1px solid #dbefff}
-    .svg-wrap{background:#f7fbff;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;height:280px}
-    pre#caption{background:#fcfdff;padding:8px;border-radius:8px;min-height:80px;white-space:pre-wrap}
-    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .small{font-size:13px;color:var(--muted)}
-    .streak{margin-left:auto;background:linear-gradient(90deg,#fff6e6,#fff);padding:6px 10px;border-radius:10px;border:1px dashed #e7d5b3}
-    .toast{position:fixed;right:18px;bottom:18px;background:#111;color:#fff;padding:8px 12px;border-radius:8px;display:none}
-    @media(max-width:880px){ .header{flex-direction:column;align-items:stretch}.right{width:100%} }
+    body{margin:0;background:var(--bg);font-family:Inter,Arial;padding:20px;}
+    .card{max-width:900px;margin:auto;background:var(--card);padding:20px;border-radius:16px;box-shadow:0 10px 35px rgba(0,0,0,0.07);}
+    .row{display:flex;gap:10px;flex-wrap:wrap;}
+    label{font-size:13px;color:var(--muted);}
+    input,select{padding:10px;border-radius:8px;border:1px solid #dfe6f1;font-size:15px;width:100%;}
+    .btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;}
+    .primary{background:var(--accent);color:white;}
+    .secondary{background:#eef3ff;color:var(--accent);border:1px solid #ddebff;}
+    #badgeContainer{text-align:center;color:#7b8a9c;}
+    #caption{background:#f7faff;padding:10px;border-radius:8px;min-height:80px;}
+    .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:8px 12px;border-radius:6px;display:none;}
+    .streak{background:#fff1cc;border:1px dashed #e3c37a;padding:6px 10px;border-radius:8px;margin-left:auto;}
+    .svg-wrap{background:#f3f8ff;padding:10px;border-radius:10px;height:250px;display:flex;align-items:center;justify-content:center;}
   </style>
 </head>
+
 <body>
-  <div class="app">
-    <div class="card" id="appCard">
-      <div class="header">
-        <div class="left">
-          <label class="small">Your display name or fid</label>
-          <input id="name" type="text" placeholder="@you or 12345" />
+  <div class="card">
+    <div class="row">
+      <div style="flex:1">
+        <label>Your Name</label>
+        <input id="name" type="text" placeholder="@you or fid" />
 
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <div style="flex:1">
-              <label class="small">Badge type</label>
-              <select id="type">
-                <option>Daily Check-in</option>
-                <option>Builder</option>
-                <option>Contributor</option>
-                <option>OG</option>
-              </select>
-            </div>
-
-            <div style="width:140px">
-              <label class="small">Shape</label>
-              <select id="shape">
-                <option value="circle">Circle</option>
-                <option value="shield">Shield</option>
-                <option value="ribbon">Ribbon</option>
-                <option value="hex">Hex</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="right">
-          <div style="display:flex;align-items:center;gap:8px">
-            <label class="small">Theme</label>
-            <select id="theme" style="margin-left:auto">
-              <option value="default">Light</option>
-              <option value="dark">Dark</option>
-              <option value="blue">Blue</option>
+        <div class="row" style="margin-top:10px">
+          <div style="flex:1">
+            <label>Badge Type</label>
+            <select id="type">
+              <option>Daily Check-in</option>
+              <option>Builder</option>
+              <option>Contributor</option>
+              <option>OG</option>
             </select>
-            <div class="streak" id="streakDisplay">Streak: 0 🔥</div>
           </div>
 
-          <div class="controls" style="margin-top:12px">
-            <button id="claim" class="btn">Claim Badge</button>
-            <button id="download" class="secondary">Download SVG</button>
-            <button id="copyCaption" class="secondary">Copy Caption</button>
-            <button id="share" class="secondary">Share to Twitter</button>
-          </div>
-
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <label class="small"><input id="autoCopy" type="checkbox"> Auto-copy after claim</label>
-            <label class="small"><input id="autoDownload" type="checkbox"> Auto-download after claim</label>
-            <label class="small"><input id="randomColor" type="checkbox" checked> Random badge color</label>
+          <div style="width:140px">
+            <label>Shape</label>
+            <select id="shape">
+              <option value="circle">Circle</option>
+              <option value="shield">Shield</option>
+              <option value="ribbon">Ribbon</option>
+              <option value="hex">Hex</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-        <div style="flex:1;min-width:320px">
-          <div class="svg-wrap" id="previewWrap" aria-live="polite">
-            <div id="badgeContainer" style="text-align:center;color:#6b7280">No badge yet</div>
-          </div>
+      <div style="width:350px">
+        <label>Theme</label>
+        <select id="theme">
+          <option value="default">Light</option>
+          <option value="dark">Dark</option>
+          <option value="blue">Blue</option>
+        </select>
+
+        <div class="streak" id="streakDisplay">Streak: 0 🔥</div>
+
+        <div class="row" style="margin-top:12px">
+          <button id="claim" class="btn primary">Claim Badge</button>
+          <button id="download" class="btn secondary">Download</button>
+          <button id="copyCaption" class="btn secondary">Copy</button>
+          <button id="share" class="btn secondary">Share</button>
         </div>
 
-        <div style="width:320px;min-width:240px">
-          <div class="small">Caption preview</div>
-          <pre id="caption">No caption</pre>
-        </div>
+        <label><input id="autoCopy" type="checkbox"> Auto copy</label>
+        <label><input id="autoDownload" type="checkbox"> Auto download</label>
+        <label><input id="randomColor" type="checkbox" checked> Random Colors</label>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:20px">
+      <div class="svg-wrap" style="flex:1">
+        <div id="badgeContainer">No badge yet</div>
+      </div>
+      <div style="width:300px">
+        <label>Caption</label>
+        <pre id="caption">No caption</pre>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast">Copied</div>
+  <div class="toast" id="toast">Copied!</div>
 
   <script src="script.js"></script>
 </body>
