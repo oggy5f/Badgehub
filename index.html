@@ -1,159 +1,166 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BadgeHub — Upgraded</title>
-  <style>
-    :root {
-      --bg: #071022;
-      --panel: #0b1220;
-      --text: #e6eef8;
-      --accent: #0b5fff;
-      --glass: rgba(255,255,255,0.03);
-    }
-    [data-theme="light"] {
-      --bg: #f5f8ff;
-      --panel: #ffffff;
-      --text: #0a1220;
-      --accent: #0b5fff;
-      --glass: rgba(10,18,30,0.02);
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BadgeHub — Demo</title>
+<link rel="icon" href="favicon.ico" />
+<style>
+  /* --- base theme variables (dark default) --- */
+  :root{
+    --bg:#0f1724;       /* page bg */
+    --panel:#0b1220;    /* panel */
+    --text:#e6eef8;     /* text */
+    --muted:rgba(230,238,248,0.6);
+    --accent:#ff7b7b;
+    --glass: rgba(255,255,255,0.02);
+    --radius:14px;
+  }
 
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071022,#071628);color:var(--text)}
-    .wrap{max-width:1100px;margin:28px auto;padding:16px;display:grid;grid-template-columns:380px 1fr;gap:18px}
-    .panel{background:var(--panel);padding:14px;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,0.6)}
-    h2{margin:0 0 10px 0;font-size:18px}
-    label{display:block;font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:6px}
-    input[type="text"], select, input[type="range"]{width:100%;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text);box-sizing:border-box}
-    .row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    button{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;background:var(--accent);color:#fff;font-weight:600}
-    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
-    .small{font-size:13px;color:rgba(255,255,255,0.7)}
-    .svgwrap{background:var(--glass);border-radius:12px;padding:12px;min-height:360px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .caption{margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;color:var(--text);min-height:64px}
-    .streak{margin-left:auto;background:#fff1cc;color:#111;padding:6px 10px;border-radius:10px;font-weight:700}
+  /* light theme */
+  [data-theme="light"]{
+    --bg:#f6f8fb;
+    --panel:#ffffff;
+    --text:#0e1724;
+    --muted:rgba(14,23,36,0.6);
+    --accent:#1c7ed6;
+    --glass: rgba(0,0,0,0.03);
+  }
 
-    /* transform rules so SVG transform-origin works */
-    .svgwrap svg {
-      display:block;
-      transform-box: fill-box; /* IMPORTANT */
-      transform-origin: 50% 50%;
-      will-change: transform;
-      filter: drop-shadow(0 12px 20px rgba(0,0,0,0.45));
-    }
+  /* yellow */
+  [data-theme="yellow"]{
+    --bg: #fff9ef;
+    --panel:#fff7e6;
+    --text:#2a1f10;
+    --muted:rgba(42,31,16,0.6);
+    --accent:#ffd166;
+    --glass: rgba(42,31,16,0.03);
+  }
+  /* sky */
+  [data-theme="sky"]{
+    --bg:#f2fbff;
+    --panel:#ecf9ff;
+    --text:#07293a;
+    --muted:rgba(7,41,58,0.6);
+    --accent:#2fb8ff;
+    --glass: rgba(7,41,58,0.03);
+  }
+  /* chocolate */
+  [data-theme="chocolate"]{
+    --bg:#fbf6f2;
+    --panel:#f6efe9;
+    --text:#2d1f18;
+    --muted:rgba(45,31,24,0.6);
+    --accent:#c46a3b;
+    --glass: rgba(45,31,24,0.03);
+  }
 
-    /* base visual scale (we apply real size via width/height too) */
-    .anim-pop {
-      animation: pop 480ms cubic-bezier(.2,.9,.3,1.1);
-    }
-    @keyframes pop {
-      0% { transform: scale(0.88) rotate(0deg); opacity:0; }
-      50% { transform: scale(1.18) rotate(-3deg); opacity:1; }
-      85% { transform: scale(1.05) rotate(2deg); }
-      100% { transform: scale(1.0) rotate(0deg); }
-    }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial; background:var(--bg); color:var(--text);}
+  .wrap{max-width:1100px;margin:18px auto;padding:18px;display:flex;gap:18px;align-items:flex-start;}
+  .col{flex:1;min-width:300px}
+  .panel{background:var(--panel); padding:18px;border-radius:var(--radius); box-shadow: 0 6px 22px rgba(0,0,0,0.2); color:var(--text)}
+  h2{margin:0 0 12px 0}
+  label{display:block;font-size:13px;color:var(--muted); margin-bottom:6px}
+  input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06); background:transparent;color:var(--text)}
+  button{padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+  .btn-secondary{background:transparent;border:1px solid rgba(255,255,255,0.06); color:var(--text); padding:8px 12px}
+  .row{display:flex;gap:12px;align-items:center}
+  .row > div{flex:1}
+  #svgwrap{height:360px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:var(--glass); overflow:hidden; position:relative}
+  #svgwrap svg{width:100%;height:auto;max-width:720px; transform-origin:center center; transition:transform 300ms ease}
+  .small{font-size:13px;color:var(--muted)}
+  .controls{display:flex;flex-direction:column;gap:10px}
+  .checkbox-row{display:flex;gap:8px;align-items:center}
+  #captionPreview{min-height:120px; border-radius:8px; background:linear-gradient(180deg,rgba(0,0,0,0.02),transparent); padding:12px}
+  .streak{position:fixed;left:16px;bottom:16px;background:var(--panel);border-radius:8px;padding:8px 12px;color:var(--text);box-shadow:0 6px 22px rgba(0,0,0,0.2)}
+  /* small responsive */
+  @media (max-width:900px){
+    .wrap{flex-direction:column;padding:12px}
+    #svgwrap{height:260px}
+  }
 
-    /* small screen */
-    @media(max-width:980px){ .wrap{grid-template-columns:1fr; padding:10px} .svgwrap{min-height:260px} }
-  </style>
+  /* animation classes */
+  .badge-pop{animation: badgePop 540ms cubic-bezier(.2,.9,.3,1);}
+  @keyframes badgePop{
+    0%{transform:scale(.85) rotate(-6deg) translateY(30px)}
+    45%{transform:scale(1.03) rotate(2deg) translateY(0)}
+    100%{transform:scale(1) rotate(0) translateY(0)}
+  }
+
+</style>
 </head>
 <body>
-  <div class="wrap" id="rootWrap" data-theme="dark">
-    <div class="panel">
-      <h2>BadgeHub Controls</h2>
+  <div class="wrap">
+    <div class="col panel">
+      <h2>Badge Controls</h2>
 
-      <div class="row">
-        <div style="flex:1">
-          <label>Your name / fid</label>
-          <input id="name" type="text" placeholder="@you or fid" value="@you">
-        </div>
-      </div>
+      <label>Your name or fid</label>
+      <input id="nameInput" type="text" placeholder="@you or 12345" value="@you">
 
-      <div class="row">
-        <div style="flex:1">
-          <label>Badge type</label>
-          <select id="type">
+      <div class="row" style="margin-top:12px">
+        <div>
+          <label>Badge Type</label>
+          <select id="typeSelect">
             <option>Daily Check-in</option>
-            <option>Builder</option>
+            <option>BaseMiniNFT</option>
             <option>Contributor</option>
-            <option>OG</option>
           </select>
         </div>
-      </div>
-
-      <div class="row">
-        <div style="flex:1">
+        <div style="max-width:120px">
           <label>Shape</label>
-          <select id="shape">
+          <select id="shapeSelect">
             <option value="circle">Circle</option>
             <option value="square">Square</option>
-            <option value="diamond">Diamond</option>
+            <option value="hex">Hex</option>
           </select>
         </div>
       </div>
 
-      <div class="row">
-        <div style="flex:1">
-          <label>Output scale (%) — visual size (slider)</label>
-          <input id="scaleRange" type="range" min="10" max="100" value="30">
-          <div class="small" id="scaleValue">30%</div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div style="flex:1">
-          <label>Randomize</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <label class="small"><input id="randColors" type="checkbox"> Random colors</label>
-            <label class="small"><input id="randShape" type="checkbox"> Random shape</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div style="flex:1">
-          <label>After claim</label>
-          <div style="display:flex;gap:8px">
-            <label class="small"><input id="autoCopy" type="checkbox"> Auto-copy caption</label>
-            <label class="small"><input id="autoDL" type="checkbox"> Auto-download SVG</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div style="flex:1">
+      <div class="row" style="margin-top:10px">
+        <div>
           <label>Theme</label>
           <select id="theme">
             <option value="dark">Dark</option>
             <option value="light">Light</option>
+            <option value="yellow">Yellow</option>
+            <option value="sky">Sky (blue)</option>
+            <option value="chocolate">Chocolate</option>
           </select>
+        </div>
+        <div>
+          <label>Size scale</label>
+          <input id="sizeScale" type="range" min="30" max="150" value="100">
         </div>
       </div>
 
-      <div class="actions" style="margin-top:10px">
-        <button id="claim">Claim Badge</button>
-        <button id="download" class="ghost">Download SVG</button>
-        <button id="copyCaption" class="ghost">Copy caption</button>
-        <button id="shareWarp" class="ghost">Share (Farcaster)</button>
-      </div>
+      <div class="controls" style="margin-top:12px">
+        <div class="row">
+          <button id="claimBtn">Claim Badge</button>
+          <button class="btn-secondary" id="downloadBtn">Download SVG</button>
+          <button class="btn-secondary" id="copyCaption">Copy caption</button>
+          <button class="btn-secondary" id="shareBtn">Share (Farcaster)</button>
+        </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
-        <button id="mint" class="ghost">Mint (placeholder)</button>
-        <div class="streak">Streak: <span id="streakDisplay">0</span></div>
-      </div>
+        <div class="checkbox-row">
+          <input id="randomColor" type="checkbox"><label class="small" for="randomColor">Random badge color</label>
+          <input id="autoCopy" type="checkbox" style="margin-left:12px"><label class="small" for="autoCopy">Auto-copy after claim</label>
+        </div>
 
-      <div class="small" style="margin-top:12px">Tip: Output scale controls actual SVG width/height. Default 30% + 30% boost applied automatically for visibility.</div>
+      </div>
+      <div style="margin-top:14px" class="small">Caption preview:</div>
+      <div id="captionPreview" class="panel small">Caption will appear here after claim.</div>
     </div>
 
-    <div class="panel">
-      <h2 style="margin-top:0">Preview</h2>
-      <div id="svgwrap" class="svgwrap">No badge yet — click Claim</div>
-      <div id="caption" class="caption">Caption will appear here.</div>
+    <div class="col panel">
+      <h2>Preview</h2>
+      <div id="svgwrap">
+        <div style="text-align:center;color:var(--muted)">No badge yet</div>
+      </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div class="streak" id="streakDisplay">Streak: 0 🔥</div>
+
+<script src="script.js"></script>
 </body>
 </html>
