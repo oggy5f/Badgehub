@@ -340,7 +340,7 @@
       <div class="label">Your name / FID</div>
       <div class="input-row">
         <div class="input">
-          <input id="fidInput" type="text" placeholder="MACN235" />
+          <input id="fidInput" type="text" placeholder="Your FID" />
         </div>
         <div class="pill">ID</div>
       </div>
@@ -369,7 +369,7 @@
       <!-- TOGGLES -->
       <div class="toggles">
         <label class="toggle">
-          <input id="randomColorToggle" type="checkbox" checked />
+          <input id="randomColorToggle" type="checkbox" />
           <span>Random badge color</span>
         </label>
         <label class="toggle">
@@ -425,7 +425,7 @@
 
         <div class="badge-text">
           <div>
-            <div id="badgeFidText">MACN235</div>
+            <div id="badgeFidText">----</div>
             <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">Daily Check-in</div>
           </div>
           <div id="badgeDateText">--</div>
@@ -477,7 +477,8 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v3";
+  // NEW KEY -> purana data reset
+  var STORAGE_KEY = "badgehub_state_v4";
   var currentGradient = "";
 
   function todayISO() {
@@ -528,24 +529,16 @@
       return {
         total: 0,
         streak: 0,
-        lastClaimDate: null,
-        lastFid: "",
-        lastType: "Daily Check-in",
-        theme: "sky"
+        lastClaimDate: null
       };
     }
     try {
-      var s = JSON.parse(raw);
-      if (!s.theme) s.theme = "sky";
-      return s;
+      return JSON.parse(raw);
     } catch (e) {
       return {
         total: 0,
         streak: 0,
-        lastClaimDate: null,
-        lastFid: "",
-        lastType: "Daily Check-in",
-        theme: "sky"
+        lastClaimDate: null
       };
     }
   }
@@ -555,7 +548,7 @@
   }
 
   function updateCaption(state) {
-    var fid = fidInput.value || "MACN235";
+    var fid = fidInput.value || "Anon";
     var type = badgeTypeInput.value || "Daily Check-in";
     var caption =
       "#" + fid + " " + type + " badge earned\n\n" +
@@ -578,7 +571,7 @@
     }
 
     // badge text
-    badgeFidText.textContent = fidInput.value || "MACN235";
+    badgeFidText.textContent = fidInput.value || "----";
     badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : "--";
     badgeDateText.textContent = dateText;
@@ -588,7 +581,9 @@
     badgeCircle.style.display = (shape === "circle" || shape === "both") ? "block" : "none";
     badgePill.style.display = (shape === "pill" || shape === "both") ? "block" : "none";
 
-    // color
+    // colour:
+    //  - agar Random ON hai -> random gradient
+    //  - warna theme dropdown wala gradient
     if (randomColorToggle.checked) {
       currentGradient = randomGradient();
     } else {
@@ -605,7 +600,7 @@
   }
 
   function createSvg(state) {
-    var fid = fidInput.value || "MACN235";
+    var fid = fidInput.value || "Anon";
     var type = badgeTypeInput.value || "Daily Check-in";
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : todayISO();
     var shape = shapeSelect.value;
@@ -647,12 +642,6 @@
   }
 
   var state = loadState();
-
-  // initial from state
-  if (state.lastFid) fidInput.value = state.lastFid;
-  if (state.lastType) badgeTypeInput.value = state.lastType;
-  themeSelect.value = state.theme || "sky";
-
   updatePreview(state);
 
   // Claim
@@ -677,9 +666,6 @@
 
     state.total = state.total + 1;
     state.lastClaimDate = today;
-    state.lastFid = fidInput.value || "MACN235";
-    state.lastType = badgeTypeInput.value || "Daily Check-in";
-    state.theme = themeSelect.value;
 
     saveState(state);
     updatePreview(state);
@@ -698,7 +684,7 @@
     window.open(url, "_blank");
   });
 
-  // Share on Farcaster (Warpcast compose)
+  // Share on Farcaster
   shareFcBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
@@ -754,7 +740,12 @@
   randomColorToggle.addEventListener("change", function () {
     updatePreview(state);
   });
-});
+  themeSelect.addEventListener("change", function () {
+    updatePreview(state);
+  });
+
+})();
 </script>
+
 </body>
 </html>
