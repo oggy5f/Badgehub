@@ -406,6 +406,16 @@
       border-radius: 999px;
       background: #e5f4ff;
       box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frog-pill-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #022c22;
+      letter-spacing: 0.04em;
     }
 
     /* big name in top empty area */
@@ -545,10 +555,10 @@
 
     <div class="badge-card">
       <div class="badge" id="badgeMain">
-        <!-- big name in top empty area -->
+        <!-- big name top -->
         <div class="badge-name-large" id="badgeNameLarge">----</div>
 
-        <!-- CARTOON FROG -->
+        <!-- CARTOON FROG + PILL -->
         <div class="frog-wrapper">
           <div class="frog-head">
             <div class="frog-eye left">
@@ -559,7 +569,9 @@
             </div>
             <div class="frog-mouth"></div>
           </div>
-          <div class="frog-pill"></div>
+          <div class="frog-pill">
+            <span class="frog-pill-label" id="badgePillId">----</span>
+          </div>
         </div>
 
         <!-- SMALL TEXT BOTTOM -->
@@ -604,6 +616,7 @@
   var captionTextEl = document.getElementById("captionText");
 
   var badgeNameLarge = document.getElementById("badgeNameLarge");
+  var badgePillId = document.getElementById("badgePillId");
   var badgeTypeText = document.getElementById("badgeTypeText");
   var badgeDateText = document.getElementById("badgeDateText");
 
@@ -612,7 +625,7 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v6";
+  var STORAGE_KEY = "badgehub_state_v7";
 
   function todayISO() {
     var d = new Date();
@@ -688,8 +701,11 @@
       lastClaimLabel.textContent = "Not claimed yet";
     }
 
+    var fid = fidInput.value || "----";
+
     // badge texts
-    badgeNameLarge.textContent = fidInput.value || "----";
+    badgeNameLarge.textContent = fid;
+    badgePillId.textContent = fid;
     badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
     badgeDateText.textContent = state.lastClaimDate
       ? formatDateShort(state.lastClaimDate)
@@ -743,8 +759,10 @@
       '<circle cx="670" cy="210" r="15" fill="#020617"/>' +
       '<path d="M555 290 Q600 330 645 290" stroke="#020617" stroke-width="4" fill="none"/>' +
       '</g>' +
-      // pill
+      // pill with id text
       '<rect x="430" y="380" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
+      '<text x="600" y="407" text-anchor="middle" font-size="28" font-family="system-ui, sans-serif" fill="#022c22" font-weight="600">' +
+      fid + '</text>' +
       // bottom text
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
       type + '</text>' +
