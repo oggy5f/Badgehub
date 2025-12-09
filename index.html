@@ -2,101 +2,670 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BadgeHub — Upgraded</title>
+  <title>Badgehub – Daily Check-in</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #111827, #020617 60%);
+      color: #e5e7eb;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1100px;
+      background: radial-gradient(circle at top left, #0f172a, #020617);
+      border-radius: 24px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    h1 {
+      font-size: 22px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    h1 span.spark {
+      font-size: 16px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .input {
+      flex: 1;
+      background: #020617;
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    .input:focus {
+      outline: 1px solid #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    .pill {
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"] {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: inherit;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      border-radius: 999px;
+      padding: 11px 16px;
+      background: linear-gradient(90deg, #22c55e, #a3e635);
+      color: #022c22;
+      font-weight: 600;
+      margin-bottom: 10px;
+      box-shadow: 0 10px 35px rgba(34, 197, 94, 0.45);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+      opacity: 0.9;
+    }
+
+    .btn-ghost {
+      width: 100%;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
+    .status.success {
+      color: #4ade80;
+    }
+
+    .status.error {
+      color: #f97373;
+    }
+
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .toggle input {
+      accent-color: #22c55e;
+    }
+
+    .caption-preview {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      word-break: break-word;
+    }
+
+    .caption-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    /* RIGHT SIDE */
+
+    .right-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .theme-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 11px;
+      gap: 6px;
+      color: #9ca3af;
+    }
+
+    .theme-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .badge-card {
+      background: #020617;
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-main {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 20px;
+      background: radial-gradient(circle at top left, #22c55e, #16a34a);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #04120a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .badge-circle {
+      width: 40%;
+      max-width: 180px;
+      aspect-ratio: 1/1;
+      background: rgba(236, 253, 245, 0.95);
+      border-radius: 999px;
+      opacity: 0.96;
+      margin-bottom: 16px;
+    }
+
+    .badge-pill {
+      width: 70%;
+      max-width: 260px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(236, 253, 245, 0.95);
+      opacity: 0.96;
+    }
+
+    .badge-text {
+      position: absolute;
+      bottom: 14px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #022c22;
+    }
+
+    .badge-meta {
+      font-size: 12px;
+      color: #9ca3af;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metrics {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .metric-chip {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #9ca3af;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+  </style>
 </head>
-<body class="theme-dark">
+<body>
   <div class="app">
-    <header class="app-header">
-      <h1 class="app-title">BadgeHub <span>— Upgraded ⚡</span></h1>
+    <!-- LEFT SIDE -->
+    <div>
+      <h1>BADGEHUB <span class="spark">⚡</span></h1>
+      <div class="subtitle">Daily Check-in Mini App</div>
 
-      <div class="header-right">
-        <label class="field-label" for="themeSelect">Theme</label>
-        <select id="themeSelect" class="select">
-          <option value="dark">Dark</option>
-          <option value="yellow">Yellow</option>
-          <option value="sky">Sky</option>
-          <option value="choco">Chocolate</option>
-        </select>
-      </div>
-    </header>
-
-    <main class="layout">
-      <!-- Controls -->
-      <section class="panel panel-controls">
-        <div class="field-group">
-          <label class="field-label" for="nameInput">Your name / fid</label>
-          <input id="nameInput" class="input" placeholder="@you or 12345" />
+      <div class="panel">
+        <!-- FID -->
+        <div class="label">Your name / FID</div>
+        <div class="input-row">
+          <div class="input">
+            <input id="fidInput" type="number" placeholder="45613" />
+          </div>
+          <div class="pill">FID</div>
         </div>
 
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="typeSelect">Badge type</label>
-            <select id="typeSelect" class="select">
-              <option>Daily Check-in</option>
-              <option>Top Helper</option>
-              <option>Builder</option>
-              <option>OG</option>
-            </select>
+        <!-- BADGE TYPE -->
+        <div class="label">Badge Type</div>
+        <div class="input-row">
+          <div class="input">
+            <input id="badgeTypeInput" type="text" value="Daily Check-in" />
           </div>
+          <div class="pill">Default</div>
+        </div>
 
-          <div class="field-group">
-            <label class="field-label" for="shapeSelect">Shape</label>
-            <select id="shapeSelect" class="select">
-              <option value="circle">Circle</option>
+        <!-- SHAPE -->
+        <div class="label">Shape</div>
+        <div class="input-row">
+          <div class="input">
+            <select id="shapeSelect">
+              <option value="circle" selected>Circle</option>
               <option value="pill">Pill</option>
-              <option value="square">Square</option>
+              <option value="both">Circle + Pill</option>
             </select>
           </div>
         </div>
 
-        <div class="field-row toggles-row">
-          <label class="checkbox">
-            <input type="checkbox" id="randomColors" checked />
+        <!-- TOGGLES -->
+        <div class="toggles">
+          <label class="toggle">
+            <input type="checkbox" id="randomColorToggle" checked />
             <span>Random badge color</span>
           </label>
-
-          <label class="checkbox">
-            <input type="checkbox" id="autoCopy" />
+          <label class="toggle">
+            <input type="checkbox" id="autoCopyToggle" />
             <span>Auto-copy after claim</span>
           </label>
-
-          <label class="checkbox">
-            <input type="checkbox" id="autoDownload" />
-            <span>Auto-download SVG</span>
-          </label>
         </div>
 
-        <div class="buttons-row">
-          <button id="claimBtn" class="btn primary">Claim badge</button>
-          <button id="downloadBtn" class="btn">Download SVG</button>
-          <button id="copyCaption" class="btn">Copy caption</button>
-          <button id="shareBtn" class="btn ghost">Share (Farcaster)</button>
-        </div>
+        <!-- BUTTONS -->
+        <button id="claimBtn" class="btn-primary">Claim badge</button>
+        <button id="copyCaptionBtn" class="btn-ghost">Copy caption</button>
 
-        <div class="footer-row">
-          <div id="streakDisplay" class="streak-pill">Streak: 0 🔥</div>
-          <div id="msg" class="msg"></div>
-        </div>
-      </section>
+        <div id="status" class="status"></div>
 
-      <!-- Preview -->
-      <section class="panel panel-preview">
-        <div id="svgwrap" class="badge-shell">
-          <div class="badge-empty">No badge yet</div>
-        </div>
-
-        <div class="caption-area">
+        <!-- CAPTION PREVIEW -->
+        <div class="caption-preview">
           <div class="caption-label">Caption preview</div>
-          <div id="captionPreview" class="caption-preview">
-            Caption will appear here after claim.
+          <div id="captionText"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+      <div class="right-header">
+        <div>
+          <div class="theme-pill">
+            <span class="dot"></span>
+            BADGEHUB 3 — UPGRADED
           </div>
         </div>
-      </section>
-    </main>
+        <div class="theme-switch">
+          Theme: <strong>Sky</strong>
+        </div>
+      </div>
+
+      <div class="badge-card">
+        <div class="badge-row">
+          <div class="badge-main" id="badgeMain">
+            <div class="badge-circle" id="badgeCircle"></div>
+            <div class="badge-pill" id="badgePill"></div>
+            <div class="badge-text">
+              <div>
+                <div id="badgeFidText">45613</div>
+                <div id="badgeTypeText" style="font-size: 11px; opacity: 0.9;">
+                  Daily Check-in
+                </div>
+              </div>
+              <div id="badgeDateText"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="badge-row">
+          <div class="badge-meta">
+            <span>Badgehub • base-mini-app</span>
+            <span id="lastClaimLabel">Not claimed yet</span>
+          </div>
+        </div>
+
+        <!-- METRICS -->
+        <div class="metrics">
+          <div class="metric-chip">
+            Streak
+            <span class="metric-value" id="streakValue">0 days</span>
+          </div>
+          <div class="metric-chip">
+            Total claimed
+            <span class="metric-value" id="totalValue">0</span>
+          </div>
+          <div class="metric-chip">
+            Last claim
+            <span class="metric-value" id="lastDayValue">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="script.js" defer></script>
+  <script>
+    const fidInput = document.getElementById("fidInput");
+    const badgeTypeInput = document.getElementById("badgeTypeInput");
+    const shapeSelect = document.getElementById("shapeSelect");
+    const randomColorToggle = document.getElementById("randomColorToggle");
+    const autoCopyToggle = document.getElementById("autoCopyToggle");
+    const claimBtn = document.getElementById("claimBtn");
+    const copyCaptionBtn = document.getElementById("copyCaptionBtn");
+    const statusEl = document.getElementById("status");
+    const captionTextEl = document.getElementById("captionText");
+
+    const badgeMain = document.getElementById("badgeMain");
+    const badgeCircle = document.getElementById("badgeCircle");
+    const badgePill = document.getElementById("badgePill");
+    const badgeFidText = document.getElementById("badgeFidText");
+    const badgeTypeText = document.getElementById("badgeTypeText");
+    const badgeDateText = document.getElementById("badgeDateText");
+
+    const streakValue = document.getElementById("streakValue");
+    const totalValue = document.getElementById("totalValue");
+    const lastDayValue = document.getElementById("lastDayValue");
+    const lastClaimLabel = document.getElementById("lastClaimLabel");
+
+    const STORAGE_KEY = "badgehub_daily_data_v1";
+
+    function todayISO() {
+      const d = new Date();
+      return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    }
+
+    function formatDateShort(iso) {
+      if (!iso) return "—";
+      const d = new Date(iso + "T00:00:00");
+      return d.toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+
+    function dayDiff(a, b) {
+      // a, b are YYYY-MM-DD
+      const da = new Date(a + "T00:00:00");
+      const db = new Date(b + "T00:00:00");
+      const ms = da - db;
+      return Math.round(ms / (1000 * 60 * 60 * 24));
+    }
+
+    function randomGradient() {
+      const colors = [
+        ["#22c55e", "#16a34a"],
+        ["#38bdf8", "#0ea5e9"],
+        ["#a855f7", "#6366f1"],
+        ["#f97316", "#facc15"],
+        ["#ec4899", "#8b5cf6"],
+      ];
+      const i = Math.floor(Math.random() * colors.length);
+      return linear-gradient(135deg, ${colors[i][0]}, ${colors[i][1]});
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return {
+          total: 0,
+          streak: 0,
+          lastClaimDate: null,
+          lastFid: "",
+          lastType: "Daily Check-in",
+        };
+      }
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return {
+          total: 0,
+          streak: 0,
+          lastClaimDate: null,
+          lastFid: "",
+          lastType: "Daily Check-in",
+        };
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function updateCaption(state) {
+      const fid = fidInput.value || "45613";
+      const type = badgeTypeInput.value || "Daily Check-in";
+      const caption = 🎖 #${fid} • ${type} badge earned\n\nStreak: ${state.streak} day(s) • Total: ${state.total}\n#Badgehub #Base;
+      captionTextEl.textContent = caption;
+      return caption;
+    }
+
+    function updateUIFromState(state) {
+      streakValue.textContent = state.streak + (state.streak === 1 ? " day" : " days");
+      totalValue.textContent = state.total.toString();
+      lastDayValue.textContent = formatDateShort(state.lastClaimDate);
+      if (state.lastClaimDate) {
+        lastClaimLabel.textContent = `Last claimed on ${formatDateShort(
+          state.lastClaimDate
+        )}`;
+      } else {
+        lastClaimLabel.textContent = "Not claimed yet";
+      }
+      if (state.lastFid) fidInput.value = state.lastFid;
+      if (state.lastType) badgeTypeInput.value = state.lastType;
+
+      // Badge text
+      badgeFidText.textContent = fidInput.value || "45613";
+      badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
+
+      const dateText = state.lastClaimDate
+        ? formatDateShort(state.lastClaimDate)
+        : formatDateShort(todayISO());
+      badgeDateText.textContent = dateText;
+
+      // Shape
+      const shape = shapeSelect.value;
+      badgeCircle.style.display =
+        shape === "circle" || shape === "both" ? "block" : "none";
+      badgePill.style.display =
+        shape === "pill" || shape === "both" ? "block" : "none";
+
+      // Color
+      if (randomColorToggle.checked) {
+        badgeMain.style.backgroundImage = randomGradient();
+      } else {
+        badgeMain.style.backgroundImage = "linear-gradient(135deg,#22c55e,#16a34a)";
+      }
+
+      updateCaption(state);
+    }
+
+    function showStatus(msg, type = "") {
+      statusEl.textContent = msg;
+      statusEl.className = "status " + type;
+    }
+
+    // INITIALIZE
+    let state = loadState();
+    updateUIFromState(state);
+
+    // EVENTS
+    claimBtn.addEventListener("click", () => {
+      const today = todayISO();
+      if (state.lastClaimDate === today) {
+        showStatus("Aaj ka badge already claim ho chuka hai. Kal fir se try karo ✨", "error");
+        return;
+      }
+
+      // Calculate streak
+      if (state.lastClaimDate) {
+        const diff = dayDiff(today, state.lastClaimDate);
+        if (diff === 1) {
+          state.streak += 1; // continued streak
+        } else {
+          state.streak = 1; // reset streak
+        }
+      } else {
+        state.streak = 1;
+      }
+
+      state.total += 1;
+      state.lastClaimDate = today;
+      state.lastFid = fidInput.value || "45613";
+      state.lastType = badgeTypeInput.value || "Daily Check-in";
+
+      saveState(state);
+      updateUIFromState(state);
+      showStatus("Badge claimed! 🎉 Streak updated.", "success");
+
+      if (autoCopyToggle.checked) {
+        const caption = updateCaption(state);
+        navigator.clipboard
+          .writeText(caption)
+          .catch(() => console.log("Clipboard blocked"));
+      }
+    });
+
+    copyCaptionBtn.addEventListener("click", () => {
+      const caption = updateCaption(state);
+      navigator.clipboard
+        .writeText(caption)
+        .then(() => {
+          showStatus("Caption copied ✅", "success");
+        })
+        .catch(() => {
+          showStatus("Clipboard permission blocked in this browser.", "error");
+        });
+    });
+
+    fidInput.addEventListener("input", () => updateUIFromState(state));
+    badgeTypeInput.addEventListener("input", () => updateUIFromState(state));
+    shapeSelect.addEventListener("change", () => updateUIFromState(state));
+    randomColorToggle.addEventListener("change", () => updateUIFromState(state));
+  </script>
 </body>
 </html>
