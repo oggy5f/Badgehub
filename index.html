@@ -5,168 +5,465 @@
   <title>Badgehub – Daily Check-in</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        sans-serif;
     }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #020617, #020617 55%, #000000);
+      color: #e5e7eb;
+    }
+
     .app {
       width: 100%;
-      max-width: 480px;
-      padding: 20px;
+      max-width: 1100px;
+      background: radial-gradient(circle at top left, #020617, #020617 45%, #020617);
+      border-radius: 24px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
     }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+
     h1 {
       font-size: 22px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #38bdf8;
       margin-bottom: 4px;
     }
+
     .subtitle {
-      font-size: 13px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
       color: #9ca3af;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
-    .card {
-      background: #02081b;
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      padding: 16px;
+
+    .panel {
+      background: radial-gradient(circle at top, #020617, #020617 40%, #020617);
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
     }
-    label {
-      display: block;
-      font-size: 13px;
-      margin-bottom: 4px;
+
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       color: #9ca3af;
+      margin-bottom: 6px;
     }
-    input[type="text"],
-    input[type="number"] {
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 8px 12px;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-    .row {
+
+    .input-row {
       display: flex;
-      gap: 8px;
       align-items: center;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 14px;
     }
-    .row label {
-      margin: 0;
-      font-size: 13px;
+
+    .input {
+      flex: 1;
+      background: #020617;
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #e5e7eb;
+      font-size: 14px;
     }
-    .row input[type="checkbox"] {
-      margin: 0;
+
+    .input:focus-within {
+      outline: 1px solid #38bdf8;
+      border-color: #38bdf8;
     }
+
+    .pill {
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    select,
+    input[type="text"] {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: inherit;
+      width: 100%;
+      font-size: 14px;
+    }
+
     button {
       border: none;
       cursor: pointer;
       font-size: 14px;
-      border-radius: 999px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
-      width: 100%;
     }
+
     .btn-primary {
-      background: #22c55e;
+      width: 100%;
+      border-radius: 999px;
+      padding: 11px 16px;
+      background: linear-gradient(90deg, #22c55e, #a3e635);
       color: #022c22;
       font-weight: 600;
+      margin-bottom: 10px;
+      box-shadow: 0 10px 35px rgba(34, 197, 94, 0.45);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s;
     }
-    .btn-secondary {
-      background: #111827;
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+      opacity: 0.9;
+    }
+
+    .btn-ghost {
+      width: 100%;
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: rgba(15, 23, 42, 0.9);
       color: #e5e7eb;
-      border: 1px solid #374151;
-    }
-    .status {
+      border: 1px solid rgba(148, 163, 184, 0.4);
       font-size: 13px;
-      min-height: 18px;
-      margin-top: 4px;
-      color: #9ca3af;
+      margin-bottom: 6px;
     }
+
+    .status {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
     .status.success {
       color: #4ade80;
     }
+
     .status.error {
       color: #f97373;
     }
-    .stats {
-      margin-top: 12px;
-      font-size: 13px;
-      line-height: 1.5;
+
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
     }
-    .caption-box {
-      margin-top: 14px;
-      border-radius: 8px;
-      border: 1px dashed #374151;
-      padding: 8px;
-      font-size: 13px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #020617;
-    }
-    .caption-label {
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 11px;
       color: #9ca3af;
-      margin-bottom: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .toggle input {
+      accent-color: #22c55e;
+    }
+
+    .caption-preview {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      word-break: break-word;
+    }
+
+    .caption-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    /* RIGHT SIDE */
+
+    .right-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .theme-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 11px;
+      gap: 6px;
+      color: #9ca3af;
+    }
+
+    .theme-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #9ca3af;
+    }
+
+    .badge-card {
+      background: #020617;
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .badge-main {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #04120a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .badge-circle {
+      width: 40%;
+      max-width: 180px;
+      aspect-ratio: 1 / 1;
+      background: rgba(236, 253, 245, 0.96);
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    .badge-pill-shape {
+      width: 70%;
+      max-width: 260px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(236, 253, 245, 0.96);
+    }
+
+    .badge-text {
+      position: absolute;
+      bottom: 14px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #022c22;
+    }
+
+    .badge-meta {
+      font-size: 12px;
+      color: #9ca3af;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metrics {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .metric-chip {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: #9ca3af;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      color: #e5e7eb;
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <h1>Badgehub</h1>
-    <div class="subtitle">Simple daily check-in + streak tracker</div>
+    <!-- LEFT SIDE -->
+    <div>
+      <h1>BADGEHUB</h1>
+      <div class="subtitle">Daily check-in mini app</div>
 
-    <div class="card">
-      <label for="fidInput">Your FID</label>
-      <input id="fidInput" type="text" placeholder="45613" />
+      <div class="panel">
+        <!-- FID -->
+        <div class="label">Your name / FID</div>
+        <div class="input-row">
+          <div class="input">
+            <input id="fidInput" type="text" placeholder="45613" />
+          </div>
+          <div class="pill">ID</div>
+        </div>
 
-      <label for="badgeTypeInput">Badge type</label>
-      <input id="badgeTypeInput" type="text" value="Daily Check-in" />
+        <!-- BADGE TYPE -->
+        <div class="label">Badge type</div>
+        <div class="input-row">
+          <div class="input">
+            <input id="badgeTypeInput" type="text" value="Daily Check-in" />
+          </div>
+          <div class="pill">Default</div>
+        </div>
 
-      <div class="row">
-        <input id="autoCopyToggle" type="checkbox" />
-        <label for="autoCopyToggle">Auto copy caption after claim</label>
+        <!-- SHAPE -->
+        <div class="label">Shape</div>
+        <div class="input-row">
+          <div class="input">
+            <select id="shapeSelect">
+              <option value="circle">Circle</option>
+              <option value="pill">Pill</option>
+              <option value="both" selected>Circle + Pill</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TOGGLES -->
+        <div class="toggles">
+          <label class="toggle">
+            <input type="checkbox" id="randomColorToggle" checked />
+            <span>Random badge color</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="autoCopyToggle" />
+            <span>Auto copy caption after claim</span>
+          </label>
+        </div>
+
+        <!-- BUTTONS -->
+        <button id="claimBtn" class="btn-primary">Claim today's badge</button>
+        <button id="copyCaptionBtn" class="btn-ghost">Copy caption</button>
+
+        <div id="status" class="status"></div>
+
+        <!-- CAPTION PREVIEW -->
+        <div class="caption-preview">
+          <div class="caption-label">Caption preview</div>
+          <div id="captionText"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+      <div class="right-header">
+        <div class="theme-pill">
+          <span class="dot"></span>
+          BADGEHUB 3 UPGRADED
+        </div>
+        <div class="theme-switch">
+          <span>Theme</span>
+          <strong>Sky</strong>
+        </div>
       </div>
 
-      <button id="claimBtn" class="btn-primary">Claim today's badge</button>
-      <button id="copyCaptionBtn" class="btn-secondary">Copy caption</button>
+      <div class="badge-card">
+        <div class="badge-main" id="badgeMain">
+          <div class="badge-circle" id="badgeCircle"></div>
+          <div class="badge-pill-shape" id="badgePill"></div>
+          <div class="badge-text">
+            <div>
+              <div id="badgeFidText">45613</div>
+              <div id="badgeTypeText" style="font-size: 11px; opacity: 0.9;">
+                Daily Check-in
+              </div>
+            </div>
+            <div id="badgeDateText"></div>
+          </div>
+        </div>
 
-      <div id="status" class="status"></div>
+        <div class="badge-meta">
+          <span>Badgehub • base-mini-app</span>
+          <span id="lastClaimLabel">Not claimed yet</span>
+        </div>
 
-      <div class="stats">
-        <div>Streak: <span id="streakValue">0</span> days</div>
-        <div>Total claimed: <span id="totalValue">0</span></div>
-        <div>Last claim date: <span id="lastDayValue">-</span></div>
-        <div id="lastClaimLabel">Not claimed yet</div>
-      </div>
-
-      <div class="caption-box">
-        <div class="caption-label">Caption preview</div>
-        <div id="captionText"></div>
+        <div class="metrics">
+          <div class="metric-chip">
+            Streak
+            <span class="metric-value" id="streakValue">0 days</span>
+          </div>
+          <div class="metric-chip">
+            Total claimed
+            <span class="metric-value" id="totalValue">0</span>
+          </div>
+          <div class="metric-chip">
+            Last claim
+            <span class="metric-value" id="lastDayValue">-</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- SCRIPT -->
   <script>
     (function () {
       var fidInput = document.getElementById("fidInput");
       var badgeTypeInput = document.getElementById("badgeTypeInput");
+      var shapeSelect = document.getElementById("shapeSelect");
+      var randomColorToggle = document.getElementById("randomColorToggle");
       var autoCopyToggle = document.getElementById("autoCopyToggle");
       var claimBtn = document.getElementById("claimBtn");
       var copyCaptionBtn = document.getElementById("copyCaptionBtn");
       var statusEl = document.getElementById("status");
       var captionTextEl = document.getElementById("captionText");
+
+      var badgeMain = document.getElementById("badgeMain");
+      var badgeCircle = document.getElementById("badgeCircle");
+      var badgePill = document.getElementById("badgePill");
+      var badgeFidText = document.getElementById("badgeFidText");
+      var badgeTypeText = document.getElementById("badgeTypeText");
+      var badgeDateText = document.getElementById("badgeDateText");
 
       var streakValue = document.getElementById("streakValue");
       var totalValue = document.getElementById("totalValue");
@@ -177,7 +474,7 @@
 
       function todayISO() {
         var d = new Date();
-        return d.toISOString().slice(0, 10); // YYYY-MM-DD
+        return d.toISOString().slice(0, 10);
       }
 
       function formatDateShort(iso) {
@@ -195,6 +492,24 @@
         var db = new Date(b + "T00:00:00");
         var ms = da - db;
         return Math.round(ms / (1000 * 60 * 60 * 24));
+      }
+
+      function randomGradient() {
+        var colors = [
+          ["#22c55e", "#16a34a"],
+          ["#38bdf8", "#0ea5e9"],
+          ["#a855f7", "#6366f1"],
+          ["#f97316", "#facc15"],
+          ["#ec4899", "#8b5cf6"]
+        ];
+        var i = Math.floor(Math.random() * colors.length);
+        return (
+          "linear-gradient(135deg, " +
+          colors[i][0] +
+          ", " +
+          colors[i][1] +
+          ")"
+        );
       }
 
       function loadState() {
@@ -242,9 +557,11 @@
         return caption;
       }
 
-      function updateUIFromState(state) {
-        streakValue.textContent = state.streak;
-        totalValue.textContent = state.total;
+      function updatePreview(state) {
+        // stats text
+        streakValue.textContent =
+          state.streak + (state.streak === 1 ? " day" : " days");
+        totalValue.textContent = String(state.total);
         lastDayValue.textContent = state.lastClaimDate
           ? formatDateShort(state.lastClaimDate)
           : "-";
@@ -256,8 +573,33 @@
           lastClaimLabel.textContent = "Not claimed yet";
         }
 
+        // inputs from saved state
         if (state.lastFid) fidInput.value = state.lastFid;
         if (state.lastType) badgeTypeInput.value = state.lastType;
+
+        // badge text
+        badgeFidText.textContent = fidInput.value || "45613";
+        badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
+
+        var dateText = state.lastClaimDate
+          ? formatDateShort(state.lastClaimDate)
+          : formatDateShort(todayISO());
+        badgeDateText.textContent = dateText;
+
+        // shape visibility
+        var shape = shapeSelect.value;
+        badgeCircle.style.display =
+          shape === "circle" || shape === "both" ? "block" : "none";
+        badgePill.style.display =
+          shape === "pill" || shape === "both" ? "block" : "none";
+
+        // color
+        if (randomColorToggle.checked) {
+          badgeMain.style.backgroundImage = randomGradient();
+        } else {
+          badgeMain.style.backgroundImage =
+            "linear-gradient(135deg,#22c55e,#16a34a)";
+        }
 
         updateCaption(state);
       }
@@ -270,14 +612,15 @@
 
       // initial
       var state = loadState();
-      updateUIFromState(state);
+      updatePreview(state);
 
+      // claim button
       claimBtn.addEventListener("click", function () {
         var today = todayISO();
 
         if (state.lastClaimDate === today) {
           showStatus(
-            "Aaj ka badge already claim ho chuka hai. Kal fir claim karna.",
+            "Today's badge already claimed. Please come back tomorrow.",
             "error"
           );
           return;
@@ -300,7 +643,7 @@
         state.lastType = badgeTypeInput.value || "Daily Check-in";
 
         saveState(state);
-        updateUIFromState(state);
+        updatePreview(state);
         showStatus("Badge claimed. Streak updated.", "success");
 
         if (autoCopyToggle.checked && navigator.clipboard) {
@@ -311,6 +654,7 @@
         }
       });
 
+      // copy caption
       copyCaptionBtn.addEventListener("click", function () {
         var caption = updateCaption(state);
         if (!navigator.clipboard) {
@@ -323,15 +667,25 @@
             showStatus("Caption copied.", "success");
           })
           .catch(function () {
-            showStatus("Clipboard permission blocked in this browser.", "error");
+            showStatus(
+              "Clipboard permission blocked in this browser.",
+              "error"
+            );
           });
       });
 
+      // live preview updates
       fidInput.addEventListener("input", function () {
-        updateUIFromState(state);
+        updatePreview(state);
       });
       badgeTypeInput.addEventListener("input", function () {
-        updateUIFromState(state);
+        updatePreview(state);
+      });
+      shapeSelect.addEventListener("change", function () {
+        updatePreview(state);
+      });
+      randomColorToggle.addEventListener("change", function () {
+        updatePreview(state);
       });
     })();
   </script>
