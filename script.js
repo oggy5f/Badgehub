@@ -1,250 +1,321 @@
-// script.js - Crypto UI BadgeHub (single-file logic)
-// Small helper
-const $ = id => document.getElementById(id);
+// BadgeHub — main client script (no-template version)
 
-// DOM
-const nameInput = $('nameInput');
-const typeSelect = $('typeSelect');
-const shapeSelect = $('shapeSelect');
-const claimBtn = $('claimBtn');
-const svgWrap = $('svgWrap');
-const downloadBtn = $('downloadBtn');
-const copyBtn = $('copyBtn');
-const shareBtn = $('shareBtn');
-const farcasterBtn = $('farcasterBtn');
-const mintBtn = $('mintBtn');
-const captionPreview = $('captionPreview');
-const sizeRange = $('sizeRange');
-const sizeVal = $('sizeVal');
-const randomColor = $('randomColor');
-const autoCopy = $('autoCopy');
-const autoDownload = $('autoDownload');
-const streakCountEl = $('streakCount');
-const themeSelect = $('themeSelect');
-
-let currentSVGString = '';
-let streak = 0;
-
-// Themes: apply to <html> as data-theme
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('bh:theme', theme);
+// --------- Helper ----------
+function $(id) {
+  return document.getElementById(id);
 }
-themeSelect.addEventListener('change', e=>{
-  applyTheme(e.target.value);
-});
-const savedTheme = localStorage.getItem('bh:theme') || 'dark';
-themeSelect.value = savedTheme;
-applyTheme(savedTheme);
 
-// size slider
-sizeRange.addEventListener('input', ()=>{
-  sizeVal.textContent = sizeRange.value;
-});
+// --------- DOM refs ----------
+const nameInput       = $('nameInput') || $('name');
+const typeSelect      = $('typeSelect') || $('type');
+const shapeSelect     = $('shapeSelect');
+const sizeSlider      = $('sizeSlider');
+const randomColorChk  = $('randomColor');
+const autoCopyChk     = $('autoCopy');
+const autoDownloadChk = $('autoDownload');
+const themeSelect     = $('themeSelect');
+const streakValue     = $('streakValue');
 
-// streak logic
-function loadStreak(){
-  const data = JSON.parse(localStorage.getItem('bh:streak') || '{}');
-  const last = data.lastClaim;
-  streak = data.streak || 0;
-  // if last claim was yesterday/earlier, keep streak; if more than 24h gap, reset (simple)
-  if(last){
-    const diff = Date.now() - (new Date(last)).getTime();
-    if(diff > (48 * 3600 * 1000)){ // more than 48h break
-      streak = 0;
+const claimBtn        = $('claimBtn') || $('claim');
+const downloadBtn     = $('downloadBtn') || $('download');
+const copyCaptionBtn  = $('copyCaption') || $('copyCaptionBtn');
+const shareBtn        = $('shareBtn');
+const mintBtn         = $('mintBtn');
+
+const svgWrap         = $('svgwrap') || $('previewWrap') || $('badgeContainer');
+const captionPreview  = $('captionPreview') || $('captionBox');
+
+// --------- Small utils ----------
+function escapeXml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function clamp(num, min, max) {
+  return Math.min(max, Math.max(min, num));
+}
+
+// Random pastel color
+function randomPastel() {
+  const h = Math.floor(Math.random() * 360);
+  const s = 70;
+  const l = 75;
+  return 'hsl(' + h + ',' + s + '%,' + l + '%)';
+}
+
+// --------- Theme handling ----------
+const THEME_KEY = 'badgehub_theme_v1';
+
+function applyTheme(theme) {
+  const body = document.body;
+  body.classList.remove('theme-dark', 'theme-yellow', 'theme-sky', 'theme-choco', 'theme-light');
+
+  if (theme === 'yellow') body.classList.add('theme-yellow');
+  else if (theme === 'sky') body.classList.add('theme-sky');
+  else if (theme === 'choco') body.classList.add('theme-choco');
+  else if (theme === 'light') body.classList.add('theme-light');
+  else body.classList.add('theme-dark'); // default
+
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (e) {
+    console.warn('theme save failed', e);
+  }
+}
+
+function initTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(THEME_KEY);
+  } catch (e) {}
+  if (!saved) saved = 'dark';
+  if (themeSelect) themeSelect.value = saved;
+  applyTheme(saved);
+}
+
+// --------- Streak handling ----------
+const STREAK_KEY = 'badgehub_streak_v1';
+const LAST_DATE_KEY = 'badgehub_lastDate_v1';
+
+function formatYMD(d) {
+  const y = d.getFullYear();
+  const m = ('0' + (d.getMonth() + 1)).slice(0 - 2);
+  const day = ('0' + d.getDate()).slice(0 - 2);
+  return y + '-' + m + '-' + day;
+}
+
+function loadStreak() {
+  let streak = 0;
+  try {
+    const s = localStorage.getItem(STREAK_KEY);
+    if (s) streak = parseInt(s, 10) || 0;
+  } catch (e) {}
+  if (streakValue) streakValue.textContent = streak;
+}
+
+function updateStreakOnClaim() {
+  const today = new Date();
+  const todayKey = formatYMD(today);
+  let streak = 0;
+  let lastDate = null;
+
+  try {
+    const s = localStorage.getItem(STREAK_KEY);
+    if (s) streak = parseInt(s, 10) || 0;
+    lastDate = localStorage.getItem(LAST_DATE_KEY);
+  } catch (e) {}
+
+  if (!lastDate) {
+    streak = 1;
+  } else if (lastDate === todayKey) {
+    // same day — streak stays same
+  } else {
+    // find diff in days
+    const [y, m, d] = lastDate.split('-');
+    const prev = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+    const diffMs = today - prev;
+    const diffDays = Math.round(diffMs / 86400000);
+
+    if (diffDays === 1) {
+      streak += 1; // consecutive
+    } else {
+      streak = 1; // reset
     }
   }
-  streakCountEl.textContent = streak;
-}
-function saveStreak(){
-  localStorage.setItem('bh:streak', JSON.stringify({streak, lastClaim: new Date().toISOString()}));
+
+  try {
+    localStorage.setItem(STREAK_KEY, String(streak));
+    localStorage.setItem(LAST_DATE_KEY, todayKey);
+  } catch (e) {}
+
+  if (streakValue) streakValue.textContent = streak;
 }
 
-// helper: random color
-function randColor(){
-  const pool = ['#ff7ab6','#a17cff','#6be4ff','#ffd16b','#ff9b6b','#8affb0'];
-  return pool[Math.floor(Math.random()*pool.length)];
-}
+// --------- SVG maker ----------
+function makeBadgeSVG(displayName, badgeType) {
+  const dateStr = new Date().toLocaleDateString();
 
-// SVG maker
-function makeBadgeSVG(displayName, badgeType, shape, scalePct=100, bgColor='#0b5fff'){
-  const date = new Date().toLocaleDateString();
-  const s = Number(scalePct) / 100;
-  // base card size scaled (720x360 base)
-  const width = 720 * s;
-  const height = 360 * s;
-  const circleSize = 120 * s;
-  // shape content: circle, square, hex
-  let shapeSvg = '';
-  if(shape === 'circle'){
-    shapeSvg = <circle cx="${120*s}" cy="${180*s}" r="${circleSize/2}" fill="${bgColor}" />;
-  } else if(shape === 'square'){
-    const size = circleSize;
-    shapeSvg = <rect x="${120*s - size/2}" y="${180*s - size/2}" width="${size}" height="${size}" rx="${size*0.12}" fill="${bgColor}" />;
-  } else { // hex
-    const r = circleSize/2;
-    const cx = 120*s, cy = 180*s;
-    const points = Array.from({length:6}).map((_,i)=>{
-      const a = Math.PI/3*i - Math.PI/6;
-      return ${cx + r*Math.cos(a)},${cy + r*Math.sin(a)};
-    }).join(' ');
-    shapeSvg = <polygon points="${points}" fill="${bgColor}" />;
+  // base colors (default)
+  let bgColor = '#0b5fff';
+  let accent = '#ffb347';
+
+  // random color toggle
+  if (randomColorChk && randomColorChk.checked) {
+    bgColor = randomPastel();
   }
 
-  // use template literal (multi-line)
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${720} ${360}">
-    <defs>
-      <filter id="soft">
-        <feDropShadow dx="0" dy="8" stdDeviation="16" flood-opacity="0.12"/>
-      </filter>
-    </defs>
-    <rect width="720" height="360" rx="24" fill="#0b0f14" />
-    <rect x="24" y="24" width="672" height="312" rx="16" fill="#0f1720"/>
-    <!-- circular/square/hex shape -->
-    ${shapeSvg}
-    <text x="${220}" y="${145}" font-size="${34}" fill="#fff" font-weight="800" font-family="Inter, system-ui, Arial">
-      ${escapeXml(displayName)}
-    </text>
-    <text x="${220}" y="${190}" font-size="${22}" fill="#cfe0ff">${escapeXml(badgeType)}</text>
-    <text x="${220}" y="${230}" font-size="${16}" fill="#9fbff0">${escapeXml(date)}</text>
-  </svg>`.trim();
+  // size percent from slider
+  let scale = 1;
+  if (sizeSlider) {
+    const val = parseInt(sizeSlider.value, 10) || 100;
+    scale = clamp(val, 30, 130) / 100.0;
+  }
+
+  const safeName = escapeXml(displayName || '');
+  const safeType = escapeXml(badgeType || '');
+  const safeDate = escapeXml(dateStr);
+
+  // Build SVG string (no backticks)
+  let svg = '';
+  svg += '<svg class="badge-svg" xmlns="http://www.w3.org/2000/svg"';
+  svg += ' width="720" height="360" viewBox="0 0 720 360">';
+  svg += '<defs>';
+  svg += '<filter id="cardShadow" x="-5%" y="-10%" width="110%" height="130%">';
+  svg += '<feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="rgba(0,0,0,0.45)"/>';
+  svg += '</filter>';
+  svg += '</defs>';
+
+  svg += '<g transform="translate(360,180) scale(' + scale + ') translate(-360,-180)">';
+  svg += '<rect x="40" y="40" width="640" height="280" rx="32" fill="#050816" filter="url(#cardShadow)"/>';
+  svg += '<rect x="48" y="48" width="624" height="264" rx="28" fill="' + bgColor + '"/>';
+
+  svg += '<circle cx="170" cy="150" r="72" fill="' + accent + '"/>';
+
+  svg += '<text x="170" y="245" text-anchor="middle"';
+  svg += ' font-size="22" fill="rgba(255,255,255,0.82)" font-family="system-ui, -apple-system, BlinkMacSystemFont,';
+  svg += ' Segoe UI, sans-serif">';
+  svg += safeType + '</text>';
+
+  svg += '<text x="520" y="150" text-anchor="middle"';
+  svg += ' font-size="44" fill="#ffffff" font-weight="700"';
+  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
+  svg += safeName + '</text>';
+
+  svg += '<text x="520" y="190" text-anchor="middle"';
+  svg += ' font-size="18" fill="rgba(255,255,255,0.7)"';
+  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
+  svg += 'Daily Check-in • BadgeHub';
+  svg += '</text>';
+
+  svg += '<text x="520" y="230" text-anchor="middle"';
+  svg += ' font-size="16" fill="rgba(255,255,255,0.7)"';
+  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
+  svg += safeDate + '</text>';
+
+  svg += '</g></svg>';
 
   return svg;
 }
 
-// small xml escape to keep safe
-function escapeXml(str=''){
-  return String(str||'').replace(/[&<>"']/g, function (s) {
-    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'})[s];
-  });
+// --------- Caption builder ----------
+function buildCaption(name, type) {
+  const display = name && name.trim() ? name.trim() : 'anon';
+  const btype = type || 'Daily Check-in';
+  return '🥇 ' + display + ' — ' + btype + ' badge earned on Base.\n#BadgeHub';
 }
 
-// render svg into DOM
-function renderSVG(svgString){
-  currentSVGString = svgString;
-  svgWrap.classList.remove('empty');
-  svgWrap.innerHTML = svgString;
-  // add animation (pop)
+// --------- Main claim flow ----------
+function handleClaim() {
+  if (!svgWrap) return;
+
+  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
+  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
+
+  const svg = makeBadgeSVG(name, type);
+
+  svgWrap.innerHTML = svg;
+
+  // simple pop animation class
   const svgEl = svgWrap.querySelector('svg');
-  if(svgEl){
+  if (svgEl) {
     svgEl.classList.remove('pop');
-    // force reflow then add
     void svgEl.offsetWidth;
     svgEl.classList.add('pop');
   }
-}
 
-// download helper
-function downloadSVG(name='badge.svg'){
-  if(!currentSVGString) return;
-  const blob = new Blob([currentSVGString], {type: 'image/svg+xml;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a); a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 5000);
-}
+  // caption
+  const caption = buildCaption(name || '@you', type);
+  if (captionPreview) captionPreview.textContent = caption;
 
-// copy caption
-function copyCaption(text){
-  navigator.clipboard?.writeText(text).then(()=>{}, ()=>{});
-}
+  updateStreakOnClaim();
 
-// share twitter (simple text only, images not attached)
-function shareTwitter(text){
-  const url = https://twitter.com/intent/tweet?text=${encodeURIComponent(text)};
-  window.open(url,'_blank','noopener');
-}
-
-// farcaster share placeholder: we cannot POST to Farcaster from client w/o auth — provide a copied caption
-function shareFarcaster(text){
-  // copy to clipboard and open farcaster.com (user can paste)
-  copyCaption(text);
-  alert('Caption copied. Open your Farcaster app and paste to share. (Automated Farcaster posting requires auth.)');
-}
-
-// caption generator
-function makeCaption(name,type){
-  return I just earned a ${type} badge on BadgeHub 🎉 — ${name} #BadgeHub;
-}
-
-// load previous settings
-function loadSettings(){
-  sizeVal.textContent = sizeRange.value;
-  const sTheme = localStorage.getItem('bh:theme') || 'dark';
-  if(sTheme) themeSelect.value = sTheme;
-}
-loadSettings();
-loadStreak();
-
-// Claim button action
-claimBtn.addEventListener('click', ()=>{
-  const name = nameInput.value.trim() || 'Anonymous';
-  const type = typeSelect.value;
-  const shape = shapeSelect.value;
-  const scale = sizeRange.value;
-  const color = randomColor.checked ? randColor() : '#ff9b6b'; // fallback
-
-  const svg = makeBadgeSVG(name, type, shape, scale, color);
-  renderSVG(svg);
-
-  // update streak
-  streak = (parseInt(streak) || 0) + 1;
-  streakCountEl.textContent = streak;
-  saveStreak();
-
-  const caption = makeCaption(name, type);
-  captionPreview.textContent = caption;
-
-  if(autoCopy.checked){
-    copyCaption(caption);
+  // auto copy
+  if (autoCopyChk && autoCopyChk.checked) {
+    copyCaptionToClipboard(caption);
   }
-  if(autoDownload.checked){
-    downloadSVG(${name.replace(/\s+/g,'_')}_${type.replace(/\s+/g,'_')}.svg);
+
+  // auto download
+  if (autoDownloadChk && autoDownloadChk.checked) {
+    downloadSVG(svg);
   }
-});
+}
 
-// download button
-downloadBtn.addEventListener('click', ()=>{
-  downloadSVG('badge.svg');
-});
+// --------- Download / copy / share helpers ----------
+function downloadSVG(svg) {
+  try {
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'badge.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('download failed', e);
+  }
+}
 
-// copy caption
-copyBtn.addEventListener('click', ()=>{
-  const name = nameInput.value.trim() || 'Anonymous';
-  const type = typeSelect.value;
-  const text = makeCaption(name,type);
-  copyCaption(text);
-  captionPreview.textContent = 'Caption copied to clipboard ✔';
-});
+function copyCaptionToClipboard(caption) {
+  if (!navigator.clipboard) return;
+  navigator.clipboard.writeText(caption).catch(function (e) {
+    console.warn('clipboard failed', e);
+  });
+}
 
-// share
-shareBtn.addEventListener('click', ()=>{
-  const name = nameInput.value.trim() || 'Anonymous';
-  const type = typeSelect.value;
-  const text = makeCaption(name,type);
-  shareTwitter(text);
-});
-farcasterBtn.addEventListener('click', ()=>{
-  const name = nameInput.value.trim() || 'Anonymous';
-  const type = typeSelect.value;
-  const text = makeCaption(name,type);
-  shareFarcaster(text);
-});
+function handleDownloadClick() {
+  if (!svgWrap) return;
+  const svgEl = svgWrap.querySelector('svg');
+  if (!svgEl) return;
+  const svg = svgWrap.innerHTML;
+  downloadSVG(svg);
+}
 
-// Mint placeholder
-mintBtn.addEventListener('click', ()=>{
-  alert('Mint integration placeholder — requires API + wallet connection.');
+function handleCopyCaptionClick() {
+  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
+  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
+  const caption = buildCaption(name || '@you', type);
+  copyCaptionToClipboard(caption);
+}
+
+function handleShareClick() {
+  // Farcaster share (Warpcast)
+  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
+  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
+  const caption = buildCaption(name || '@you', type);
+  const text = encodeURIComponent(caption);
+  const url = encodeURIComponent(window.location.href);
+  const full = 'https://warpcast.com/~/compose?text=' + text + '&embeds[]=' + url;
+  window.open(full, '_blank');
+}
+
+function handleMintClick() {
+  alert('Mint on Base: placeholder. Baad me API connect karenge 🙂');
+}
+
+// --------- Init listeners ----------
+function initListeners() {
+  if (claimBtn)       claimBtn.addEventListener('click', handleClaim);
+  if (downloadBtn)    downloadBtn.addEventListener('click', handleDownloadClick);
+  if (copyCaptionBtn) copyCaptionBtn.addEventListener('click', handleCopyCaptionClick);
+  if (shareBtn)       shareBtn.addEventListener('click', handleShareClick);
+  if (mintBtn)        mintBtn.addEventListener('click', handleMintClick);
+
+  if (themeSelect) {
+    themeSelect.addEventListener('change', function () {
+      applyTheme(themeSelect.value);
+    });
+  }
+}
+
+// --------- Boot ----------
+document.addEventListener('DOMContentLoaded', function () {
+  initTheme();
+  loadStreak();
+  initListeners();
+  console.log('script.js loaded OK');
 });
-
-// quick keyboard: press Enter to claim
-nameInput.addEventListener('keydown', e=>{
-  if(e.key === 'Enter'){ claimBtn.click();}
-});
-
-// load last known theme from localStorage already applied earlier
-
-// If a saved SVG is in localStorage we could load it (optional) - not implemented by default.
