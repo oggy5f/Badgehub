@@ -345,7 +345,7 @@
       justify-content: center;
     }
 
-    /* Cartoon frog-style badge (4th image feel) */
+    /* Cartoon frog-style badge */
     .frog-wrapper {
       position: relative;
       width: 230px;
@@ -406,6 +406,19 @@
       border-radius: 999px;
       background: #e5f4ff;
       box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    }
+
+    /* big name in top empty area */
+    .badge-name-large {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #041014;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.18);
     }
 
     .badge-text {
@@ -532,6 +545,10 @@
 
     <div class="badge-card">
       <div class="badge" id="badgeMain">
+        <!-- big name in top empty area -->
+        <div class="badge-name-large" id="badgeNameLarge">----</div>
+
+        <!-- CARTOON FROG -->
         <div class="frog-wrapper">
           <div class="frog-head">
             <div class="frog-eye left">
@@ -545,10 +562,10 @@
           <div class="frog-pill"></div>
         </div>
 
+        <!-- SMALL TEXT BOTTOM -->
         <div class="badge-text">
-          <div>
-            <div id="badgeFidText">----</div>
-            <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">Daily Check-in</div>
+          <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">
+            Daily Check-in
           </div>
           <div id="badgeDateText">--</div>
         </div>
@@ -586,8 +603,7 @@
   var statusEl = document.getElementById("status");
   var captionTextEl = document.getElementById("captionText");
 
-  var badgeMain = document.getElementById("badgeMain");
-  var badgeFidText = document.getElementById("badgeFidText");
+  var badgeNameLarge = document.getElementById("badgeNameLarge");
   var badgeTypeText = document.getElementById("badgeTypeText");
   var badgeDateText = document.getElementById("badgeDateText");
 
@@ -596,7 +612,7 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v5";
+  var STORAGE_KEY = "badgehub_state_v6";
 
   function todayISO() {
     var d = new Date();
@@ -620,32 +636,26 @@
     return Math.round(ms / (1000 * 60 * 60 * 24));
   }
 
-  function randomThemeGradient() {
-    var themes = ["sky","mint","sunset","violet"];
-    var t = themes[Math.floor(Math.random() * themes.length)];
-    // update body class too so whole site matches
+  function applyTheme(theme) {
+    var body = document.body;
+    body.classList.remove("theme-sky","theme-mint","theme-sunset","theme-violet");
+    body.classList.add("theme-" + theme);
+  }
+
+  function randomTheme() {
+    var list = ["sky","mint","sunset","violet"];
+    var t = list[Math.floor(Math.random() * list.length)];
+    themeSelect.value = t;
     applyTheme(t);
-    return; // gradient will come from CSS variables
   }
 
   function loadState() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return {
-        total: 0,
-        streak: 0,
-        lastClaimDate: null
-      };
+      return { total: 0, streak: 0, lastClaimDate: null };
     }
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      return {
-        total: 0,
-        streak: 0,
-        lastClaimDate: null
-      };
-    }
+    try { return JSON.parse(raw); }
+    catch (e) { return { total: 0, streak: 0, lastClaimDate: null }; }
   }
 
   function saveState(state) {
@@ -667,23 +677,29 @@
     // stats
     streakValue.textContent = state.streak + " day(s)";
     totalValue.textContent = String(state.total);
-    lastDayValue.textContent = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : "-";
+    lastDayValue.textContent = state.lastClaimDate
+      ? formatDateShort(state.lastClaimDate)
+      : "-";
 
     if (state.lastClaimDate) {
-      lastClaimLabel.textContent = "Last claimed on " + formatDateShort(state.lastClaimDate);
+      lastClaimLabel.textContent =
+        "Last claimed on " + formatDateShort(state.lastClaimDate);
     } else {
       lastClaimLabel.textContent = "Not claimed yet";
     }
 
-    // badge text
-    badgeFidText.textContent = fidInput.value || "----";
+    // badge texts
+    badgeNameLarge.textContent = fidInput.value || "----";
     badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
-    var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : "--";
-    badgeDateText.textContent = dateText;
+    badgeDateText.textContent = state.lastClaimDate
+      ? formatDateShort(state.lastClaimDate)
+      : "--";
 
-    // random theme if toggle on
+    // theme / color
     if (randomColorToggle.checked) {
-      randomThemeGradient();
+      randomTheme();
+    } else {
+      applyTheme(themeSelect.value);
     }
 
     updateCaption(state);
@@ -697,18 +713,16 @@
   function createSvg(state) {
     var fid = fidInput.value || "Anon";
     var type = badgeTypeInput.value || "Daily Check-in";
-    var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : todayISO();
+    var dateText = state.lastClaimDate
+      ? formatDateShort(state.lastClaimDate)
+      : todayISO();
     var theme = themeSelect.value;
 
     var bg1 = "#38bdf8";
     var bg2 = "#0ea5e9";
-    if (theme === "mint") {
-      bg1 = "#22c55e"; bg2 = "#16a34a";
-    } else if (theme === "sunset") {
-      bg1 = "#f97316"; bg2 = "#facc15";
-    } else if (theme === "violet") {
-      bg1 = "#a855f7"; bg2 = "#6366f1";
-    }
+    if (theme === "mint") { bg1 = "#22c55e"; bg2 = "#16a34a"; }
+    else if (theme === "sunset") { bg1 = "#f97316"; bg2 = "#facc15"; }
+    else if (theme === "violet") { bg1 = "#a855f7"; bg2 = "#6366f1"; }
 
     var svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">' +
@@ -717,39 +731,35 @@
       '<stop offset="100%" stop-color="' + bg2 + '"/>' +
       '</linearGradient></defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
+      // big name top centre
+      '<text x="600" y="120" text-anchor="middle" font-size="44" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
+      fid + '</text>' +
       // frog head
-      '<g transform="translate(0,10)">' +
-      '<ellipse cx="600" cy="250" rx="120" ry="90" fill="#e5f4ff"/>' +
-      '<circle cx="530" cy="200" r="32" fill="#e5f4ff"/>' +
-      '<circle cx="670" cy="200" r="32" fill="#e5f4ff"/>' +
-      '<circle cx="530" cy="200" r="15" fill="#020617"/>' +
-      '<circle cx="670" cy="200" r="15" fill="#020617"/>' +
-      '<path d="M555 280 Q600 320 645 280" stroke="#020617" stroke-width="4" fill="none"/>' +
+      '<g transform="translate(0,30)">' +
+      '<ellipse cx="600" cy="260" rx="120" ry="90" fill="#e5f4ff"/>' +
+      '<circle cx="530" cy="210" r="32" fill="#e5f4ff"/>' +
+      '<circle cx="670" cy="210" r="32" fill="#e5f4ff"/>' +
+      '<circle cx="530" cy="210" r="15" fill="#020617"/>' +
+      '<circle cx="670" cy="210" r="15" fill="#020617"/>' +
+      '<path d="M555 290 Q600 330 645 290" stroke="#020617" stroke-width="4" fill="none"/>' +
       '</g>' +
       // pill
-      '<rect x="430" y="360" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
-      '<text x="80" y="520" font-size="40" font-family="system-ui, sans-serif" fill="#022c22">' +
-      fid + '</text>' +
+      '<rect x="430" y="380" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
+      // bottom text
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
       type + '</text>' +
       '<text x="1040" y="560" text-anchor="end" font-size="24" font-family="system-ui, sans-serif" fill="#022c22">' +
-      dateText +
-      '</text>' +
+      dateText + '</text>' +
       '</svg>';
 
     return svg;
   }
 
-  function applyTheme(theme) {
-    var body = document.body;
-    body.classList.remove("theme-sky","theme-mint","theme-sunset","theme-violet");
-    body.classList.add("theme-" + theme);
-  }
-
   var state = loadState();
-  updatePreview(state); // initial
+  updatePreview(state);
+  applyTheme(themeSelect.value);
 
-  /* CLAIM BUTTON */
+  /* CLAIM */
   claimBtn.addEventListener("click", function () {
     var today = todayISO();
 
@@ -760,19 +770,16 @@
 
     if (state.lastClaimDate) {
       var diff = dayDiff(today, state.lastClaimDate);
-      if (diff === 1) {
-        state.streak = state.streak + 1;
-      } else {
-        state.streak = 1;
-      }
+      if (diff === 1) state.streak += 1;
+      else state.streak = 1;
     } else {
       state.streak = 1;
     }
 
-    state.total = state.total + 1;
+    state.total += 1;
     state.lastClaimDate = today;
-
     saveState(state);
+
     updatePreview(state);
     showStatus("Badge claimed. Streak updated.", "success");
 
@@ -804,9 +811,7 @@
       return;
     }
     navigator.clipboard.writeText(caption)
-      .then(function () {
-        showStatus("Caption copied.", "success");
-      })
+      .then(function () { showStatus("Caption copied.", "success"); })
       .catch(function () {
         showStatus("Clipboard permission blocked in this browser.", "error");
       });
@@ -846,9 +851,6 @@
     applyTheme(themeSelect.value);
     updatePreview(state);
   });
-
-  // initial theme
-  applyTheme(themeSelect.value);
 
 })();
 </script>
