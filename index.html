@@ -1,223 +1,339 @@
-<script>
-  var fidInput = document.getElementById("fidInput");
-  var badgeTypeInput = document.getElementById("badgeTypeInput");
-  var shapeSelect = document.getElementById("shapeSelect");
-  var randomColorToggle = document.getElementById("randomColorToggle");
-  var autoCopyToggle = document.getElementById("autoCopyToggle");
-  var claimBtn = document.getElementById("claimBtn");
-  var copyCaptionBtn = document.getElementById("copyCaptionBtn");
-  var statusEl = document.getElementById("status");
-  var captionTextEl = document.getElementById("captionText");
-
-  var badgeMain = document.getElementById("badgeMain");
-  var badgeCircle = document.getElementById("badgeCircle");
-  var badgePill = document.getElementById("badgePill");
-  var badgeFidText = document.getElementById("badgeFidText");
-  var badgeTypeText = document.getElementById("badgeTypeText");
-  var badgeDateText = document.getElementById("badgeDateText");
-
-  var streakValue = document.getElementById("streakValue");
-  var totalValue = document.getElementById("totalValue");
-  var lastDayValue = document.getElementById("lastDayValue");
-  var lastClaimLabel = document.getElementById("lastClaimLabel");
-
-  var STORAGE_KEY = "badgehub_daily_data_v1";
-
-  function todayISO() {
-    var d = new Date();
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
-  }
-
-  function formatDateShort(iso) {
-    if (!iso) return "—";
-    var d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
-  }
-
-  function dayDiff(a, b) {
-    var da = new Date(a + "T00:00:00");
-    var db = new Date(b + "T00:00:00");
-    var ms = da - db;
-    return Math.round(ms / (1000 * 60 * 60 * 24));
-  }
-
-  function randomGradient() {
-    var colors = [
-      ["#22c55e", "#16a34a"],
-      ["#38bdf8", "#0ea5e9"],
-      ["#a855f7", "#6366f1"],
-      ["#f97316", "#facc15"],
-      ["#ec4899", "#8b5cf6"]
-    ];
-    var i = Math.floor(Math.random() * colors.length);
-    return "linear-gradient(135deg, " + colors[i][0] + ", " + colors[i][1] + ")";
-  }
-
-  function loadState() {
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return {
-        total: 0,
-        streak: 0,
-        lastClaimDate: null,
-        lastFid: "",
-        lastType: "Daily Check-in"
-      };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Badgehub – Daily Check-in</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
     }
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      return {
-        total: 0,
-        streak: 0,
-        lastClaimDate: null,
-        lastFid: "",
-        lastType: "Daily Check-in"
-      };
+    .app {
+      width: 100%;
+      max-width: 480px;
+      padding: 20px;
     }
-  }
-
-  function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
-
-  function updateCaption(state) {
-    var fid = fidInput.value || "45613";
-    var type = badgeTypeInput.value || "Daily Check-in";
-    var caption =
-      "#" +
-      fid +
-      " - " +
-      type +
-      " badge earned\n\nStreak: " +
-      state.streak +
-      " days | Total: " +
-      state.total +
-      "\n#Badgehub #Base";
-    captionTextEl.textContent = caption;
-    return caption;
-  }
-
-  function updateUIFromState(state) {
-    streakValue.textContent =
-      state.streak + (state.streak === 1 ? " day" : " days");
-    totalValue.textContent = String(state.total);
-    lastDayValue.textContent = formatDateShort(state.lastClaimDate);
-    if (state.lastClaimDate) {
-      lastClaimLabel.textContent =
-        "Last claimed on " + formatDateShort(state.lastClaimDate);
-    } else {
-      lastClaimLabel.textContent = "Not claimed yet";
+    h1 {
+      font-size: 22px;
+      margin-bottom: 4px;
     }
-
-    if (state.lastFid) fidInput.value = state.lastFid;
-    if (state.lastType) badgeTypeInput.value = state.lastType;
-
-    badgeFidText.textContent = fidInput.value || "45613";
-    badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
-
-    var dateText = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : formatDateShort(todayISO());
-    badgeDateText.textContent = dateText;
-
-    var shape = shapeSelect.value;
-    badgeCircle.style.display =
-      shape === "circle" || shape === "both" ? "block" : "none";
-    badgePill.style.display =
-      shape === "pill" || shape === "both" ? "block" : "none";
-
-    if (randomColorToggle.checked) {
-      badgeMain.style.backgroundImage = randomGradient();
-    } else {
-      badgeMain.style.backgroundImage =
-        "linear-gradient(135deg,#22c55e,#16a34a)";
+    .subtitle {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 16px;
     }
-
-    updateCaption(state);
-  }
-
-  function showStatus(msg, type) {
-    if (type === undefined) type = "";
-    statusEl.textContent = msg;
-    statusEl.className = "status " + type;
-  }
-
-  // INITIAL STATE
-  var state = loadState();
-  updateUIFromState(state);
-
-  // EVENTS
-  claimBtn.addEventListener("click", function () {
-    var today = todayISO();
-    if (state.lastClaimDate === today) {
-      showStatus(
-        "Aaj ka badge already claim ho chuka hai. Kal fir se try karo.",
-        "error"
-      );
-      return;
+    .card {
+      background: #02081b;
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      padding: 16px;
     }
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: #9ca3af;
+    }
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 8px 12px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .row label {
+      margin: 0;
+      font-size: 13px;
+    }
+    .row input[type="checkbox"] {
+      margin: 0;
+    }
+    button {
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 999px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .btn-primary {
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+    }
+    .btn-secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    .status {
+      font-size: 13px;
+      min-height: 18px;
+      margin-top: 4px;
+      color: #9ca3af;
+    }
+    .status.success {
+      color: #4ade80;
+    }
+    .status.error {
+      color: #f97373;
+    }
+    .stats {
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .caption-box {
+      margin-top: 14px;
+      border-radius: 8px;
+      border: 1px dashed #374151;
+      padding: 8px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #020617;
+    }
+    .caption-label {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Badgehub</h1>
+    <div class="subtitle">Simple daily check-in + streak tracker</div>
 
-    if (state.lastClaimDate) {
-      var diff = dayDiff(today, state.lastClaimDate);
-      if (diff === 1) {
-        state.streak += 1;
-      } else {
-        state.streak = 1;
+    <div class="card">
+      <label for="fidInput">Your FID</label>
+      <input id="fidInput" type="number" placeholder="45613" />
+
+      <label for="badgeTypeInput">Badge type</label>
+      <input id="badgeTypeInput" type="text" value="Daily Check-in" />
+
+      <div class="row">
+        <input id="autoCopyToggle" type="checkbox" />
+        <label for="autoCopyToggle">Auto copy caption after claim</label>
+      </div>
+
+      <button id="claimBtn" class="btn-primary">Claim today's badge</button>
+      <button id="copyCaptionBtn" class="btn-secondary">Copy caption</button>
+
+      <div id="status" class="status"></div>
+
+      <div class="stats">
+        <div>Streak: <span id="streakValue">0</span> days</div>
+        <div>Total claimed: <span id="totalValue">0</span></div>
+        <div>Last claim date: <span id="lastDayValue">-</span></div>
+        <div id="lastClaimLabel">Not claimed yet</div>
+      </div>
+
+      <div class="caption-box">
+        <div class="caption-label">Caption preview</div>
+        <div id="captionText"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var fidInput = document.getElementById("fidInput");
+      var badgeTypeInput = document.getElementById("badgeTypeInput");
+      var autoCopyToggle = document.getElementById("autoCopyToggle");
+      var claimBtn = document.getElementById("claimBtn");
+      var copyCaptionBtn = document.getElementById("copyCaptionBtn");
+      var statusEl = document.getElementById("status");
+      var captionTextEl = document.getElementById("captionText");
+
+      var streakValue = document.getElementById("streakValue");
+      var totalValue = document.getElementById("totalValue");
+      var lastDayValue = document.getElementById("lastDayValue");
+      var lastClaimLabel = document.getElementById("lastClaimLabel");
+
+      var STORAGE_KEY = "badgehub_daily_data_v1";
+
+      function todayISO() {
+        var d = new Date();
+        return d.toISOString().slice(0, 10); // YYYY-MM-DD
       }
-    } else {
-      state.streak = 1;
-    }
 
-    state.total += 1;
-    state.lastClaimDate = today;
-    state.lastFid = fidInput.value || "45613";
-    state.lastType = badgeTypeInput.value || "Daily Check-in";
-
-    saveState(state);
-    updateUIFromState(state);
-    showStatus("Badge claimed. Streak updated.", "success");
-
-    if (autoCopyToggle.checked) {
-      var caption = updateCaption(state);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(caption).catch(function () {
-          console.log("Clipboard blocked");
+      function formatDateShort(iso) {
+        if (!iso) return "-";
+        var d = new Date(iso + "T00:00:00");
+        return d.toLocaleDateString(undefined, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric"
         });
       }
-    }
-  });
 
-  copyCaptionBtn.addEventListener("click", function () {
-    var caption = updateCaption(state);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(caption)
-        .then(function () {
-          showStatus("Caption copied", "success");
-        })
-        .catch(function () {
-          showStatus("Clipboard permission blocked in this browser.", "error");
-        });
-    } else {
-      showStatus("Clipboard API not available.", "error");
-    }
-  });
+      function dayDiff(a, b) {
+        var da = new Date(a + "T00:00:00");
+        var db = new Date(b + "T00:00:00");
+        var ms = da - db;
+        return Math.round(ms / (1000 * 60 * 60 * 24));
+      }
 
-  fidInput.addEventListener("input", function () {
-    updateUIFromState(state);
-  });
-  badgeTypeInput.addEventListener("input", function () {
-    updateUIFromState(state);
-  });
-  shapeSelect.addEventListener("change", function () {
-    updateUIFromState(state);
-  });
-  randomColorToggle.addEventListener("change", function () {
-    updateUIFromState(state);
-  });
-</script>
+      function loadState() {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          return {
+            total: 0,
+            streak: 0,
+            lastClaimDate: null,
+            lastFid: "",
+            lastType: "Daily Check-in"
+          };
+        }
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          return {
+            total: 0,
+            streak: 0,
+            lastClaimDate: null,
+            lastFid: "",
+            lastType: "Daily Check-in"
+          };
+        }
+      }
+
+      function saveState(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function updateCaption(state) {
+        var fid = fidInput.value || "45613";
+        var type = badgeTypeInput.value || "Daily Check-in";
+        var caption =
+          "#" +
+          fid +
+          " " +
+          type +
+          " badge earned\n\nStreak: " +
+          state.streak +
+          " days | Total: " +
+          state.total +
+          "\n#Badgehub #Base";
+        captionTextEl.textContent = caption;
+        return caption;
+      }
+
+      function updateUIFromState(state) {
+        streakValue.textContent = state.streak;
+        totalValue.textContent = state.total;
+        lastDayValue.textContent = state.lastClaimDate
+          ? formatDateShort(state.lastClaimDate)
+          : "-";
+
+        if (state.lastClaimDate) {
+          lastClaimLabel.textContent =
+            "Last claimed on " + formatDateShort(state.lastClaimDate);
+        } else {
+          lastClaimLabel.textContent = "Not claimed yet";
+        }
+
+        if (state.lastFid) fidInput.value = state.lastFid;
+        if (state.lastType) badgeTypeInput.value = state.lastType;
+
+        updateCaption(state);
+      }
+
+      function showStatus(msg, type) {
+        if (type === undefined) type = "";
+        statusEl.textContent = msg;
+        statusEl.className = "status " + type;
+      }
+
+      // initial
+      var state = loadState();
+      updateUIFromState(state);
+
+      claimBtn.addEventListener("click", function () {
+        var today = todayISO();
+
+        if (state.lastClaimDate === today) {
+          showStatus(
+            "Aaj ka badge already claim ho chuka hai. Kal fir claim karna.",
+            "error"
+          );
+          return;
+        }
+
+        if (state.lastClaimDate) {
+          var diff = dayDiff(today, state.lastClaimDate);
+          if (diff === 1) {
+            state.streak += 1;
+          } else {
+            state.streak = 1;
+          }
+        } else {
+          state.streak = 1;
+        }
+
+        state.total += 1;
+        state.lastClaimDate = today;
+        state.lastFid = fidInput.value || "45613";
+        state.lastType = badgeTypeInput.value || "Daily Check-in";
+
+        saveState(state);
+        updateUIFromState(state);
+        showStatus("Badge claimed. Streak updated.", "success");
+
+        if (autoCopyToggle.checked && navigator.clipboard) {
+          var caption = updateCaption(state);
+          navigator.clipboard.writeText(caption).catch(function () {
+            console.log("Clipboard blocked");
+          });
+        }
+      });
+
+      copyCaptionBtn.addEventListener("click", function () {
+        var caption = updateCaption(state);
+        if (!navigator.clipboard) {
+          showStatus("Clipboard API not available.", "error");
+          return;
+        }
+        navigator.clipboard
+          .writeText(caption)
+          .then(function () {
+            showStatus("Caption copied.", "success");
+          })
+          .catch(function () {
+            showStatus("Clipboard permission blocked in this browser.", "error");
+          });
+      });
+
+      fidInput.addEventListener("input", function () {
+        updateUIFromState(state);
+      });
+      badgeTypeInput.addEventListener("input", function () {
+        updateUIFromState(state);
+      });
+    })();
+  </script>
+</body>
+</html>
