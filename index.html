@@ -1,88 +1,102 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>BadgeHub — Crypto UI</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>BadgeHub — Upgraded</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand">BadgeHub <span class="spark">✨</span></div>
-      <div class="controls-inline">
-        <label class="small">Theme
-          <select id="themeSelect">
-            <option value="dark">Dark</option>
-            <option value="yellow">Yellow</option>
-            <option value="sky">Sky Blue</option>
-            <option value="chocolate">Chocolate</option>
-          </select>
-        </label>
+<body class="theme-dark">
+  <div class="app">
+    <header class="app-header">
+      <h1 class="app-title">BadgeHub <span>— Upgraded ⚡</span></h1>
+
+      <div class="header-right">
+        <label class="field-label" for="themeSelect">Theme</label>
+        <select id="themeSelect" class="select">
+          <option value="dark">Dark</option>
+          <option value="yellow">Yellow</option>
+          <option value="sky">Sky</option>
+          <option value="choco">Chocolate</option>
+        </select>
       </div>
     </header>
 
-    <section class="layout">
-      <aside class="panel">
-        <h3>Claim controls</h3>
-
-        <label>Display name / @handle
-          <input id="nameInput" placeholder="@you or 12345" />
-        </label>
-
-        <label>Badge type
-          <select id="typeSelect">
-            <option>Daily Check-in</option>
-            <option>Contributor</option>
-            <option>Builder</option>
-            <option>BaseMiniNFT</option>
-          </select>
-        </label>
-
-        <label>Shape
-          <select id="shapeSelect">
-            <option value="circle">Circle</option>
-            <option value="square">Square</option>
-            <option value="hex">Hex</option>
-          </select>
-        </label>
-
-        <label>Badge size (scale)
-          <input id="sizeRange" type="range" min="30" max="150" value="100" />
-          <div class="range-value"><span id="sizeVal">100</span>%</div>
-        </label>
-
-        <label class="checkbox"><input id="randomColor" type="checkbox" /> Random badge color</label>
-
-        <label class="checkbox"><input id="autoCopy" type="checkbox" /> Auto-copy caption</label>
-        <label class="checkbox"><input id="autoDownload" type="checkbox" /> Auto-download SVG</label>
-
-        <div class="buttons">
-          <button id="claimBtn" class="primary">Claim Badge</button>
-          <button id="downloadBtn">Download SVG</button>
-          <button id="copyBtn">Copy Caption</button>
-          <button id="shareBtn">Share (Twitter)</button>
-          <button id="farcasterBtn">Share (Farcaster)</button>
-          <button id="mintBtn" class="muted">Mint (placeholder)</button>
+    <main class="layout">
+      <!-- Controls -->
+      <section class="panel panel-controls">
+        <div class="field-group">
+          <label class="field-label" for="nameInput">Your name / fid</label>
+          <input id="nameInput" class="input" placeholder="@you or 12345" />
         </div>
 
-        <div class="streak" id="streakDisplay">Streak: <span id="streakCount">0</span> 🔥</div>
-      </aside>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="typeSelect">Badge type</label>
+            <select id="typeSelect" class="select">
+              <option>Daily Check-in</option>
+              <option>Top Helper</option>
+              <option>Builder</option>
+              <option>OG</option>
+            </select>
+          </div>
 
-      <article class="preview-area">
-        <div id="svgWrap" class="svg-wrap empty">
-          <div class="placeholder">No badge yet — claim to generate</div>
+          <div class="field-group">
+            <label class="field-label" for="shapeSelect">Shape</label>
+            <select id="shapeSelect" class="select">
+              <option value="circle">Circle</option>
+              <option value="pill">Pill</option>
+              <option value="square">Square</option>
+            </select>
+          </div>
         </div>
 
-        <div id="captionPreview" class="caption-preview">Caption will appear here after claim.</div>
-      </article>
-    </section>
+        <div class="field-row toggles-row">
+          <label class="checkbox">
+            <input type="checkbox" id="randomColors" checked />
+            <span>Random badge color</span>
+          </label>
 
-    <footer class="footer">
-      <small>Crypto UI theme — BadgeHub demo</small>
-    </footer>
-  </main>
+          <label class="checkbox">
+            <input type="checkbox" id="autoCopy" />
+            <span>Auto-copy after claim</span>
+          </label>
 
-  <script src="script.js"></script>
+          <label class="checkbox">
+            <input type="checkbox" id="autoDownload" />
+            <span>Auto-download SVG</span>
+          </label>
+        </div>
+
+        <div class="buttons-row">
+          <button id="claimBtn" class="btn primary">Claim badge</button>
+          <button id="downloadBtn" class="btn">Download SVG</button>
+          <button id="copyCaption" class="btn">Copy caption</button>
+          <button id="shareBtn" class="btn ghost">Share (Farcaster)</button>
+        </div>
+
+        <div class="footer-row">
+          <div id="streakDisplay" class="streak-pill">Streak: 0 🔥</div>
+          <div id="msg" class="msg"></div>
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section class="panel panel-preview">
+        <div id="svgwrap" class="badge-shell">
+          <div class="badge-empty">No badge yet</div>
+        </div>
+
+        <div class="caption-area">
+          <div class="caption-label">Caption preview</div>
+          <div id="captionPreview" class="caption-preview">
+            Caption will appear here after claim.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js" defer></script>
 </body>
 </html>
