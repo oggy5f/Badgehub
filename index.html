@@ -231,12 +231,23 @@
       background: #38bdf8;
     }
 
-    .theme-text {
+    .theme-select {
       border-radius: 999px;
       border: 1px solid #374151;
       padding: 4px 10px;
       font-size: 11px;
       color: #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-select select {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #e5e7eb;
+      font-size: 11px;
     }
 
     .badge-card {
@@ -250,7 +261,7 @@
       width: 100%;
       aspect-ratio: 16 / 9;
       border-radius: 18px;
-      background: linear-gradient(135deg, #f97316, #facc15);
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -329,7 +340,7 @@
       <div class="label">Your name / FID</div>
       <div class="input-row">
         <div class="input">
-          <input id="fidInput" type="text" placeholder="13256" />
+          <input id="fidInput" type="text" placeholder="MACN235" />
         </div>
         <div class="pill">ID</div>
       </div>
@@ -373,6 +384,7 @@
       <!-- ACTIONS -->
       <div class="actions-row">
         <button id="shareXBtn" class="btn-ghost btn-small">Share on X</button>
+        <button id="shareFcBtn" class="btn-ghost btn-small">Share on Farcaster</button>
         <button id="copyCaptionBtn" class="btn-ghost btn-small">Copy caption</button>
         <button id="downloadSvgBtn" class="btn-ghost btn-small">Download SVG</button>
         <button id="mintBtn" class="btn-ghost btn-small">Onchain mint</button>
@@ -395,7 +407,15 @@
         <div class="theme-dot"></div>
         Badgehub 3 upgraded
       </div>
-      <div class="theme-text">Theme: Sky</div>
+      <div class="theme-select">
+        <span>Theme</span>
+        <select id="themeSelect">
+          <option value="sky">Sky</option>
+          <option value="lime">Lime</option>
+          <option value="sunset">Sunset</option>
+          <option value="violet">Violet</option>
+        </select>
+      </div>
     </div>
 
     <div class="badge-card">
@@ -405,7 +425,7 @@
 
         <div class="badge-text">
           <div>
-            <div id="badgeFidText">13256</div>
+            <div id="badgeFidText">MACN235</div>
             <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">Daily Check-in</div>
           </div>
           <div id="badgeDateText">--</div>
@@ -418,7 +438,7 @@
       </div>
 
       <div class="metrics">
-        <div class="chip">Streak<span id="streakValue">0 days</span></div>
+        <div class="chip">Streak<span id="streakValue">0 day(s)</span></div>
         <div class="chip">Total claimed<span id="totalValue">0</span></div>
         <div class="chip">Last claim<span id="lastDayValue">-</span></div>
       </div>
@@ -433,9 +453,11 @@
   var shapeSelect = document.getElementById("shapeSelect");
   var randomColorToggle = document.getElementById("randomColorToggle");
   var autoCopyToggle = document.getElementById("autoCopyToggle");
+  var themeSelect = document.getElementById("themeSelect");
 
   var claimBtn = document.getElementById("claimBtn");
   var shareXBtn = document.getElementById("shareXBtn");
+  var shareFcBtn = document.getElementById("shareFcBtn");
   var copyCaptionBtn = document.getElementById("copyCaptionBtn");
   var downloadSvgBtn = document.getElementById("downloadSvgBtn");
   var mintBtn = document.getElementById("mintBtn");
@@ -455,8 +477,8 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v2";
-  var currentGradient = "linear-gradient(135deg, #f97316, #facc15)";
+  var STORAGE_KEY = "badgehub_state_v3";
+  var currentGradient = "";
 
   function todayISO() {
     var d = new Date();
@@ -480,16 +502,24 @@
     return Math.round(ms / (1000 * 60 * 60 * 24));
   }
 
+  function themeGradient(theme) {
+    if (theme === "lime") {
+      return "linear-gradient(135deg,#22c55e,#a3e635)";
+    }
+    if (theme === "sunset") {
+      return "linear-gradient(135deg,#f97316,#facc15)";
+    }
+    if (theme === "violet") {
+      return "linear-gradient(135deg,#a855f7,#6366f1)";
+    }
+    // default sky
+    return "linear-gradient(135deg,#38bdf8,#0ea5e9)";
+  }
+
   function randomGradient() {
-    var colors = [
-      ["#f97316", "#facc15"],
-      ["#22c55e", "#16a34a"],
-      ["#38bdf8", "#0ea5e9"],
-      ["#a855f7", "#6366f1"],
-      ["#ec4899", "#8b5cf6"]
-    ];
-    var i = Math.floor(Math.random() * colors.length);
-    return "linear-gradient(135deg, " + colors[i][0] + ", " + colors[i][1] + ")";
+    var list = ["sky", "lime", "sunset", "violet"];
+    var t = list[Math.floor(Math.random() * list.length)];
+    return themeGradient(t);
   }
 
   function loadState() {
@@ -500,18 +530,22 @@
         streak: 0,
         lastClaimDate: null,
         lastFid: "",
-        lastType: "Daily Check-in"
+        lastType: "Daily Check-in",
+        theme: "sky"
       };
     }
     try {
-      return JSON.parse(raw);
+      var s = JSON.parse(raw);
+      if (!s.theme) s.theme = "sky";
+      return s;
     } catch (e) {
       return {
         total: 0,
         streak: 0,
         lastClaimDate: null,
         lastFid: "",
-        lastType: "Daily Check-in"
+        lastType: "Daily Check-in",
+        theme: "sky"
       };
     }
   }
@@ -521,7 +555,7 @@
   }
 
   function updateCaption(state) {
-    var fid = fidInput.value || "13256";
+    var fid = fidInput.value || "MACN235";
     var type = badgeTypeInput.value || "Daily Check-in";
     var caption =
       "#" + fid + " " + type + " badge earned\n\n" +
@@ -544,7 +578,7 @@
     }
 
     // badge text
-    badgeFidText.textContent = fidInput.value || "13256";
+    badgeFidText.textContent = fidInput.value || "MACN235";
     badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : "--";
     badgeDateText.textContent = dateText;
@@ -557,6 +591,8 @@
     // color
     if (randomColorToggle.checked) {
       currentGradient = randomGradient();
+    } else {
+      currentGradient = themeGradient(themeSelect.value);
     }
     badgeMain.style.backgroundImage = currentGradient;
 
@@ -569,20 +605,27 @@
   }
 
   function createSvg(state) {
-    var fid = fidInput.value || "13256";
+    var fid = fidInput.value || "MACN235";
     var type = badgeTypeInput.value || "Daily Check-in";
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : todayISO();
     var shape = shapeSelect.value;
+    var theme = themeSelect.value;
 
-    // simple flat colors for svg
-    var bgColor1 = "#f97316";
-    var bgColor2 = "#facc15";
+    var bg1 = "#38bdf8";
+    var bg2 = "#0ea5e9";
+    if (theme === "lime") {
+      bg1 = "#22c55e"; bg2 = "#a3e635";
+    } else if (theme === "sunset") {
+      bg1 = "#f97316"; bg2 = "#facc15";
+    } else if (theme === "violet") {
+      bg1 = "#a855f7"; bg2 = "#6366f1";
+    }
 
     var svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">' +
       '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0%" stop-color="' + bgColor1 + '"/>' +
-      '<stop offset="100%" stop-color="' + bgColor2 + '"/>' +
+      '<stop offset="0%" stop-color="' + bg1 + '"/>' +
+      '<stop offset="100%" stop-color="' + bg2 + '"/>' +
       '</linearGradient></defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
       (shape === "circle" || shape === "both"
@@ -605,13 +648,14 @@
 
   var state = loadState();
 
-  // initial text fields from state
+  // initial from state
   if (state.lastFid) fidInput.value = state.lastFid;
   if (state.lastType) badgeTypeInput.value = state.lastType;
+  themeSelect.value = state.theme || "sky";
 
   updatePreview(state);
 
-  // Claim button
+  // Claim
   claimBtn.addEventListener("click", function () {
     var today = todayISO();
 
@@ -633,8 +677,9 @@
 
     state.total = state.total + 1;
     state.lastClaimDate = today;
-    state.lastFid = fidInput.value || "13256";
+    state.lastFid = fidInput.value || "MACN235";
     state.lastType = badgeTypeInput.value || "Daily Check-in";
+    state.theme = themeSelect.value;
 
     saveState(state);
     updatePreview(state);
@@ -649,8 +694,14 @@
   // Share on X
   shareXBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
-    var url = "https://x.com/intent/tweet?text=" +
-      encodeURIComponent(caption);
+    var url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
+    window.open(url, "_blank");
+  });
+
+  // Share on Farcaster (Warpcast compose)
+  shareFcBtn.addEventListener("click", function () {
+    var caption = updateCaption(state);
+    var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
@@ -685,12 +736,12 @@
     showStatus("SVG downloaded.", "success");
   });
 
-  // Onchain mint (placeholder)
+  // Onchain mint placeholder
   mintBtn.addEventListener("click", function () {
-    alert("Onchain mint coming soon. Connect this button to your contract when ready.");
+    alert("Onchain mint coming soon. Connect this button to your smart contract.");
   });
 
-  // Live preview changes
+  // Live preview
   fidInput.addEventListener("input", function () {
     updatePreview(state);
   });
@@ -703,9 +754,7 @@
   randomColorToggle.addEventListener("change", function () {
     updatePreview(state);
   });
-
-})();
+});
 </script>
-
 </body>
 </html>
