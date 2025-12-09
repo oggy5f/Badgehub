@@ -1,321 +1,398 @@
-// BadgeHub — main client script (no-template version)
+// script.js – BadgeHub (no template literals)
 
-// --------- Helper ----------
+// Small helper
 function $(id) {
   return document.getElementById(id);
 }
 
-// --------- DOM refs ----------
-const nameInput       = $('nameInput') || $('name');
-const typeSelect      = $('typeSelect') || $('type');
-const shapeSelect     = $('shapeSelect');
-const sizeSlider      = $('sizeSlider');
-const randomColorChk  = $('randomColor');
-const autoCopyChk     = $('autoCopy');
-const autoDownloadChk = $('autoDownload');
-const themeSelect     = $('themeSelect');
-const streakValue     = $('streakValue');
+// DOM refs
+var nameInput = $("nameInput");
+var typeSelect = $("typeSelect");
+var shapeSelect = $("shapeSelect");
+var randomColorsChk = $("randomColors");
+var autoCopyChk = $("autoCopy");
+var autoDownloadChk = $("autoDownload");
 
-const claimBtn        = $('claimBtn') || $('claim');
-const downloadBtn     = $('downloadBtn') || $('download');
-const copyCaptionBtn  = $('copyCaption') || $('copyCaptionBtn');
-const shareBtn        = $('shareBtn');
-const mintBtn         = $('mintBtn');
+var themeSelect = $("themeSelect");
+var claimBtn = $("claimBtn");
+var downloadBtn = $("downloadBtn");
+var copyCaptionBtn = $("copyCaption");
+var shareBtn = $("shareBtn");
 
-const svgWrap         = $('svgwrap') || $('previewWrap') || $('badgeContainer');
-const captionPreview  = $('captionPreview') || $('captionBox');
+var svgwrap = $("svgwrap");
+var captionPreview = $("captionPreview");
+var streakDisplay = $("streakDisplay");
+var msg = $("msg");
 
-// --------- Small utils ----------
-function escapeXml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function clamp(num, min, max) {
-  return Math.min(max, Math.max(min, num));
-}
-
-// Random pastel color
-function randomPastel() {
-  const h = Math.floor(Math.random() * 360);
-  const s = 70;
-  const l = 75;
-  return 'hsl(' + h + ',' + s + '%,' + l + '%)';
-}
-
-// --------- Theme handling ----------
-const THEME_KEY = 'badgehub_theme_v1';
+// ---------- Theme handling ----------
 
 function applyTheme(theme) {
-  const body = document.body;
-  body.classList.remove('theme-dark', 'theme-yellow', 'theme-sky', 'theme-choco', 'theme-light');
+  var body = document.body;
+  body.classList.remove("theme-dark", "theme-yellow", "theme-sky", "theme-choco");
 
-  if (theme === 'yellow') body.classList.add('theme-yellow');
-  else if (theme === 'sky') body.classList.add('theme-sky');
-  else if (theme === 'choco') body.classList.add('theme-choco');
-  else if (theme === 'light') body.classList.add('theme-light');
-  else body.classList.add('theme-dark'); // default
-
-  try {
-    localStorage.setItem(THEME_KEY, theme);
-  } catch (e) {
-    console.warn('theme save failed', e);
-  }
-}
-
-function initTheme() {
-  let saved = null;
-  try {
-    saved = localStorage.getItem(THEME_KEY);
-  } catch (e) {}
-  if (!saved) saved = 'dark';
-  if (themeSelect) themeSelect.value = saved;
-  applyTheme(saved);
-}
-
-// --------- Streak handling ----------
-const STREAK_KEY = 'badgehub_streak_v1';
-const LAST_DATE_KEY = 'badgehub_lastDate_v1';
-
-function formatYMD(d) {
-  const y = d.getFullYear();
-  const m = ('0' + (d.getMonth() + 1)).slice(0 - 2);
-  const day = ('0' + d.getDate()).slice(0 - 2);
-  return y + '-' + m + '-' + day;
-}
-
-function loadStreak() {
-  let streak = 0;
-  try {
-    const s = localStorage.getItem(STREAK_KEY);
-    if (s) streak = parseInt(s, 10) || 0;
-  } catch (e) {}
-  if (streakValue) streakValue.textContent = streak;
-}
-
-function updateStreakOnClaim() {
-  const today = new Date();
-  const todayKey = formatYMD(today);
-  let streak = 0;
-  let lastDate = null;
-
-  try {
-    const s = localStorage.getItem(STREAK_KEY);
-    if (s) streak = parseInt(s, 10) || 0;
-    lastDate = localStorage.getItem(LAST_DATE_KEY);
-  } catch (e) {}
-
-  if (!lastDate) {
-    streak = 1;
-  } else if (lastDate === todayKey) {
-    // same day — streak stays same
+  if (theme === "yellow") {
+    body.classList.add("theme-yellow");
+  } else if (theme === "sky") {
+    body.classList.add("theme-sky");
+  } else if (theme === "choco") {
+    body.classList.add("theme-choco");
   } else {
-    // find diff in days
-    const [y, m, d] = lastDate.split('-');
-    const prev = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
-    const diffMs = today - prev;
-    const diffDays = Math.round(diffMs / 86400000);
+    body.classList.add("theme-dark");
+    theme = "dark";
+  }
+
+  try {
+    localStorage.setItem("bh_theme", theme);
+  } catch (e) {}
+}
+
+(function initTheme() {
+  var saved = null;
+  try {
+    saved = localStorage.getItem("bh_theme");
+  } catch (e) {}
+  if (!saved) {
+    saved = "dark";
+  }
+  themeSelect.value = saved;
+  applyTheme(saved);
+})();
+
+themeSelect.addEventListener("change", function () {
+  applyTheme(themeSelect.value);
+});
+
+// ---------- Streak logic ----------
+
+function updateStreak() {
+  var todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  var last = null;
+  var streak = 0;
+
+  try {
+    last = localStorage.getItem("bh_lastDate");
+    streak = parseInt(localStorage.getItem("bh_streak") || "0", 10);
+  } catch (e) {
+    last = null;
+    streak = 0;
+  }
+
+  if (!last) {
+    streak = 1;
+  } else {
+    var lastDate = new Date(last);
+    var today = new Date(todayStr);
+    var diffMs = today - lastDate;
+    var diffDays = Math.round(diffMs / 86400000);
 
     if (diffDays === 1) {
-      streak += 1; // consecutive
+      streak = streak + 1;
+    } else if (diffDays === 0) {
+      // same day, keep streak
     } else {
-      streak = 1; // reset
+      streak = 1;
     }
   }
 
   try {
-    localStorage.setItem(STREAK_KEY, String(streak));
-    localStorage.setItem(LAST_DATE_KEY, todayKey);
+    localStorage.setItem("bh_lastDate", todayStr);
+    localStorage.setItem("bh_streak", String(streak));
   } catch (e) {}
 
-  if (streakValue) streakValue.textContent = streak;
+  streakDisplay.textContent = "Streak: " + streak + " 🔥";
 }
 
-// --------- SVG maker ----------
-function makeBadgeSVG(displayName, badgeType) {
-  const dateStr = new Date().toLocaleDateString();
+// ---------- SVG builder ----------
 
-  // base colors (default)
-  let bgColor = '#0b5fff';
-  let accent = '#ffb347';
+function pickThemeColors(themeName) {
+  var cfg = {
+    bg: "#0f172a",
+    card: "#f9fafb",
+    accent: "#38bdf8",
+    textMain: "#111827",
+    textSub: "#4b5563"
+  };
 
-  // random color toggle
-  if (randomColorChk && randomColorChk.checked) {
-    bgColor = randomPastel();
+  if (themeName === "yellow") {
+    cfg.bg = "#fef9c3";
+    cfg.card = "#f8fafc";
+    cfg.accent = "#f97316";
+    cfg.textMain = "#111827";
+    cfg.textSub = "#6b7280";
+  } else if (themeName === "sky") {
+    cfg.bg = "#0f172a";
+    cfg.card = "#e0f2fe";
+    cfg.accent = "#0ea5e9";
+    cfg.textMain = "#020617";
+    cfg.textSub = "#0f172a";
+  } else if (themeName === "choco") {
+    cfg.bg = "#111827";
+    cfg.card = "#fef3c7";
+    cfg.accent = "#92400e";
+    cfg.textMain = "#111827";
+    cfg.textSub = "#6b7280";
   }
 
-  // size percent from slider
-  let scale = 1;
-  if (sizeSlider) {
-    const val = parseInt(sizeSlider.value, 10) || 100;
-    scale = clamp(val, 30, 130) / 100.0;
+  return cfg;
+}
+
+function randomAccent() {
+  var palette = [
+    "#22c55e",
+    "#e11d48",
+    "#f97316",
+    "#a855f7",
+    "#0ea5e9",
+    "#facc15"
+  ];
+  var idx = Math.floor(Math.random() * palette.length);
+  return palette[idx];
+}
+
+function escapeText(str) {
+  if (!str) return "";
+  var s = String(str);
+  s = s.replace(/&/g, "&amp;");
+  s = s.replace(/</g, "&lt;");
+  s = s.replace(/>/g, "&gt;");
+  return s;
+}
+
+function makeBadgeSVG(name, badgeType, themeName, shape, useRandomAccent) {
+  var dateStr = new Date().toLocaleDateString();
+  var cfg = pickThemeColors(themeName || "dark");
+
+  if (useRandomAccent) {
+    cfg.accent = randomAccent();
   }
 
-  const safeName = escapeXml(displayName || '');
-  const safeType = escapeXml(badgeType || '');
-  const safeDate = escapeXml(dateStr);
+  var safeName = escapeText(name || "Anonymous");
+  var safeType = escapeText(badgeType || "Daily Check-in");
+  var safeDate = escapeText(dateStr);
 
-  // Build SVG string (no backticks)
-  let svg = '';
-  svg += '<svg class="badge-svg" xmlns="http://www.w3.org/2000/svg"';
-  svg += ' width="720" height="360" viewBox="0 0 720 360">';
-  svg += '<defs>';
-  svg += '<filter id="cardShadow" x="-5%" y="-10%" width="110%" height="130%">';
-  svg += '<feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="rgba(0,0,0,0.45)"/>';
-  svg += '</filter>';
-  svg += '</defs>';
+  var parts = [];
 
-  svg += '<g transform="translate(360,180) scale(' + scale + ') translate(-360,-180)">';
-  svg += '<rect x="40" y="40" width="640" height="280" rx="32" fill="#050816" filter="url(#cardShadow)"/>';
-  svg += '<rect x="48" y="48" width="624" height="264" rx="28" fill="' + bgColor + '"/>';
+  parts.push(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">'
+  );
+  parts.push('<defs>');
+  parts.push(
+    '<linearGradient id="cardGrad" x1="0" y1="0" x2="1" y2="1">'
+  );
+  parts.push('<stop offset="0" stop-color="' + cfg.card + '"/>');
+  parts.push('<stop offset="1" stop-color="' + cfg.bg + '"/>');
+  parts.push("</linearGradient>");
+  parts.push("</defs>");
 
-  svg += '<circle cx="170" cy="150" r="72" fill="' + accent + '"/>';
+  // Card base
+  parts.push(
+    '<rect x="24" y="24" width="672" height="312" rx="32" fill="url(#cardGrad)"/>'
+  );
 
-  svg += '<text x="170" y="245" text-anchor="middle"';
-  svg += ' font-size="22" fill="rgba(255,255,255,0.82)" font-family="system-ui, -apple-system, BlinkMacSystemFont,';
-  svg += ' Segoe UI, sans-serif">';
-  svg += safeType + '</text>';
+  // Accent shape
+  if (shape === "square") {
+    parts.push(
+      '<rect x="72" y="80" width="160" height="160" rx="24" fill="' +
+        cfg.accent +
+        '"/>'
+    );
+  } else if (shape === "pill") {
+    parts.push(
+      '<rect x="72" y="110" width="220" height="100" rx="50" fill="' +
+        cfg.accent +
+        '"/>'
+    );
+  } else {
+    // default circle
+    parts.push(
+      '<circle cx="152" cy="180" r="80" fill="' + cfg.accent + '"/>'
+    );
+  }
 
-  svg += '<text x="520" y="150" text-anchor="middle"';
-  svg += ' font-size="44" fill="#ffffff" font-weight="700"';
-  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
-  svg += safeName + '</text>';
+  // Vertical bar on right
+  parts.push(
+    '<rect x="560" y="42" width="96" height="276" rx="40" fill="' +
+      cfg.accent +
+      '" opacity="0.9"/>'
+  );
+  parts.push(
+    '<text x="608" y="80" text-anchor="middle" font-size="16" fill="#f9fafb" ' +
+      'font-weight="600" transform="rotate(90 608 80)">' +
+      safeType +
+      "</text>"
+  );
 
-  svg += '<text x="520" y="190" text-anchor="middle"';
-  svg += ' font-size="18" fill="rgba(255,255,255,0.7)"';
-  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
-  svg += 'Daily Check-in • BadgeHub';
-  svg += '</text>';
+  // Main text
+  parts.push(
+    '<text x="300" y="150" font-size="34" fill="' +
+      cfg.textMain +
+      '" font-weight="700" font-family="Inter, system-ui, -apple-system, sans-serif">' +
+      safeName +
+      "</text>"
+  );
 
-  svg += '<text x="520" y="230" text-anchor="middle"';
-  svg += ' font-size="16" fill="rgba(255,255,255,0.7)"';
-  svg += ' font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif">';
-  svg += safeDate + '</text>';
+  parts.push(
+    '<text x="300" y="190" font-size="22" fill="' +
+      cfg.textSub +
+      '" font-weight="500" font-family="Inter, system-ui, -apple-system, sans-serif">' +
+      safeType +
+      "</text>"
+  );
 
-  svg += '</g></svg>';
+  parts.push(
+    '<text x="300" y="228" font-size="16" fill="' +
+      cfg.textSub +
+      '" font-family="Inter, system-ui, -apple-system, sans-serif">' +
+      safeDate +
+      "</text>"
+  );
 
-  return svg;
+  // Tiny brand
+  parts.push(
+    '<text x="40" y="310" font-size="13" fill="' +
+      cfg.textSub +
+      '" font-family="Inter, system-ui, -apple-system, sans-serif">BadgeHub · base-mini-app</text>'
+  );
+
+  parts.push("</svg>");
+
+  return parts.join("");
 }
 
-// --------- Caption builder ----------
-function buildCaption(name, type) {
-  const display = name && name.trim() ? name.trim() : 'anon';
-  const btype = type || 'Daily Check-in';
-  return '🥇 ' + display + ' — ' + btype + ' badge earned on Base.\n#BadgeHub';
+// ---------- Caption builder ----------
+
+function buildCaption(name, badgeType, streak) {
+  var baseName = name && name.trim() ? name.trim() : "Anon";
+  var type = badgeType && badgeType.trim() ? badgeType.trim() : "Daily Check-in";
+  var s = "🏅 " + baseName + " — " + type + " badge earned!";
+  if (streak && streak > 1) {
+    s += "\n🔥 Streak: " + streak + " days on-chain.";
+  }
+  s += "\n#BadgeHub #Base";
+  return s;
 }
 
-// --------- Main claim flow ----------
-function handleClaim() {
-  if (!svgWrap) return;
+// ---------- Actions ----------
 
-  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
-  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
+function renderBadge() {
+  var name = nameInput.value || "";
+  var type = typeSelect.value || "Daily Check-in";
+  var shape = shapeSelect.value || "circle";
+  var themeName = themeSelect.value || "dark";
+  var useRandom = !!randomColorsChk.checked;
 
-  const svg = makeBadgeSVG(name, type);
+  var svgString = makeBadgeSVG(name, type, themeName, shape, useRandom);
 
-  svgWrap.innerHTML = svg;
+  svgwrap.innerHTML = svgString;
 
-  // simple pop animation class
-  const svgEl = svgWrap.querySelector('svg');
+  var svgEl = svgwrap.querySelector("svg");
   if (svgEl) {
-    svgEl.classList.remove('pop');
-    void svgEl.offsetWidth;
-    svgEl.classList.add('pop');
+    svgEl.classList.add("badge-pop");
+    svgEl.addEventListener(
+      "animationend",
+      function () {
+        svgEl.classList.remove("badge-pop");
+      },
+      { once: true }
+    );
   }
+}
 
-  // caption
-  const caption = buildCaption(name || '@you', type);
-  if (captionPreview) captionPreview.textContent = caption;
+function getCurrentStreak() {
+  var s = 0;
+  try {
+    s = parseInt(localStorage.getItem("bh_streak") || "0", 10);
+  } catch (e) {
+    s = 0;
+  }
+  return s;
+}
 
-  updateStreakOnClaim();
+function handleClaim() {
+  renderBadge();
+  updateStreak();
 
-  // auto copy
-  if (autoCopyChk && autoCopyChk.checked) {
+  var streak = getCurrentStreak();
+  var caption = buildCaption(nameInput.value, typeSelect.value, streak);
+  captionPreview.textContent = caption;
+
+  msg.textContent = "Badge ready — copy, download, or share.";
+
+  if (autoCopyChk.checked) {
     copyCaptionToClipboard(caption);
   }
 
-  // auto download
-  if (autoDownloadChk && autoDownloadChk.checked) {
-    downloadSVG(svg);
+  if (autoDownloadChk.checked) {
+    downloadCurrentSVG();
   }
 }
 
-// --------- Download / copy / share helpers ----------
-function downloadSVG(svg) {
-  try {
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'badge.svg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error('download failed', e);
+function getCurrentSVGString() {
+  var svgEl = svgwrap.querySelector("svg");
+  if (!svgEl) return null;
+  return svgEl.outerHTML;
+}
+
+function downloadCurrentSVG() {
+  var svg = getCurrentSVGString();
+  if (!svg) {
+    msg.textContent = "No badge to download.";
+    return;
   }
+
+  var blob = new Blob([svg], { type: "image/svg+xml" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "badge.svg";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  msg.textContent = "SVG downloaded.";
 }
 
-function copyCaptionToClipboard(caption) {
-  if (!navigator.clipboard) return;
-  navigator.clipboard.writeText(caption).catch(function (e) {
-    console.warn('clipboard failed', e);
-  });
-}
+function copyCaptionToClipboard(captionText) {
+  var txt = captionText || captionPreview.textContent || "";
+  if (!txt) {
+    msg.textContent = "Nothing to copy.";
+    return;
+  }
 
-function handleDownloadClick() {
-  if (!svgWrap) return;
-  const svgEl = svgWrap.querySelector('svg');
-  if (!svgEl) return;
-  const svg = svgWrap.innerHTML;
-  downloadSVG(svg);
-}
-
-function handleCopyCaptionClick() {
-  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
-  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
-  const caption = buildCaption(name || '@you', type);
-  copyCaptionToClipboard(caption);
-}
-
-function handleShareClick() {
-  // Farcaster share (Warpcast)
-  const name = nameInput && nameInput.value ? nameInput.value.trim() : '';
-  const type = typeSelect && typeSelect.value ? typeSelect.value : 'Daily Check-in';
-  const caption = buildCaption(name || '@you', type);
-  const text = encodeURIComponent(caption);
-  const url = encodeURIComponent(window.location.href);
-  const full = 'https://warpcast.com/~/compose?text=' + text + '&embeds[]=' + url;
-  window.open(full, '_blank');
-}
-
-function handleMintClick() {
-  alert('Mint on Base: placeholder. Baad me API connect karenge 🙂');
-}
-
-// --------- Init listeners ----------
-function initListeners() {
-  if (claimBtn)       claimBtn.addEventListener('click', handleClaim);
-  if (downloadBtn)    downloadBtn.addEventListener('click', handleDownloadClick);
-  if (copyCaptionBtn) copyCaptionBtn.addEventListener('click', handleCopyCaptionClick);
-  if (shareBtn)       shareBtn.addEventListener('click', handleShareClick);
-  if (mintBtn)        mintBtn.addEventListener('click', handleMintClick);
-
-  if (themeSelect) {
-    themeSelect.addEventListener('change', function () {
-      applyTheme(themeSelect.value);
+  navigator.clipboard
+    .writeText(txt)
+    .then(function () {
+      msg.textContent = "Caption copied ✔";
+    })
+    .catch(function () {
+      msg.textContent = "Copy failed — copy manually.";
     });
-  }
 }
 
-// --------- Boot ----------
-document.addEventListener('DOMContentLoaded', function () {
-  initTheme();
-  loadStreak();
-  initListeners();
-  console.log('script.js loaded OK');
+function shareToFarcaster() {
+  var streak = getCurrentStreak();
+  var caption = buildCaption(nameInput.value, typeSelect.value, streak);
+
+  copyCaptionToClipboard(caption);
+
+  var url =
+    "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
+  window.open(url, "_blank");
+}
+
+// ---------- Listeners ----------
+
+claimBtn.addEventListener("click", handleClaim);
+downloadBtn.addEventListener("click", downloadCurrentSVG);
+copyCaptionBtn.addEventListener("click", function () {
+  copyCaptionToClipboard();
 });
+shareBtn.addEventListener("click", shareToFarcaster);
+
+// Initial streak display
+(function initStreakUI() {
+  var s = getCurrentStreak();
+  if (!s) s = 0;
+  streakDisplay.textContent = "Streak: " + s + " 🔥";
+})();
