@@ -6,6 +6,83 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
+    /* ---------- THEME TOKENS ---------- */
+    :root {
+      --bg: #020617;
+      --bg-soft: #020617;
+      --panel-bg: #020617;
+      --panel-border: #1f2937;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.12);
+      --primary-from: #22c55e;
+      --primary-to: #a3e635;
+      --chip-bg: #020617;
+      --chip-border: #374151;
+      --badge-from: #38bdf8;
+      --badge-to: #0ea5e9;
+    }
+
+    body.theme-sky {
+      --bg: #020617;
+      --bg-soft: #020617;
+      --panel-bg: #020617;
+      --panel-border: #1f2937;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.12);
+      --primary-from: #22c55e;
+      --primary-to: #a3e635;
+      --chip-bg: #020617;
+      --chip-border: #374151;
+      --badge-from: #38bdf8;
+      --badge-to: #0ea5e9;
+    }
+
+    body.theme-mint {
+      --bg: #022c22;
+      --bg-soft: #022c22;
+      --panel-bg: #041f19;
+      --panel-border: #064e3b;
+      --accent: #4ade80;
+      --accent-soft: rgba(74, 222, 128, 0.14);
+      --primary-from: #4ade80;
+      --primary-to: #22c55e;
+      --chip-bg: #022c22;
+      --chip-border: #064e3b;
+      --badge-from: #22c55e;
+      --badge-to: #16a34a;
+    }
+
+    body.theme-sunset {
+      --bg: #111827;
+      --bg-soft: #111827;
+      --panel-bg: #020617;
+      --panel-border: #7c2d12;
+      --accent: #fb923c;
+      --accent-soft: rgba(251, 146, 60, 0.15);
+      --primary-from: #fb923c;
+      --primary-to: #facc15;
+      --chip-bg: #020617;
+      --chip-border: #7c2d12;
+      --badge-from: #f97316;
+      --badge-to: #facc15;
+    }
+
+    body.theme-violet {
+      --bg: #0b1020;
+      --bg-soft: #020617;
+      --panel-bg: #020617;
+      --panel-border: #4c1d95;
+      --accent: #a855f7;
+      --accent-soft: rgba(168, 85, 247, 0.16);
+      --primary-from: #a855f7;
+      --primary-to: #6366f1;
+      --chip-bg: #020617;
+      --chip-border: #4c1d95;
+      --badge-from: #a855f7;
+      --badge-to: #6366f1;
+    }
+
+    /* ---------- BASE LAYOUT ---------- */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -14,7 +91,8 @@
     }
 
     body {
-      background: #020617;
+      background:
+        radial-gradient(circle at top, var(--bg-soft), #000000 65%);
       color: #e5e7eb;
       min-height: 100vh;
       display: flex;
@@ -29,10 +107,10 @@
       display: grid;
       grid-template-columns: 360px 1fr;
       gap: 24px;
-      background: radial-gradient(circle at top left, #020617, #000000);
+      background: radial-gradient(circle at top left, var(--bg-soft), #000000);
       padding: 24px;
       border-radius: 24px;
-      border: 1px solid #1f2937;
+      border: 1px solid var(--panel-border);
       box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
     }
 
@@ -44,7 +122,7 @@
 
     h1 {
       font-size: 22px;
-      color: #38bdf8;
+      color: var(--accent);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 4px;
@@ -60,9 +138,9 @@
 
     .panel {
       border-radius: 18px;
-      border: 1px solid #1f2937;
+      border: 1px solid var(--panel-border);
       padding: 16px;
-      background: rgba(15, 23, 42, 0.9);
+      background: var(--panel-bg);
     }
 
     .label {
@@ -91,8 +169,8 @@
     }
 
     .input:focus-within {
-      outline: 1px solid #38bdf8;
-      border-color: #38bdf8;
+      outline: 1px solid var(--accent);
+      border-color: var(--accent);
     }
 
     input[type="text"],
@@ -148,10 +226,10 @@
     }
 
     .btn-primary {
-      background: linear-gradient(90deg, #22c55e, #a3e635);
+      background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
       color: #022c22;
       font-weight: 600;
-      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
+      box-shadow: 0 10px 30px var(--accent-soft);
     }
 
     .btn-ghost {
@@ -180,7 +258,6 @@
       margin-top: 4px;
       color: #9ca3af;
     }
-
     .status.success { color: #4ade80; }
     .status.error { color: #f97373; }
 
@@ -203,8 +280,7 @@
       margin-bottom: 4px;
     }
 
-    /* RIGHT SIDE */
-
+    /* ---------- RIGHT SIDE / BADGE ---------- */
     .right-header {
       display: flex;
       justify-content: space-between;
@@ -228,7 +304,7 @@
       width: 7px;
       height: 7px;
       border-radius: 999px;
-      background: #38bdf8;
+      background: var(--accent);
     }
 
     .theme-select {
@@ -252,48 +328,95 @@
 
     .badge-card {
       border-radius: 20px;
-      border: 1px solid #1f2937;
+      border: 1px solid var(--panel-border);
       padding: 18px;
-      background: #020617;
+      background: var(--panel-bg);
     }
 
     .badge {
       width: 100%;
       aspect-ratio: 16 / 9;
       border-radius: 18px;
-      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background: linear-gradient(135deg, var(--badge-from), var(--badge-to));
       position: relative;
       overflow: hidden;
-      color: #041014;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .badge-circle {
-      width: 160px;
-      height: 160px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.96);
-    }
-
-    .badge-pill-shape {
-      position: absolute;
+    /* Cartoon frog-style badge (4th image feel) */
+    .frog-wrapper {
+      position: relative;
       width: 230px;
-      height: 26px;
+      height: 190px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .frog-head {
+      width: 150px;
+      height: 120px;
+      background: #e5f4ff;
+      border-radius: 999px 999px 80px 80px;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+    }
+
+    .frog-eye {
+      position: absolute;
+      top: -18px;
+      width: 38px;
+      height: 38px;
+      background: #e5f4ff;
       border-radius: 999px;
-      background: rgba(255,255,255,0.96);
-      top: 62%;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frog-eye.left { left: 18px; }
+    .frog-eye.right { right: 18px; }
+
+    .frog-eye-inner {
+      width: 16px;
+      height: 16px;
+      background: #020617;
+      border-radius: 999px;
+    }
+
+    .frog-mouth {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      width: 70px;
+      height: 32px;
+      margin-left: -35px;
+      border-bottom: 3px solid #020617;
+      border-radius: 0 0 50px 50px;
+    }
+
+    .frog-pill {
+      margin-top: 18px;
+      width: 200px;
+      height: 30px;
+      border-radius: 999px;
+      background: #e5f4ff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
     }
 
     .badge-text {
       position: absolute;
-      bottom: 12px;
+      bottom: 10px;
       left: 16px;
       right: 16px;
       display: flex;
       justify-content: space-between;
       font-size: 13px;
+      color: #041014;
     }
 
     .badge-meta {
@@ -314,10 +437,11 @@
 
     .chip {
       border-radius: 999px;
-      border: 1px solid #374151;
+      border: 1px solid var(--chip-border);
       padding: 5px 10px;
       font-size: 11px;
       color: #9ca3af;
+      background: var(--chip-bg);
     }
 
     .chip span {
@@ -327,7 +451,7 @@
     }
   </style>
 </head>
-<body>
+<body class="theme-sky">
 
 <div class="app">
   <!-- LEFT SIDE -->
@@ -352,18 +476,6 @@
           <input id="badgeTypeInput" type="text" value="Daily Check-in" />
         </div>
         <div class="pill">Default</div>
-      </div>
-
-      <!-- SHAPE -->
-      <div class="label">Shape</div>
-      <div class="input-row">
-        <div class="input">
-          <select id="shapeSelect">
-            <option value="both">Circle + Pill</option>
-            <option value="circle">Circle only</option>
-            <option value="pill">Pill only</option>
-          </select>
-        </div>
       </div>
 
       <!-- TOGGLES -->
@@ -411,7 +523,7 @@
         <span>Theme</span>
         <select id="themeSelect">
           <option value="sky">Sky</option>
-          <option value="lime">Lime</option>
+          <option value="mint">Mint</option>
           <option value="sunset">Sunset</option>
           <option value="violet">Violet</option>
         </select>
@@ -420,8 +532,18 @@
 
     <div class="badge-card">
       <div class="badge" id="badgeMain">
-        <div class="badge-circle" id="badgeCircle"></div>
-        <div class="badge-pill-shape" id="badgePill"></div>
+        <div class="frog-wrapper">
+          <div class="frog-head">
+            <div class="frog-eye left">
+              <div class="frog-eye-inner"></div>
+            </div>
+            <div class="frog-eye right">
+              <div class="frog-eye-inner"></div>
+            </div>
+            <div class="frog-mouth"></div>
+          </div>
+          <div class="frog-pill"></div>
+        </div>
 
         <div class="badge-text">
           <div>
@@ -450,7 +572,6 @@
 (function () {
   var fidInput = document.getElementById("fidInput");
   var badgeTypeInput = document.getElementById("badgeTypeInput");
-  var shapeSelect = document.getElementById("shapeSelect");
   var randomColorToggle = document.getElementById("randomColorToggle");
   var autoCopyToggle = document.getElementById("autoCopyToggle");
   var themeSelect = document.getElementById("themeSelect");
@@ -466,8 +587,6 @@
   var captionTextEl = document.getElementById("captionText");
 
   var badgeMain = document.getElementById("badgeMain");
-  var badgeCircle = document.getElementById("badgeCircle");
-  var badgePill = document.getElementById("badgePill");
   var badgeFidText = document.getElementById("badgeFidText");
   var badgeTypeText = document.getElementById("badgeTypeText");
   var badgeDateText = document.getElementById("badgeDateText");
@@ -477,9 +596,7 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  // NEW KEY -> purana data reset
-  var STORAGE_KEY = "badgehub_state_v4";
-  var currentGradient = "";
+  var STORAGE_KEY = "badgehub_state_v5";
 
   function todayISO() {
     var d = new Date();
@@ -503,24 +620,12 @@
     return Math.round(ms / (1000 * 60 * 60 * 24));
   }
 
-  function themeGradient(theme) {
-    if (theme === "lime") {
-      return "linear-gradient(135deg,#22c55e,#a3e635)";
-    }
-    if (theme === "sunset") {
-      return "linear-gradient(135deg,#f97316,#facc15)";
-    }
-    if (theme === "violet") {
-      return "linear-gradient(135deg,#a855f7,#6366f1)";
-    }
-    // default sky
-    return "linear-gradient(135deg,#38bdf8,#0ea5e9)";
-  }
-
-  function randomGradient() {
-    var list = ["sky", "lime", "sunset", "violet"];
-    var t = list[Math.floor(Math.random() * list.length)];
-    return themeGradient(t);
+  function randomThemeGradient() {
+    var themes = ["sky","mint","sunset","violet"];
+    var t = themes[Math.floor(Math.random() * themes.length)];
+    // update body class too so whole site matches
+    applyTheme(t);
+    return; // gradient will come from CSS variables
   }
 
   function loadState() {
@@ -576,20 +681,10 @@
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : "--";
     badgeDateText.textContent = dateText;
 
-    // shape
-    var shape = shapeSelect.value;
-    badgeCircle.style.display = (shape === "circle" || shape === "both") ? "block" : "none";
-    badgePill.style.display = (shape === "pill" || shape === "both") ? "block" : "none";
-
-    // colour:
-    //  - agar Random ON hai -> random gradient
-    //  - warna theme dropdown wala gradient
+    // random theme if toggle on
     if (randomColorToggle.checked) {
-      currentGradient = randomGradient();
-    } else {
-      currentGradient = themeGradient(themeSelect.value);
+      randomThemeGradient();
     }
-    badgeMain.style.backgroundImage = currentGradient;
 
     updateCaption(state);
   }
@@ -603,13 +698,12 @@
     var fid = fidInput.value || "Anon";
     var type = badgeTypeInput.value || "Daily Check-in";
     var dateText = state.lastClaimDate ? formatDateShort(state.lastClaimDate) : todayISO();
-    var shape = shapeSelect.value;
     var theme = themeSelect.value;
 
     var bg1 = "#38bdf8";
     var bg2 = "#0ea5e9";
-    if (theme === "lime") {
-      bg1 = "#22c55e"; bg2 = "#a3e635";
+    if (theme === "mint") {
+      bg1 = "#22c55e"; bg2 = "#16a34a";
     } else if (theme === "sunset") {
       bg1 = "#f97316"; bg2 = "#facc15";
     } else if (theme === "violet") {
@@ -623,12 +717,17 @@
       '<stop offset="100%" stop-color="' + bg2 + '"/>' +
       '</linearGradient></defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
-      (shape === "circle" || shape === "both"
-        ? '<circle cx="600" cy="280" r="120" fill="#ffffff"/>'
-        : '') +
-      (shape === "pill" || shape === "both"
-        ? '<rect x="430" y="380" width="340" height="40" rx="20" fill="#ffffff"/>'
-        : '') +
+      // frog head
+      '<g transform="translate(0,10)">' +
+      '<ellipse cx="600" cy="250" rx="120" ry="90" fill="#e5f4ff"/>' +
+      '<circle cx="530" cy="200" r="32" fill="#e5f4ff"/>' +
+      '<circle cx="670" cy="200" r="32" fill="#e5f4ff"/>' +
+      '<circle cx="530" cy="200" r="15" fill="#020617"/>' +
+      '<circle cx="670" cy="200" r="15" fill="#020617"/>' +
+      '<path d="M555 280 Q600 320 645 280" stroke="#020617" stroke-width="4" fill="none"/>' +
+      '</g>' +
+      // pill
+      '<rect x="430" y="360" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
       '<text x="80" y="520" font-size="40" font-family="system-ui, sans-serif" fill="#022c22">' +
       fid + '</text>' +
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
@@ -641,10 +740,16 @@
     return svg;
   }
 
-  var state = loadState();
-  updatePreview(state);
+  function applyTheme(theme) {
+    var body = document.body;
+    body.classList.remove("theme-sky","theme-mint","theme-sunset","theme-violet");
+    body.classList.add("theme-" + theme);
+  }
 
-  // Claim
+  var state = loadState();
+  updatePreview(state); // initial
+
+  /* CLAIM BUTTON */
   claimBtn.addEventListener("click", function () {
     var today = todayISO();
 
@@ -677,21 +782,21 @@
     }
   });
 
-  // Share on X
+  /* SHARE X */
   shareXBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     var url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
-  // Share on Farcaster
+  /* SHARE FARCASTER */
   shareFcBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
-  // Copy caption
+  /* COPY CAPTION */
   copyCaptionBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     if (!navigator.clipboard) {
@@ -707,7 +812,7 @@
       });
   });
 
-  // Download SVG
+  /* DOWNLOAD SVG */
   downloadSvgBtn.addEventListener("click", function () {
     var svg = createSvg(state);
     var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -722,27 +827,28 @@
     showStatus("SVG downloaded.", "success");
   });
 
-  // Onchain mint placeholder
+  /* ONCHAIN MINT (placeholder) */
   mintBtn.addEventListener("click", function () {
-    alert("Onchain mint coming soon. Connect this button to your smart contract.");
+    alert("Onchain mint coming soon. Hook this button to your contract.");
   });
 
-  // Live preview
+  /* LIVE PREVIEW */
   fidInput.addEventListener("input", function () {
     updatePreview(state);
   });
   badgeTypeInput.addEventListener("input", function () {
     updatePreview(state);
   });
-  shapeSelect.addEventListener("change", function () {
-    updatePreview(state);
-  });
   randomColorToggle.addEventListener("change", function () {
     updatePreview(state);
   });
   themeSelect.addEventListener("change", function () {
+    applyTheme(themeSelect.value);
     updatePreview(state);
   });
+
+  // initial theme
+  applyTheme(themeSelect.value);
 
 })();
 </script>
