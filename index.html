@@ -337,12 +337,59 @@
       width: 100%;
       aspect-ratio: 16 / 9;
       border-radius: 18px;
-      background: linear-gradient(135deg, var(--badge-from), var(--badge-to));
+      background: radial-gradient(circle at top left, var(--badge-from), var(--badge-to));
       position: relative;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .badge::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 55%);
+      pointer-events: none;
+    }
+
+    /* tier-based glow */
+    .badge-tier-1 {
+      box-shadow: 0 16px 36px rgba(56,189,248,0.3);
+    }
+    .badge-tier-2 {
+      box-shadow: 0 18px 40px rgba(129,140,248,0.45);
+    }
+    .badge-tier-3 {
+      box-shadow: 0 22px 55px rgba(251,191,36,0.7);
+    }
+
+    .badge-level-chip {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: rgba(15,23,42,0.75);
+      color: #facc15;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    .badge-level-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #facc15;
     }
 
     /* Cartoon frog-style badge */
@@ -354,6 +401,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
+      z-index: 1;
     }
 
     .frog-head {
@@ -401,34 +449,35 @@
 
     .frog-pill {
       margin-top: 18px;
-      width: 200px;
-      height: 30px;
+      width: 210px;
+      height: 34px;
       border-radius: 999px;
       background: #e5f4ff;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .frog-pill-label {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 18px;
+      font-weight: 700;
       color: #022c22;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
 
     /* big name in top empty area */
     .badge-name-large {
       position: absolute;
-      top: 18px;
+      top: 22px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
       color: #041014;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.18);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      z-index: 1;
     }
 
     .badge-text {
@@ -440,6 +489,7 @@
       justify-content: space-between;
       font-size: 13px;
       color: #041014;
+      z-index: 1;
     }
 
     .badge-meta {
@@ -554,7 +604,12 @@
     </div>
 
     <div class="badge-card">
-      <div class="badge" id="badgeMain">
+      <div class="badge badge-tier-1" id="badgeMain">
+        <div class="badge-level-chip" id="badgeLevelChip">
+          <div class="badge-level-dot"></div>
+          <span id="badgeLevelText">Level: New</span>
+        </div>
+
         <!-- big name top -->
         <div class="badge-name-large" id="badgeNameLarge">----</div>
 
@@ -606,19 +661,19 @@
    * CONFIG + FEATURE FLAGS
    * ========================= */
   const CONFIG = {
-    contractAddress: "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE", // <- yaha apna Base Sepolia address
+    contractAddress: "0x3A7518A3F42029F24B26733E8DD8562C09AE", // tumhara Base Sepolia contract
     chainId: 84532,
     explorerBase: "https://sepolia.basescan.org"
   };
 
   const FEATURES = {
-    farcasterAutoFID: false,   // future: Farcaster frame se FID auto
-    persistFIDLocally: true,   // last used FID save/load
-    onchainMint: true          // agar kabhi mint band karna ho to toggle
+    farcasterAutoFID: false,
+    persistFIDLocally: true,
+    onchainMint: true
   };
 
   const STORAGE_KEYS = {
-    state: "badgehub_state_v9",
+    state: "badgehub_state_v10",
     lastFid: "badgehub_last_fid"
   };
 
@@ -677,10 +732,12 @@
   const statusEl = document.getElementById("status");
   const captionTextEl = document.getElementById("captionText");
 
+  const badgeMain = document.getElementById("badgeMain");
   const badgeNameLarge = document.getElementById("badgeNameLarge");
   const badgePillId = document.getElementById("badgePillId");
   const badgeTypeText = document.getElementById("badgeTypeText");
   const badgeDateText = document.getElementById("badgeDateText");
+  const badgeLevelText = document.getElementById("badgeLevelText");
 
   const streakValue = document.getElementById("streakValue");
   const totalValue = document.getElementById("totalValue");
@@ -688,7 +745,7 @@
   const lastClaimLabel = document.getElementById("lastClaimLabel");
 
   /* =========================
-   * UTILITIES / HELPERS
+   * UTILITIES
    * ========================= */
   function todayISO() {
     return new Date().toISOString().slice(0, 10);
@@ -768,6 +825,13 @@
     return caption;
   }
 
+  function getLevelForStreak(streak) {
+    if (streak >= 7) return { label: "Level: Legend", tier: 3 };
+    if (streak >= 3) return { label: "Level: Pro", tier: 2 };
+    if (streak >= 1) return { label: "Level: New", tier: 1 };
+    return { label: "Level: Fresh", tier: 1 };
+  }
+
   /* =========================
    * BADGE SVG + PREVIEW
    * ========================= */
@@ -778,37 +842,68 @@
       ? formatDateShort(state.lastClaimDate)
       : todayISO();
     const theme = themeSelect.value;
+    const streak = state.streak || 0;
+    const levelInfo = getLevelForStreak(streak);
 
     let bg1 = "#38bdf8";
     let bg2 = "#0ea5e9";
-    if (theme === "mint") { bg1 = "#22c55e"; bg2 = "#16a34a"; }
-    else if (theme === "sunset") { bg1 = "#f97316"; bg2 = "#facc15"; }
-    else if (theme === "violet") { bg1 = "#a855f7"; bg2 = "#6366f1"; }
+
+    if (streak >= 7) {
+      bg1 = "#f97316";
+      bg2 = "#facc15";
+    } else if (streak >= 3) {
+      bg1 = "#6366f1";
+      bg2 = "#a855f7";
+    } else {
+      if (theme === "mint") { bg1 = "#22c55e"; bg2 = "#16a34a"; }
+      else if (theme === "sunset") { bg1 = "#f97316"; bg2 = "#facc15"; }
+      else if (theme === "violet") { bg1 = "#a855f7"; bg2 = "#6366f1"; }
+    }
 
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">' +
-      '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
+      '<defs>' +
+      '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
       '<stop offset="0%" stop-color="' + bg1 + '"/>' +
       '<stop offset="100%" stop-color="' + bg2 + '"/>' +
-      '</linearGradient></defs>' +
+      '</linearGradient>' +
+      '<radialGradient id="glow" cx="0.5" cy="0" r="1">' +
+      '<stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>' +
+      '<stop offset="100%" stop-color="rgba(255,255,255,0)"/>' +
+      '</radialGradient>' +
+      '</defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
-      '<text x="600" y="120" text-anchor="middle" font-size="44" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
+      '<rect x="30" y="30" width="1140" height="570" rx="32" fill="url(#glow)" opacity="0.8"/>' +
+      // level chip
+      '<rect x="70" y="70" rx="20" ry="20" width="210" height="40" fill="rgba(15,23,42,0.85)"/>' +
+      '<circle cx="92" cy="90" r="5" fill="#facc15"/>' +
+      '<text x="110" y="96" font-size="20" font-family="system-ui, sans-serif" fill="#e5e7eb" font-weight="500">' +
+      levelInfo.label +
+      '</text>' +
+      // big name top centre
+      '<text x="600" y="150" text-anchor="middle" font-size="56" font-family="system-ui, sans-serif" fill="#022c22" font-weight="800">' +
       fid + '</text>' +
-      '<g transform="translate(0,30)">' +
-      '<ellipse cx="600" cy="260" rx="120" ry="90" fill="#e5f4ff"/>' +
-      '<circle cx="530" cy="210" r="32" fill="#e5f4ff"/>' +
-      '<circle cx="670" cy="210" r="32" fill="#e5f4ff"/>' +
-      '<circle cx="530" cy="210" r="15" fill="#020617"/>' +
-      '<circle cx="670" cy="210" r="15" fill="#020617"/>' +
-      '<path d="M555 290 Q600 330 645 290" stroke="#020617" stroke-width="4" fill="none"/>' +
+      // frog head group
+      '<g transform="translate(0,40)">' +
+      '<ellipse cx="600" cy="280" rx="130" ry="95" fill="#e5f4ff"/>' +
+      '<circle cx="525" cy="225" r="36" fill="#e5f4ff"/>' +
+      '<circle cx="675" cy="225" r="36" fill="#e5f4ff"/>' +
+      '<circle cx="525" cy="225" r="16" fill="#020617"/>' +
+      '<circle cx="675" cy="225" r="16" fill="#020617"/>' +
+      '<path d="M555 310 Q600 350 645 310" stroke="#020617" stroke-width="4" fill="none"/>' +
       '</g>' +
-      '<rect x="430" y="380" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
-      '<text x="600" y="407" text-anchor="middle" font-size="28" font-family="system-ui, sans-serif" fill="#022c22" font-weight="600">' +
+      // pill with id text
+      '<rect x="420" y="410" width="360" height="48" rx="24" fill="#e5f4ff"/>' +
+      '<text x="600" y="441" text-anchor="middle" font-size="30" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
       fid + '</text>' +
+      // bottom label + streak info
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
       type + '</text>' +
       '<text x="1040" y="560" text-anchor="end" font-size="24" font-family="system-ui, sans-serif" fill="#022c22">' +
       dateText + '</text>' +
+      '<text x="80" y="520" font-size="20" font-family="system-ui, sans-serif" fill="#022c22">' +
+      'Streak: ' + streak + ' day(s)' +
+      '</text>' +
       '</svg>';
 
     return svg;
@@ -835,6 +930,11 @@
     badgeDateText.textContent = state.lastClaimDate
       ? formatDateShort(state.lastClaimDate)
       : "--";
+
+    const levelInfo = getLevelForStreak(state.streak || 0);
+    badgeLevelText.textContent = levelInfo.label;
+    badgeMain.classList.remove("badge-tier-1","badge-tier-2","badge-tier-3");
+    badgeMain.classList.add("badge-tier-" + levelInfo.tier);
 
     if (randomColorToggle.checked) {
       randomTheme();
@@ -904,8 +1004,6 @@
    * INIT + EVENT BINDINGS
    * ========================= */
   const state = loadState();
-
-  // FID init – abhi sirf last-used local storage se (Farcaster hook OFF)
   const lastFid = loadLastFid();
   if (lastFid) {
     fidInput.value = lastFid;
@@ -914,7 +1012,6 @@
   updatePreview(state);
   applyTheme(themeSelect.value);
 
-  /* --- BUTTONS / INPUTS --- */
   claimBtn.addEventListener("click", function () {
     const today = todayISO();
 
