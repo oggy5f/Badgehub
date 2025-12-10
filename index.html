@@ -392,7 +392,6 @@
       background: #facc15;
     }
 
-    /* Cartoon frog-style badge */
     .frog-wrapper {
       position: relative;
       width: 230px;
@@ -466,7 +465,6 @@
       letter-spacing: 0.06em;
     }
 
-    /* big name in top empty area */
     .badge-name-large {
       position: absolute;
       top: 22px;
@@ -610,10 +608,8 @@
           <span id="badgeLevelText">Level: New</span>
         </div>
 
-        <!-- big name top -->
         <div class="badge-name-large" id="badgeNameLarge">----</div>
 
-        <!-- CARTOON FROG + PILL -->
         <div class="frog-wrapper">
           <div class="frog-head">
             <div class="frog-eye left">
@@ -629,7 +625,6 @@
           </div>
         </div>
 
-        <!-- SMALL TEXT BOTTOM -->
         <div class="badge-text">
           <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">
             Daily Check-in
@@ -661,7 +656,7 @@
    * CONFIG + FEATURE FLAGS
    * ========================= */
   const CONFIG = {
-    contractAddress: "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE", // tumhara Base Sepolia contract
+    contractAddress: "0x3A7518A3F42029F24B26733E8DD8562C09AE", // tumhara Base Sepolia contract
     chainId: 84532,
     explorerBase: "https://sepolia.basescan.org"
   };
@@ -678,27 +673,303 @@
   };
 
   /* =========================
-   * ONCHAIN / WALLET LAYER
+   * ABI (tumhara contract)
    * ========================= */
   const ABI = [
     {
-      "inputs": [
-        { "internalType": "address", "name": "to", "type": "address" },
-        { "internalType": "string", "name": "fid", "type": "string" },
-        { "internalType": "string", "name": "badgeType_", "type": "string" },
-        { "internalType": "uint64", "name": "date", "type": "uint64" },
-        { "internalType": "uint32", "name": "streak", "type": "uint32" },
-        { "internalType": "string", "name": "tokenURI_", "type": "string" }
+      "inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"approve",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[],
+      "stateMutability":"nonpayable",
+      "type":"constructor"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],
+      "name":"ERC721IncorrectOwner",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"ERC721InsufficientApproval",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"approver","type":"address"}],
+      "name":"ERC721InvalidApprover",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"operator","type":"address"}],
+      "name":"ERC721InvalidOperator",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"owner","type":"address"}],
+      "name":"ERC721InvalidOwner",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"receiver","type":"address"}],
+      "name":"ERC721InvalidReceiver",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"sender","type":"address"}],
+      "name":"ERC721InvalidSender",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"ERC721NonexistentToken",
+      "type":"error"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"string","name":"fid","type":"string"},
+        {"internalType":"string","name":"badgeType_","type":"string"},
+        {"internalType":"uint64","name":"date","type":"uint64"},
+        {"internalType":"uint32","name":"streak","type":"uint32"},
+        {"internalType":"string","name":"tokenURI_","type":"string"}
       ],
-      "name": "mintBadge",
-      "outputs": [
-        { "internalType": "uint256", "name": "", "type": "uint256" }
+      "name":"mintBadge",
+      "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"owner","type":"address"}],
+      "name":"OwnableInvalidOwner",
+      "type":"error"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"account","type":"address"}],
+      "name":"OwnableUnauthorizedAccount",
+      "type":"error"
+    },
+    {
+      "anonymous":false,
+      "inputs":[
+        {"indexed":true,"internalType":"address","name":"owner","type":"address"},
+        {"indexed":true,"internalType":"address","name":"approved","type":"address"},
+        {"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "name":"Approval",
+      "type":"event"
+    },
+    {
+      "anonymous":false,
+      "inputs":[
+        {"indexed":true,"internalType":"address","name":"owner","type":"address"},
+        {"indexed":true,"internalType":"address","name":"operator","type":"address"},
+        {"indexed":false,"internalType":"bool","name":"approved","type":"bool"}
+      ],
+      "name":"ApprovalForAll",
+      "type":"event"
+    },
+    {
+      "anonymous":false,
+      "inputs":[
+        {"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},
+        {"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}
+      ],
+      "name":"BatchMetadataUpdate",
+      "type":"event"
+    },
+    {
+      "anonymous":false,
+      "inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],
+      "name":"MetadataUpdate",
+      "type":"event"
+    },
+    {
+      "anonymous":false,
+      "inputs":[
+        {"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},
+        {"indexed":true,"internalType":"address","name":"newOwner","type":"address"}
+      ],
+      "name":"OwnershipTransferred",
+      "type":"event"
+    },
+    {
+      "inputs":[],
+      "name":"renounceOwnership",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"from","type":"address"},
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"uint256","name":"tokenId","type":"uint256"}
+      ],
+      "name":"safeTransferFrom",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"from","type":"address"},
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"uint256","name":"tokenId","type":"uint256"},
+        {"internalType":"bytes","name":"data","type":"bytes"}
+      ],
+      "name":"safeTransferFrom",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"operator","type":"address"},
+        {"internalType":"bool","name":"approved","type":"bool"}
+      ],
+      "name":"setApprovalForAll",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "anonymous":false,
+      "inputs":[
+        {"indexed":true,"internalType":"address","name":"from","type":"address"},
+        {"indexed":true,"internalType":"address","name":"to","type":"address"},
+        {"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}
+      ],
+      "name":"Transfer",
+      "type":"event"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"from","type":"address"},
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"uint256","name":"tokenId","type":"uint256"}
+      ],
+      "name":"transferFrom",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"newOwner","type":"address"}],
+      "name":"transferOwnership",
+      "outputs":[],
+      "stateMutability":"nonpayable",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+      "name":"badgeData",
+      "outputs":[
+        {"internalType":"string","name":"fid","type":"string"},
+        {"internalType":"string","name":"badgeType","type":"string"},
+        {"internalType":"uint64","name":"date","type":"uint64"},
+        {"internalType":"uint32","name":"streak","type":"uint32"}
+      ],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"address","name":"owner","type":"address"}],
+      "name":"balanceOf",
+      "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"getApproved",
+      "outputs":[{"internalType":"address","name":"","type":"address"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[
+        {"internalType":"address","name":"owner","type":"address"},
+        {"internalType":"address","name":"operator","type":"address"}
+      ],
+      "name":"isApprovedForAll",
+      "outputs":[{"internalType":"bool","name":"","type":"bool"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[],
+      "name":"name",
+      "outputs":[{"internalType":"string","name":"","type":"string"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[],
+      "name":"nextTokenId",
+      "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[],
+      "name":"owner",
+      "outputs":[{"internalType":"address","name":"","type":"address"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"ownerOf",
+      "outputs":[{"internalType":"address","name":"","type":"address"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],
+      "name":"supportsInterface",
+      "outputs":[{"internalType":"bool","name":"","type":"bool"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[],
+      "name":"symbol",
+      "outputs":[{"internalType":"string","name":"","type":"string"}],
+      "stateMutability":"view",
+      "type":"function"
+    },
+    {
+      "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+      "name":"tokenURI",
+      "outputs":[{"internalType":"string","name":"","type":"string"}],
+      "stateMutability":"view",
+      "type":"function"
     }
   ];
 
+  /* =========================
+   * ADDRESS CLEAN HELPER
+   * ========================= */
+  function getCleanContractAddress() {
+    const raw = (CONFIG.contractAddress || "").trim();
+    let cleaned = raw.replace(/[^0-9a-fA-Fx]/g, "");
+    if (!cleaned.startsWith("0x")) cleaned = "0x" + cleaned;
+    const body = cleaned.slice(2);
+    const finalAddr = "0x" + body.slice(-40);
+    if (!/^0x[0-9a-fA-F]{40}$/.test(finalAddr)) {
+      throw new Error("Invalid CONFIG.contractAddress: " + CONFIG.contractAddress);
+    }
+    console.log("Using contract address:", finalAddr);
+    return finalAddr;
+  }
+
+  /* =========================
+   * ONCHAIN / WALLET LAYER
+   * ========================= */
   let provider, signer, contract;
 
   async function connectWallet() {
@@ -709,7 +980,9 @@
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
-    contract = new ethers.Contract(CONFIG.contractAddress, ABI, signer);
+
+    const cleanAddress = getCleanContractAddress();
+    contract = new ethers.Contract(cleanAddress, ABI, signer);
     return signer.getAddress();
   }
 
@@ -874,16 +1147,13 @@
       '</defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
       '<rect x="30" y="30" width="1140" height="570" rx="32" fill="url(#glow)" opacity="0.8"/>' +
-      // level chip
       '<rect x="70" y="70" rx="20" ry="20" width="210" height="40" fill="rgba(15,23,42,0.85)"/>' +
       '<circle cx="92" cy="90" r="5" fill="#facc15"/>' +
       '<text x="110" y="96" font-size="20" font-family="system-ui, sans-serif" fill="#e5e7eb" font-weight="500">' +
       levelInfo.label +
       '</text>' +
-      // big name top centre
       '<text x="600" y="150" text-anchor="middle" font-size="56" font-family="system-ui, sans-serif" fill="#022c22" font-weight="800">' +
       fid + '</text>' +
-      // frog head group
       '<g transform="translate(0,40)">' +
       '<ellipse cx="600" cy="280" rx="130" ry="95" fill="#e5f4ff"/>' +
       '<circle cx="525" cy="225" r="36" fill="#e5f4ff"/>' +
@@ -892,11 +1162,9 @@
       '<circle cx="675" cy="225" r="16" fill="#020617"/>' +
       '<path d="M555 310 Q600 350 645 310" stroke="#020617" stroke-width="4" fill="none"/>' +
       '</g>' +
-      // pill with id text
       '<rect x="420" y="410" width="360" height="48" rx="24" fill="#e5f4ff"/>' +
       '<text x="600" y="441" text-anchor="middle" font-size="30" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
       fid + '</text>' +
-      // bottom label + streak info
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
       type + '</text>' +
       '<text x="1040" y="560" text-anchor="end" font-size="24" font-family="system-ui, sans-serif" fill="#022c22">' +
