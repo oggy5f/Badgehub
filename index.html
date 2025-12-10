@@ -91,7 +91,8 @@
     }
 
     body {
-      background: radial-gradient(circle at top, var(--bg-soft), #000000 65%);
+      background:
+        radial-gradient(circle at top, var(--bg-soft), #000000 65%);
       color: #e5e7eb;
       min-height: 100vh;
       display: flex;
@@ -596,12 +597,48 @@
   </div>
 </div>
 
-<!-- ethers.js -->
+<!-- ethers.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.umd.min.js"></script>
 
 <script>
 (function () {
-  /* === DOM REFS === */
+  // ======== ONCHAIN CONFIG (PUT YOUR CONTRACT ADDRESS HERE) ========
+  const CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS_HERE"; // <-- apna Base Sepolia contract yaha
+
+  const CONTRACT_ABI = [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "to", "type": "address" },
+        { "internalType": "string", "name": "fid", "type": "string" },
+        { "internalType": "string", "name": "badgeType_", "type": "string" },
+        { "internalType": "uint64", "name": "date", "type": "uint64" },
+        { "internalType": "uint32", "name": "streak", "type": "uint32" },
+        { "internalType": "string", "name": "tokenURI_", "type": "string" }
+      ],
+      "name": "mintBadge",
+      "outputs": [
+        { "internalType": "uint256", "name": "", "type": "uint256" }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+
+  let provider, signer, contract;
+
+  async function connectWallet() {
+    if (!window.ethereum) {
+      alert("Install MetaMask/Base wallet and switch to Base Sepolia Testnet.");
+      throw new Error("no wallet");
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    return signer.getAddress();
+  }
+
+  // ======== DOM ELEMENTS ========
   var fidInput = document.getElementById("fidInput");
   var badgeTypeInput = document.getElementById("badgeTypeInput");
   var randomColorToggle = document.getElementById("randomColorToggle");
@@ -628,51 +665,9 @@
   var lastDayValue = document.getElementById("lastDayValue");
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v7";
+  var STORAGE_KEY = "badgehub_state_v8";
 
-  /* === ONCHAIN CONFIG === */
-  const CONTRACT_ADDRESS = "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE";
-
-  const CONTRACT_ABI = [
-    {
-      "inputs": [
-        { "internalType": "address", "name": "to", "type": "address" },
-        { "internalType": "string", "name": "fid", "type": "string" },
-        { "internalType": "string", "name": "badgeType_", "type": "string" },
-        { "internalType": "uint64", "name": "date", "type": "uint64" },
-        { "internalType": "uint32", "name": "streak", "type": "uint32" },
-        { "internalType": "string", "name": "tokenURI_", "type": "string" }
-      ],
-      "name": "mintBadge",
-      "outputs": [
-        { "internalType": "uint256", "name": "", "type": "uint256" }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ];
-
-  let provider, signer, contract;
-
-  async function connectWallet() {
-    if (!window.ethereum) {
-      alert("Install MetaMask / Base wallet and switch to Base Sepolia Testnet.");
-      throw new Error("no wallet");
-    }
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = await provider.getSigner();
-    const network = await provider.getNetwork();
-    // Base Sepolia chainId = 84532
-    if (Number(network.chainId) !== 84532) {
-      alert("Please switch wallet network to Base Sepolia Testnet.");
-      throw new Error("wrong network");
-    }
-    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-    return signer.getAddress();
-  }
-
-  /* === UTILITIES === */
+  // ======== HELPERS ========
   function todayISO() {
     var d = new Date();
     return d.toISOString().slice(0, 10);
@@ -732,44 +727,14 @@
     return caption;
   }
 
-  function updatePreview(state) {
-    // stats
-    streakValue.textContent = state.streak + " day(s)";
-    totalValue.textContent = String(state.total);
-    lastDayValue.textContent = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : "-";
-
-    if (state.lastClaimDate) {
-      lastClaimLabel.textContent =
-        "Last claimed on " + formatDateShort(state.lastClaimDate);
-    } else {
-      lastClaimLabel.textContent = "Not claimed yet";
-    }
-
-    var fid = fidInput.value || "----";
-
-    // badge texts
-    badgeNameLarge.textContent = fid;
-    badgePillId.textContent = fid;
-    badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
-    badgeDateText.textContent = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : "--";
-
-    // theme / color
-    if (randomColorToggle.checked) {
-      randomTheme();
-    } else {
-      applyTheme(themeSelect.value);
-    }
-
-    updateCaption(state);
-  }
-
   function showStatus(msg, type) {
     statusEl.textContent = msg;
     statusEl.className = "status " + (type || "");
+  }
+
+  // Unicode-safe base64
+  function toBase64Unicode(str) {
+    return btoa(unescape(encodeURIComponent(str)));
   }
 
   function createSvg(state) {
@@ -819,6 +784,38 @@
     return svg;
   }
 
+  function updatePreview(state) {
+    streakValue.textContent = state.streak + " day(s)";
+    totalValue.textContent = String(state.total);
+    lastDayValue.textContent = state.lastClaimDate
+      ? formatDateShort(state.lastClaimDate)
+      : "-";
+
+    if (state.lastClaimDate) {
+      lastClaimLabel.textContent =
+        "Last claimed on " + formatDateShort(state.lastClaimDate);
+    } else {
+      lastClaimLabel.textContent = "Not claimed yet";
+    }
+
+    var fid = fidInput.value || "----";
+    badgeNameLarge.textContent = fid;
+    badgePillId.textContent = fid;
+    badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
+    badgeDateText.textContent = state.lastClaimDate
+      ? formatDateShort(state.lastClaimDate)
+      : "--";
+
+    if (randomColorToggle.checked) {
+      randomTheme();
+    } else {
+      applyTheme(themeSelect.value);
+    }
+
+    updateCaption(state);
+  }
+
+  // ======== ONCHAIN MINT ========
   async function mintOnchain(state) {
     try {
       showStatus("Connecting wallet...", "");
@@ -831,12 +828,12 @@
       const now = Math.floor(Date.now() / 1000);
 
       const svg = createSvg(state);
-      const svg64 = btoa(unescape(encodeURIComponent(svg)));
+      const svgBase64 = toBase64Unicode(svg);
 
       const metadata = {
-        name: `Badgehub – ${fid}`,
-        description: `${fid} earned a ${type} badge on Badgehub.`,
-        image: "data:image/svg+xml;base64," + svg64,
+        name: "Badgehub – " + fid,
+        description: fid + " earned a " + type + " badge on Badgehub.",
+        image: "data:image/svg+xml;base64," + svgBase64,
         attributes: [
           { trait_type: "FID", value: fid },
           { trait_type: "Badge Type", value: type },
@@ -844,9 +841,8 @@
         ]
       };
 
-      const metaURI =
-        "data:application/json;base64," +
-        btoa(JSON.stringify(metadata));
+      const metaBase64 = toBase64Unicode(JSON.stringify(metadata));
+      const tokenURI = "data:application/json;base64," + metaBase64;
 
       showStatus("Sending mint transaction...", "");
       const tx = await contract.mintBadge(
@@ -855,24 +851,24 @@
         type,
         now,
         streak,
-        metaURI
+        tokenURI
       );
 
       showStatus("Minting... tx " + tx.hash.slice(0, 10) + "...", "success");
       await tx.wait();
       showStatus("Badge minted on Base Sepolia 🎉", "success");
-    } catch (e) {
-      console.error(e);
-      showStatus("Mint failed: " + (e.message || String(e)), "error");
+    } catch (err) {
+      console.error(err);
+      showStatus("Mint failed: " + (err.message || String(err)), "error");
     }
   }
 
-  /* === INIT STATE === */
+  // ======== STATE INIT ========
   var state = loadState();
   updatePreview(state);
   applyTheme(themeSelect.value);
 
-  /* === CLAIM === */
+  // ======== EVENT HANDLERS ========
   claimBtn.addEventListener("click", function () {
     var today = todayISO();
 
@@ -902,21 +898,18 @@
     }
   });
 
-  /* SHARE X */
   shareXBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     var url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
-  /* SHARE FARCASTER */
   shareFcBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
-  /* COPY CAPTION */
   copyCaptionBtn.addEventListener("click", function () {
     var caption = updateCaption(state);
     if (!navigator.clipboard) {
@@ -926,11 +919,10 @@
     navigator.clipboard.writeText(caption)
       .then(function () { showStatus("Caption copied.", "success"); })
       .catch(function () {
-        showStatus("Clipboard permission blocked in this browser.", "error");
+        showStatus("Clipboard permission blocked.", "error");
       });
   });
 
-  /* DOWNLOAD SVG */
   downloadSvgBtn.addEventListener("click", function () {
     var svg = createSvg(state);
     var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -945,12 +937,10 @@
     showStatus("SVG downloaded.", "success");
   });
 
-  /* ONCHAIN MINT */
   mintBtn.addEventListener("click", function () {
     mintOnchain(state);
   });
 
-  /* LIVE PREVIEW */
   fidInput.addEventListener("input", function () {
     updatePreview(state);
   });
