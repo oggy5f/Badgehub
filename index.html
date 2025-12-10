@@ -91,8 +91,7 @@
     }
 
     body {
-      background:
-        radial-gradient(circle at top, var(--bg-soft), #000000 65%);
+      background: radial-gradient(circle at top, var(--bg-soft), #000000 65%);
       color: #e5e7eb;
       min-height: 100vh;
       display: flex;
@@ -597,8 +596,12 @@
   </div>
 </div>
 
+<!-- ethers.js -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.umd.min.js"></script>
+
 <script>
 (function () {
+  /* === DOM REFS === */
   var fidInput = document.getElementById("fidInput");
   var badgeTypeInput = document.getElementById("badgeTypeInput");
   var randomColorToggle = document.getElementById("randomColorToggle");
@@ -627,6 +630,49 @@
 
   var STORAGE_KEY = "badgehub_state_v7";
 
+  /* === ONCHAIN CONFIG === */
+  const CONTRACT_ADDRESS = "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE";
+
+  const CONTRACT_ABI = [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "to", "type": "address" },
+        { "internalType": "string", "name": "fid", "type": "string" },
+        { "internalType": "string", "name": "badgeType_", "type": "string" },
+        { "internalType": "uint64", "name": "date", "type": "uint64" },
+        { "internalType": "uint32", "name": "streak", "type": "uint32" },
+        { "internalType": "string", "name": "tokenURI_", "type": "string" }
+      ],
+      "name": "mintBadge",
+      "outputs": [
+        { "internalType": "uint256", "name": "", "type": "uint256" }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+
+  let provider, signer, contract;
+
+  async function connectWallet() {
+    if (!window.ethereum) {
+      alert("Install MetaMask / Base wallet and switch to Base Sepolia Testnet.");
+      throw new Error("no wallet");
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    const network = await provider.getNetwork();
+    // Base Sepolia chainId = 84532
+    if (Number(network.chainId) !== 84532) {
+      alert("Please switch wallet network to Base Sepolia Testnet.");
+      throw new Error("wrong network");
+    }
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    return signer.getAddress();
+  }
+
+  /* === UTILITIES === */
   function todayISO() {
     var d = new Date();
     return d.toISOString().slice(0, 10);
@@ -773,11 +819,60 @@
     return svg;
   }
 
+  async function mintOnchain(state) {
+    try {
+      showStatus("Connecting wallet...", "");
+      const account = await connectWallet();
+      showStatus("Wallet connected: " + account.slice(0, 8) + "...", "success");
+
+      const fid = fidInput.value || "Anon";
+      const type = badgeTypeInput.value || "Daily Check-in";
+      const streak = state.streak || 0;
+      const now = Math.floor(Date.now() / 1000);
+
+      const svg = createSvg(state);
+      const svg64 = btoa(unescape(encodeURIComponent(svg)));
+
+      const metadata = {
+        name: `Badgehub – ${fid}`,
+        description: `${fid} earned a ${type} badge on Badgehub.`,
+        image: "data:image/svg+xml;base64," + svg64,
+        attributes: [
+          { trait_type: "FID", value: fid },
+          { trait_type: "Badge Type", value: type },
+          { trait_type: "Streak", value: String(streak) }
+        ]
+      };
+
+      const metaURI =
+        "data:application/json;base64," +
+        btoa(JSON.stringify(metadata));
+
+      showStatus("Sending mint transaction...", "");
+      const tx = await contract.mintBadge(
+        account,
+        fid,
+        type,
+        now,
+        streak,
+        metaURI
+      );
+
+      showStatus("Minting... tx " + tx.hash.slice(0, 10) + "...", "success");
+      await tx.wait();
+      showStatus("Badge minted on Base Sepolia 🎉", "success");
+    } catch (e) {
+      console.error(e);
+      showStatus("Mint failed: " + (e.message || String(e)), "error");
+    }
+  }
+
+  /* === INIT STATE === */
   var state = loadState();
   updatePreview(state);
   applyTheme(themeSelect.value);
 
-  /* CLAIM */
+  /* === CLAIM === */
   claimBtn.addEventListener("click", function () {
     var today = todayISO();
 
@@ -850,9 +945,9 @@
     showStatus("SVG downloaded.", "success");
   });
 
-  /* ONCHAIN MINT (placeholder) */
+  /* ONCHAIN MINT */
   mintBtn.addEventListener("click", function () {
-    alert("Onchain mint coming soon. Hook this button to your contract.");
+    mintOnchain(state);
   });
 
   /* LIVE PREVIEW */
