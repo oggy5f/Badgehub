@@ -1,609 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Badgehub – Daily Check-in</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    /* ---------- THEME TOKENS ---------- */
-    :root {
-      --bg: #020617;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #1f2937;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.12);
-      --primary-from: #22c55e;
-      --primary-to: #a3e635;
-      --chip-bg: #020617;
-      --chip-border: #374151;
-      --badge-from: #38bdf8;
-      --badge-to: #0ea5e9;
-    }
-
-    body.theme-sky {
-      --bg: #020617;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #1f2937;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.12);
-      --primary-from: #22c55e;
-      --primary-to: #a3e635;
-      --chip-bg: #020617;
-      --chip-border: #374151;
-      --badge-from: #38bdf8;
-      --badge-to: #0ea5e9;
-    }
-
-    body.theme-mint {
-      --bg: #022c22;
-      --bg-soft: #022c22;
-      --panel-bg: #041f19;
-      --panel-border: #064e3b;
-      --accent: #4ade80;
-      --accent-soft: rgba(74, 222, 128, 0.14);
-      --primary-from: #4ade80;
-      --primary-to: #22c55e;
-      --chip-bg: #022c22;
-      --chip-border: #064e3b;
-      --badge-from: #22c55e;
-      --badge-to: #16a34a;
-    }
-
-    body.theme-sunset {
-      --bg: #111827;
-      --bg-soft: #111827;
-      --panel-bg: #020617;
-      --panel-border: #7c2d12;
-      --accent: #fb923c;
-      --accent-soft: rgba(251, 146, 60, 0.15);
-      --primary-from: #fb923c;
-      --primary-to: #facc15;
-      --chip-bg: #020617;
-      --chip-border: #7c2d12;
-      --badge-from: #f97316;
-      --badge-to: #facc15;
-    }
-
-    body.theme-violet {
-      --bg: #0b1020;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #4c1d95;
-      --accent: #a855f7;
-      --accent-soft: rgba(168, 85, 247, 0.16);
-      --primary-from: #a855f7;
-      --primary-to: #6366f1;
-      --chip-bg: #020617;
-      --chip-border: #4c1d95;
-      --badge-from: #a855f7;
-      --badge-to: #6366f1;
-    }
-
-    /* ---------- BASE LAYOUT ---------- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    body {
-      background:
-        radial-gradient(circle at top, var(--bg-soft), #000000 65%);
-      color: #e5e7eb;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 1100px;
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 24px;
-      background: radial-gradient(circle at top left, var(--bg-soft), #000000);
-      padding: 24px;
-      border-radius: 24px;
-      border: 1px solid var(--panel-border);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-    }
-
-    @media (max-width: 900px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    h1 {
-      font-size: 22px;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .subtitle {
-      font-size: 12px;
-      color: #9ca3af;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    .panel {
-      border-radius: 18px;
-      border: 1px solid var(--panel-border);
-      padding: 16px;
-      background: var(--panel-bg);
-    }
-
-    .label {
-      font-size: 11px;
-      color: #9ca3af;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .input {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 9px 14px;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 14px;
-    }
-
-    .input:focus-within {
-      outline: 1px solid var(--accent);
-      border-color: var(--accent);
-    }
-
-    input[type="text"],
-    select {
-      width: 100%;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: inherit;
-      font-size: 14px;
-    }
-
-    .pill {
-      border-radius: 999px;
-      padding: 4px 10px;
-      border: 1px solid #374151;
-      font-size: 11px;
-      color: #9ca3af;
-      text-transform: uppercase;
-    }
-
-    .toggles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 12px 0;
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      font-size: 11px;
-      color: #9ca3af;
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .toggle input {
-      accent-color: #22c55e;
-    }
-
-    button {
-      width: 100%;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      margin-bottom: 8px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
-      color: #022c22;
-      font-weight: 600;
-      box-shadow: 0 10px 30px var(--accent-soft);
-    }
-
-    .btn-ghost {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #374151;
-      color: #e5e7eb;
-      font-size: 13px;
-    }
-
-    .btn-small {
-      font-size: 12px;
-      padding: 7px 10px;
-      width: auto;
-    }
-
-    .actions-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .status {
-      font-size: 12px;
-      min-height: 18px;
-      margin-top: 4px;
-      color: #9ca3af;
-    }
-    .status.success { color: #4ade80; }
-    .status.error { color: #f97373; }
-
-    .caption-preview {
-      margin-top: 12px;
-      font-size: 12px;
-      border-radius: 10px;
-      border: 1px dashed #374151;
-      padding: 8px;
-      background: #020617;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .caption-label {
-      font-size: 11px;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 4px;
-    }
-
-    /* ---------- RIGHT SIDE / BADGE ---------- */
-    .right-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .theme-pill {
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 10px;
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #9ca3af;
-      text-transform: uppercase;
-    }
-
-    .theme-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--accent);
-    }
-
-    .theme-select {
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .theme-select select {
-      border: none;
-      outline: none;
-      background: transparent;
-      color: #e5e7eb;
-      font-size: 11px;
-    }
-
-    .badge-card {
-      border-radius: 20px;
-      border: 1px solid var(--panel-border);
-      padding: 18px;
-      background: var(--panel-bg);
-    }
-
-    .badge {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: 18px;
-      background: linear-gradient(135deg, var(--badge-from), var(--badge-to));
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Cartoon frog-style badge */
-    .frog-wrapper {
-      position: relative;
-      width: 230px;
-      height: 190px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    .frog-head {
-      width: 150px;
-      height: 120px;
-      background: #e5f4ff;
-      border-radius: 999px 999px 80px 80px;
-      position: relative;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-    }
-
-    .frog-eye {
-      position: absolute;
-      top: -18px;
-      width: 38px;
-      height: 38px;
-      background: #e5f4ff;
-      border-radius: 999px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .frog-eye.left { left: 18px; }
-    .frog-eye.right { right: 18px; }
-
-    .frog-eye-inner {
-      width: 16px;
-      height: 16px;
-      background: #020617;
-      border-radius: 999px;
-    }
-
-    .frog-mouth {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      width: 70px;
-      height: 32px;
-      margin-left: -35px;
-      border-bottom: 3px solid #020617;
-      border-radius: 0 0 50px 50px;
-    }
-
-    .frog-pill {
-      margin-top: 18px;
-      width: 200px;
-      height: 30px;
-      border-radius: 999px;
-      background: #e5f4ff;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .frog-pill-label {
-      font-size: 16px;
-      font-weight: 600;
-      color: #022c22;
-      letter-spacing: 0.04em;
-    }
-
-    /* big name in top empty area */
-    .badge-name-large {
-      position: absolute;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #041014;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.18);
-    }
-
-    .badge-text {
-      position: absolute;
-      bottom: 10px;
-      left: 16px;
-      right: 16px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #041014;
-    }
-
-    .badge-meta {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #9ca3af;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .metrics {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chip {
-      border-radius: 999px;
-      border: 1px solid var(--chip-border);
-      padding: 5px 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      background: var(--chip-bg);
-    }
-
-    .chip span {
-      color: #e5e7eb;
-      font-weight: 500;
-      margin-left: 4px;
-    }
-  </style>
-</head>
-<body class="theme-sky">
-
-<div class="app">
-  <!-- LEFT SIDE -->
-  <div>
-    <h1>BADGEHUB</h1>
-    <div class="subtitle">Daily check-in mini app</div>
-
-    <div class="panel">
-      <!-- FID -->
-      <div class="label">Your name / FID</div>
-      <div class="input-row">
-        <div class="input">
-          <input id="fidInput" type="text" placeholder="Your FID" />
-        </div>
-        <div class="pill">ID</div>
-      </div>
-
-      <!-- BADGE TYPE -->
-      <div class="label">Badge type</div>
-      <div class="input-row">
-        <div class="input">
-          <input id="badgeTypeInput" type="text" value="Daily Check-in" />
-        </div>
-        <div class="pill">Default</div>
-      </div>
-
-      <!-- TOGGLES -->
-      <div class="toggles">
-        <label class="toggle">
-          <input id="randomColorToggle" type="checkbox" />
-          <span>Random badge color</span>
-        </label>
-        <label class="toggle">
-          <input id="autoCopyToggle" type="checkbox" />
-          <span>Auto copy caption after claim</span>
-        </label>
-      </div>
-
-      <!-- CLAIM -->
-      <button id="claimBtn" class="btn-primary">Claim today's badge</button>
-
-      <!-- ACTIONS -->
-      <div class="actions-row">
-        <button id="shareXBtn" class="btn-ghost btn-small">Share on X</button>
-        <button id="shareFcBtn" class="btn-ghost btn-small">Share on Farcaster</button>
-        <button id="copyCaptionBtn" class="btn-ghost btn-small">Copy caption</button>
-        <button id="downloadSvgBtn" class="btn-ghost btn-small">Download SVG</button>
-        <button id="mintBtn" class="btn-ghost btn-small">Onchain mint</button>
-      </div>
-
-      <div id="status" class="status"></div>
-
-      <!-- CAPTION PREVIEW -->
-      <div class="caption-preview">
-        <div class="caption-label">Caption preview</div>
-        <div id="captionText"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT SIDE -->
-  <div>
-    <div class="right-header">
-      <div class="theme-pill">
-        <div class="theme-dot"></div>
-        Badgehub 3 upgraded
-      </div>
-      <div class="theme-select">
-        <span>Theme</span>
-        <select id="themeSelect">
-          <option value="sky">Sky</option>
-          <option value="mint">Mint</option>
-          <option value="sunset">Sunset</option>
-          <option value="violet">Violet</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="badge-card">
-      <div class="badge" id="badgeMain">
-        <!-- big name top -->
-        <div class="badge-name-large" id="badgeNameLarge">----</div>
-
-        <!-- CARTOON FROG + PILL -->
-        <div class="frog-wrapper">
-          <div class="frog-head">
-            <div class="frog-eye left">
-              <div class="frog-eye-inner"></div>
-            </div>
-            <div class="frog-eye right">
-              <div class="frog-eye-inner"></div>
-            </div>
-            <div class="frog-mouth"></div>
-          </div>
-          <div class="frog-pill">
-            <span class="frog-pill-label" id="badgePillId">----</span>
-          </div>
-        </div>
-
-        <!-- SMALL TEXT BOTTOM -->
-        <div class="badge-text">
-          <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">
-            Daily Check-in
-          </div>
-          <div id="badgeDateText">--</div>
-        </div>
-      </div>
-
-      <div class="badge-meta">
-        <span>Badgehub · base mini app</span>
-        <span id="lastClaimLabel">Not claimed yet</span>
-      </div>
-
-      <div class="metrics">
-        <div class="chip">Streak<span id="streakValue">0 day(s)</span></div>
-        <div class="chip">Total claimed<span id="totalValue">0</span></div>
-        <div class="chip">Last claim<span id="lastDayValue">-</span></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ethers.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.umd.min.js"></script>
 
 <script>
 (function () {
   // ======== ONCHAIN CONFIG (PUT YOUR CONTRACT ADDRESS HERE) ========
-  const CONTRACT_ADDRESS = "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE"; // <-- apna Base Sepolia contract yaha
+  const CONTRACT_ADDRESS = "0x3A7518A3F42029F24B26733E8DD8562C09AE"; // <- tumhara Base Sepolia contract
 
   const CONTRACT_ABI = [
     {
@@ -666,6 +67,7 @@
   var lastClaimLabel = document.getElementById("lastClaimLabel");
 
   var STORAGE_KEY = "badgehub_state_v8";
+  var LAST_FID_KEY = "badgehub_last_fid";
 
   // ======== HELPERS ========
   function todayISO() {
@@ -735,6 +137,28 @@
   // Unicode-safe base64
   function toBase64Unicode(str) {
     return btoa(unescape(encodeURIComponent(str)));
+  }
+
+  // Auto FID detection from URL (Farcaster style)
+  function getFidFromUrl() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return (
+        params.get("fid") ||
+        params.get("viewer_fid") ||
+        params.get("viewerFid") ||
+        null
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistFid() {
+    var f = (fidInput.value || "").trim();
+    if (f) {
+      localStorage.setItem(LAST_FID_KEY, f);
+    }
   }
 
   function createSvg(state) {
@@ -863,8 +287,19 @@
     }
   }
 
-  // ======== STATE INIT ========
+  // ======== STATE INIT + AUTO FID DETECT ========
   var state = loadState();
+
+  var initialFid =
+    getFidFromUrl() ||
+    localStorage.getItem(LAST_FID_KEY) ||
+    "";
+
+  if (initialFid) {
+    fidInput.value = initialFid;
+    showStatus("Detected FID: " + initialFid, "success");
+  }
+
   updatePreview(state);
   applyTheme(themeSelect.value);
 
@@ -888,6 +323,7 @@
     state.total += 1;
     state.lastClaimDate = today;
     saveState(state);
+    persistFid();
 
     updatePreview(state);
     showStatus("Badge claimed. Streak updated.", "success");
@@ -943,13 +379,17 @@
 
   fidInput.addEventListener("input", function () {
     updatePreview(state);
+    persistFid();
   });
+
   badgeTypeInput.addEventListener("input", function () {
     updatePreview(state);
   });
+
   randomColorToggle.addEventListener("change", function () {
     updatePreview(state);
   });
+
   themeSelect.addEventListener("change", function () {
     applyTheme(themeSelect.value);
     updatePreview(state);
@@ -957,6 +397,3 @@
 
 })();
 </script>
-
-</body>
-</html>
