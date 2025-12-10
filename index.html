@@ -602,10 +602,30 @@
 
 <script>
 (function () {
-  // ======== ONCHAIN CONFIG (PUT YOUR CONTRACT ADDRESS HERE) ========
-  const CONTRACT_ADDRESS = "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE"; // <-- apna Base Sepolia contract yaha
+  /* =========================
+   * CONFIG + FEATURE FLAGS
+   * ========================= */
+  const CONFIG = {
+    contractAddress: "0x3a7518a3F4D22F9f2b4b26733EEdd81562C0F9AE", // <- yaha apna Base Sepolia address
+    chainId: 84532,
+    explorerBase: "https://sepolia.basescan.org"
+  };
 
-  const CONTRACT_ABI = [
+  const FEATURES = {
+    farcasterAutoFID: false,   // future: Farcaster frame se FID auto
+    persistFIDLocally: true,   // last used FID save/load
+    onchainMint: true          // agar kabhi mint band karna ho to toggle
+  };
+
+  const STORAGE_KEYS = {
+    state: "badgehub_state_v9",
+    lastFid: "badgehub_last_fid"
+  };
+
+  /* =========================
+   * ONCHAIN / WALLET LAYER
+   * ========================= */
+  const ABI = [
     {
       "inputs": [
         { "internalType": "address", "name": "to", "type": "address" },
@@ -629,53 +649,54 @@
   async function connectWallet() {
     if (!window.ethereum) {
       alert("Install MetaMask/Base wallet and switch to Base Sepolia Testnet.");
-      throw new Error("no wallet");
+      throw new Error("no-wallet");
     }
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    contract = new ethers.Contract(CONFIG.contractAddress, ABI, signer);
     return signer.getAddress();
   }
 
-  // ======== DOM ELEMENTS ========
-  var fidInput = document.getElementById("fidInput");
-  var badgeTypeInput = document.getElementById("badgeTypeInput");
-  var randomColorToggle = document.getElementById("randomColorToggle");
-  var autoCopyToggle = document.getElementById("autoCopyToggle");
-  var themeSelect = document.getElementById("themeSelect");
+  /* =========================
+   * DOM REFERENCES
+   * ========================= */
+  const fidInput = document.getElementById("fidInput");
+  const badgeTypeInput = document.getElementById("badgeTypeInput");
+  const randomColorToggle = document.getElementById("randomColorToggle");
+  const autoCopyToggle = document.getElementById("autoCopyToggle");
+  const themeSelect = document.getElementById("themeSelect");
 
-  var claimBtn = document.getElementById("claimBtn");
-  var shareXBtn = document.getElementById("shareXBtn");
-  var shareFcBtn = document.getElementById("shareFcBtn");
-  var copyCaptionBtn = document.getElementById("copyCaptionBtn");
-  var downloadSvgBtn = document.getElementById("downloadSvgBtn");
-  var mintBtn = document.getElementById("mintBtn");
+  const claimBtn = document.getElementById("claimBtn");
+  const shareXBtn = document.getElementById("shareXBtn");
+  const shareFcBtn = document.getElementById("shareFcBtn");
+  const copyCaptionBtn = document.getElementById("copyCaptionBtn");
+  const downloadSvgBtn = document.getElementById("downloadSvgBtn");
+  const mintBtn = document.getElementById("mintBtn");
 
-  var statusEl = document.getElementById("status");
-  var captionTextEl = document.getElementById("captionText");
+  const statusEl = document.getElementById("status");
+  const captionTextEl = document.getElementById("captionText");
 
-  var badgeNameLarge = document.getElementById("badgeNameLarge");
-  var badgePillId = document.getElementById("badgePillId");
-  var badgeTypeText = document.getElementById("badgeTypeText");
-  var badgeDateText = document.getElementById("badgeDateText");
+  const badgeNameLarge = document.getElementById("badgeNameLarge");
+  const badgePillId = document.getElementById("badgePillId");
+  const badgeTypeText = document.getElementById("badgeTypeText");
+  const badgeDateText = document.getElementById("badgeDateText");
 
-  var streakValue = document.getElementById("streakValue");
-  var totalValue = document.getElementById("totalValue");
-  var lastDayValue = document.getElementById("lastDayValue");
-  var lastClaimLabel = document.getElementById("lastClaimLabel");
+  const streakValue = document.getElementById("streakValue");
+  const totalValue = document.getElementById("totalValue");
+  const lastDayValue = document.getElementById("lastDayValue");
+  const lastClaimLabel = document.getElementById("lastClaimLabel");
 
-  var STORAGE_KEY = "badgehub_state_v8";
-
-  // ======== HELPERS ========
+  /* =========================
+   * UTILITIES / HELPERS
+   * ========================= */
   function todayISO() {
-    var d = new Date();
-    return d.toISOString().slice(0, 10);
+    return new Date().toISOString().slice(0, 10);
   }
 
   function formatDateShort(iso) {
     if (!iso) return "-";
-    var d = new Date(iso + "T00:00:00");
+    const d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString(undefined, {
       day: "2-digit",
       month: "2-digit",
@@ -684,47 +705,23 @@
   }
 
   function dayDiff(a, b) {
-    var da = new Date(a + "T00:00:00");
-    var db = new Date(b + "T00:00:00");
-    var ms = da - db;
+    const da = new Date(a + "T00:00:00");
+    const db = new Date(b + "T00:00:00");
+    const ms = da - db;
     return Math.round(ms / (1000 * 60 * 60 * 24));
   }
 
   function applyTheme(theme) {
-    var body = document.body;
+    const body = document.body;
     body.classList.remove("theme-sky","theme-mint","theme-sunset","theme-violet");
     body.classList.add("theme-" + theme);
   }
 
   function randomTheme() {
-    var list = ["sky","mint","sunset","violet"];
-    var t = list[Math.floor(Math.random() * list.length)];
+    const list = ["sky","mint","sunset","violet"];
+    const t = list[Math.floor(Math.random() * list.length)];
     themeSelect.value = t;
     applyTheme(t);
-  }
-
-  function loadState() {
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { total: 0, streak: 0, lastClaimDate: null };
-    }
-    try { return JSON.parse(raw); }
-    catch (e) { return { total: 0, streak: 0, lastClaimDate: null }; }
-  }
-
-  function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
-
-  function updateCaption(state) {
-    var fid = fidInput.value || "Anon";
-    var type = badgeTypeInput.value || "Daily Check-in";
-    var caption =
-      "#" + fid + " " + type + " badge earned\n\n" +
-      "Streak: " + state.streak + " day(s) | Total: " + state.total +
-      "\n#Badgehub #Base";
-    captionTextEl.textContent = caption;
-    return caption;
   }
 
   function showStatus(msg, type) {
@@ -732,36 +729,71 @@
     statusEl.className = "status " + (type || "");
   }
 
-  // Unicode-safe base64
   function toBase64Unicode(str) {
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEYS.state);
+    if (!raw) return { total: 0, streak: 0, lastClaimDate: null };
+    try { return JSON.parse(raw); }
+    catch (e) { return { total: 0, streak: 0, lastClaimDate: null }; }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(state));
+  }
+
+  function loadLastFid() {
+    if (!FEATURES.persistFIDLocally) return "";
+    return localStorage.getItem(STORAGE_KEYS.lastFid) || "";
+  }
+
+  function saveLastFid(fid) {
+    if (!FEATURES.persistFIDLocally) return;
+    const clean = (fid || "").trim();
+    if (clean) {
+      localStorage.setItem(STORAGE_KEYS.lastFid, clean);
+    }
+  }
+
+  function updateCaption(state) {
+    const fid = fidInput.value || "Anon";
+    const type = badgeTypeInput.value || "Daily Check-in";
+    const caption =
+      "#" + fid + " " + type + " badge earned\n\n" +
+      "Streak: " + state.streak + " day(s) | Total: " + state.total +
+      "\n#Badgehub #Base";
+    captionTextEl.textContent = caption;
+    return caption;
+  }
+
+  /* =========================
+   * BADGE SVG + PREVIEW
+   * ========================= */
   function createSvg(state) {
-    var fid = fidInput.value || "Anon";
-    var type = badgeTypeInput.value || "Daily Check-in";
-    var dateText = state.lastClaimDate
+    const fid = fidInput.value || "Anon";
+    const type = badgeTypeInput.value || "Daily Check-in";
+    const dateText = state.lastClaimDate
       ? formatDateShort(state.lastClaimDate)
       : todayISO();
-    var theme = themeSelect.value;
+    const theme = themeSelect.value;
 
-    var bg1 = "#38bdf8";
-    var bg2 = "#0ea5e9";
+    let bg1 = "#38bdf8";
+    let bg2 = "#0ea5e9";
     if (theme === "mint") { bg1 = "#22c55e"; bg2 = "#16a34a"; }
     else if (theme === "sunset") { bg1 = "#f97316"; bg2 = "#facc15"; }
     else if (theme === "violet") { bg1 = "#a855f7"; bg2 = "#6366f1"; }
 
-    var svg =
+    const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">' +
       '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
       '<stop offset="0%" stop-color="' + bg1 + '"/>' +
       '<stop offset="100%" stop-color="' + bg2 + '"/>' +
       '</linearGradient></defs>' +
       '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
-      // big name top centre
       '<text x="600" y="120" text-anchor="middle" font-size="44" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
       fid + '</text>' +
-      // frog head
       '<g transform="translate(0,30)">' +
       '<ellipse cx="600" cy="260" rx="120" ry="90" fill="#e5f4ff"/>' +
       '<circle cx="530" cy="210" r="32" fill="#e5f4ff"/>' +
@@ -770,11 +802,9 @@
       '<circle cx="670" cy="210" r="15" fill="#020617"/>' +
       '<path d="M555 290 Q600 330 645 290" stroke="#020617" stroke-width="4" fill="none"/>' +
       '</g>' +
-      // pill with id text
       '<rect x="430" y="380" width="340" height="40" rx="20" fill="#e5f4ff"/>' +
       '<text x="600" y="407" text-anchor="middle" font-size="28" font-family="system-ui, sans-serif" fill="#022c22" font-weight="600">' +
       fid + '</text>' +
-      // bottom text
       '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
       type + '</text>' +
       '<text x="1040" y="560" text-anchor="end" font-size="24" font-family="system-ui, sans-serif" fill="#022c22">' +
@@ -798,7 +828,7 @@
       lastClaimLabel.textContent = "Not claimed yet";
     }
 
-    var fid = fidInput.value || "----";
+    const fid = fidInput.value || "----";
     badgeNameLarge.textContent = fid;
     badgePillId.textContent = fid;
     badgeTypeText.textContent = badgeTypeInput.value || "Daily Check-in";
@@ -815,8 +845,15 @@
     updateCaption(state);
   }
 
-  // ======== ONCHAIN MINT ========
+  /* =========================
+   * ONCHAIN MINT
+   * ========================= */
   async function mintOnchain(state) {
+    if (!FEATURES.onchainMint) {
+      showStatus("Onchain mint is disabled in config.", "error");
+      return;
+    }
+
     try {
       showStatus("Connecting wallet...", "");
       const account = await connectWallet();
@@ -863,14 +900,23 @@
     }
   }
 
-  // ======== STATE INIT ========
-  var state = loadState();
+  /* =========================
+   * INIT + EVENT BINDINGS
+   * ========================= */
+  const state = loadState();
+
+  // FID init – abhi sirf last-used local storage se (Farcaster hook OFF)
+  const lastFid = loadLastFid();
+  if (lastFid) {
+    fidInput.value = lastFid;
+  }
+
   updatePreview(state);
   applyTheme(themeSelect.value);
 
-  // ======== EVENT HANDLERS ========
+  /* --- BUTTONS / INPUTS --- */
   claimBtn.addEventListener("click", function () {
-    var today = todayISO();
+    const today = todayISO();
 
     if (state.lastClaimDate === today) {
       showStatus("Today's badge already claimed.", "error");
@@ -878,7 +924,7 @@
     }
 
     if (state.lastClaimDate) {
-      var diff = dayDiff(today, state.lastClaimDate);
+      const diff = dayDiff(today, state.lastClaimDate);
       if (diff === 1) state.streak += 1;
       else state.streak = 1;
     } else {
@@ -889,29 +935,31 @@
     state.lastClaimDate = today;
     saveState(state);
 
+    if (fidInput.value) saveLastFid(fidInput.value);
+
     updatePreview(state);
     showStatus("Badge claimed. Streak updated.", "success");
 
     if (autoCopyToggle.checked && navigator.clipboard) {
-      var caption = updateCaption(state);
+      const caption = updateCaption(state);
       navigator.clipboard.writeText(caption).catch(function () {});
     }
   });
 
   shareXBtn.addEventListener("click", function () {
-    var caption = updateCaption(state);
-    var url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
+    const caption = updateCaption(state);
+    const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
   shareFcBtn.addEventListener("click", function () {
-    var caption = updateCaption(state);
-    var url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
+    const caption = updateCaption(state);
+    const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
     window.open(url, "_blank");
   });
 
   copyCaptionBtn.addEventListener("click", function () {
-    var caption = updateCaption(state);
+    const caption = updateCaption(state);
     if (!navigator.clipboard) {
       showStatus("Clipboard API not available.", "error");
       return;
@@ -924,10 +972,10 @@
   });
 
   downloadSvgBtn.addEventListener("click", function () {
-    var svg = createSvg(state);
-    var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
+    const svg = createSvg(state);
+    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
     a.href = url;
     a.download = "badgehub-badge.svg";
     document.body.appendChild(a);
@@ -943,13 +991,17 @@
 
   fidInput.addEventListener("input", function () {
     updatePreview(state);
+    if (fidInput.value) saveLastFid(fidInput.value);
   });
+
   badgeTypeInput.addEventListener("input", function () {
     updatePreview(state);
   });
+
   randomColorToggle.addEventListener("change", function () {
     updatePreview(state);
   });
+
   themeSelect.addEventListener("change", function () {
     applyTheme(themeSelect.value);
     updatePreview(state);
