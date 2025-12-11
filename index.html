@@ -1,246 +1,289 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub Daily & Weekly</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Badgehub - Daily & Weekly Badge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body{font-family:Inter,system-ui,Segoe UI,Arial;background:#071017;color:#dfeff6;padding:28px;}
-    .wrap{max-width:760px;margin:0 auto}
-    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#0b1418;color:#fff;margin-bottom:12px}
-    button{padding:12px 16px;border-radius:10px;border:0;background:#1e9cff;color:#fff;margin-right:8px;cursor:pointer}
-    button.secondary{background:#444}
-    .muted{color:#9fb0bf;margin-top:10px}
-    .status{margin-top:12px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);color:#bfe6c9}
-    .error{color:#ff9fa0;background:rgba(255,100,100,0.06);padding:8px;border-radius:6px}
+    body { font-family: system-ui, Arial; background:#07121a; color:#e6fff6; padding:24px; }
+    .container{max-width:900px;margin:0 auto}
+    input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid #28474f;background:#0b2a31;color:#fff}
+    button{padding:10px 16px;border-radius:10px;border:0;margin:6px;background:#0b82b7;color:#fff;cursor:pointer}
+    button.secondary{background:#3b3b3b}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .status{margin-top:12px;padding:10px;border-radius:8px}
+    .ok{background:#062d12;color:#a9f7b8}
+    .err{background:#3b0b0b;color:#ffb4b4}
+    .muted{color:#aac7cd}
+    .preview{margin-top:18px;background:#071f25;padding:14px;border-radius:8px}
   </style>
-  <!-- ethers v5 CDN -->
+
+  <!-- load ethers (v5) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Badgehub Daily & Weekly</h1>
+  <div class="container">
+    <h1>Badgehub Daily & Weekly Badge</h1>
 
     <label>Your FID / name</label>
-    <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" />
+    <input id="fidInput" placeholder="enter your FID (e.g. anon)" />
 
-    <div>
+    <div class="row">
       <button id="connectBtn">Connect Wallet</button>
       <button id="refreshBtn" class="secondary">Refresh</button>
     </div>
 
-    <div style="margin-top:14px;">
-      <button id="localClaimBtn" class="secondary">Claim Today's Badge (local)</button>
+    <div class="row">
+      <button id="claimLocalBtn" class="secondary">Claim Today's Badge (local)</button>
       <button id="mintDailyBtn">Mint Daily Badge Onchain</button>
-      <button id="mintWeekBtn">Mint Weekly Badge Onchain</button>
+      <button id="mintWeeklyBtn">Mint Weekly Badge Onchain</button>
     </div>
 
-    <div id="status" class="status">UI initializing...</div>
-    <div id="preview" style="margin-top:14px">Preview: -</div>
-    <div id="errorBox" style="margin-top:12px"></div>
+    <div id="uiStatus" class="status muted">UI initializing...</div>
 
-    <div class="muted">Tip: "local" claim stores data in browser (for testing). Onchain mint will call the smart contract.</div>
+    <div class="preview">
+      <div><strong id="previewName">-</strong></div>
+      <div class="muted" id="streakInfo">Streak: 0 | Last claim: -</div>
+    </div>
   </div>
 
 <script>
-(async function(){
-  // ---------- CONFIG ----------
-  const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // <- your deployed contract
-  // ABI (trimmed/used from the ABI you shared - must include mintBadge & mintWeekBadge)
-  const ABI = [
-    {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-    // some helpful read functions
-    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
-  ];
+/*
+  IMPORTANT: set your deployed contract address below (the new one from Remix/Blockscout)
+*/
+const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // <- replace if needed
 
-  // ---------- DOM ----------
-  const statusEl = document.getElementById('status');
-  const errorBox = document.getElementById('errorBox');
-  const preview = document.getElementById('preview');
-  const fidInput = document.getElementById('fid');
-  const connectBtn = document.getElementById('connectBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const localClaimBtn = document.getElementById('localClaimBtn');
-  const mintDailyBtn = document.getElementById('mintDailyBtn');
-  const mintWeekBtn = document.getElementById('mintWeekBtn');
+// ------------------ ABI (from your contract) ------------------
+// Use the ABI you provided earlier — trimmed / included exactly:
+const ABI = [
+  {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+  {"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},
+  {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},
+  {"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},
+  {"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},
+  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},
+  {"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},
+  {"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},
+  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},
+  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
+  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"badgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"nextTokenId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"weeksMinted","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"weekBadgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"}
+];
 
-  let provider = null;
-  let signer = null;
-  let account = null;
-  let contract = null;
+// ------------------ app code ------------------
+let provider = null;
+let signer = null;
+let contract = null;
 
-  function setStatus(txt){ statusEl.innerText = txt; }
-  function setError(txt){ errorBox.innerHTML = txt ? '<div class="error">'+txt+'</div>':''; }
+const connectBtn = document.getElementById('connectBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const claimLocalBtn = document.getElementById('claimLocalBtn');
+const mintDailyBtn = document.getElementById('mintDailyBtn');
+const mintWeeklyBtn = document.getElementById('mintWeeklyBtn');
+const fidInput = document.getElementById('fidInput');
+const uiStatus = document.getElementById('uiStatus');
+const previewName = document.getElementById('previewName');
+const streakInfo = document.getElementById('streakInfo');
 
-  // Safe provider init
-  async function initProvider(){
-    try{
-      if(window.ethereum){
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-        setStatus("Wallet provider detected. CONFIG_CONTRACT_ADDRESS: " + CONFIG_CONTRACT_ADDRESS);
-        contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, provider);
-        return true;
-      } else {
-        setError("No injected wallet detected. Install MetaMask or use a browser with an injected ethereum provider.");
-        setStatus("No injected provider");
-        return false;
-      }
-    } catch(e){
-      console.error("initProvider error", e);
-      setError("Error initializing provider: " + (e && e.message ? e.message : e));
-      return false;
-    }
-  }
+function setStatus(text, cls = 'muted') {
+  uiStatus.className = 'status';
+  if (cls === 'ok') uiStatus.classList.add('ok');
+  else if (cls === 'err') uiStatus.classList.add('err');
+  else uiStatus.classList.add('muted');
+  uiStatus.textContent = text;
+}
 
-  // Connect wallet
-  async function connectWallet(){
-    setError("");
-    try{
-      if(!window.ethereum) {
-        setError("No injected wallet found.");
-        return;
-      }
-      // Request accounts
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      account = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-      signer = provider.getSigner();
-      contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-      setStatus("Connected: " + account);
-      connectBtn.innerText = "Connected";
-      previewUpdate();
-    } catch(err){
-      console.error("connectWallet error", err);
-      setError("Connect wallet cancelled or failed. See console for details.");
-      setStatus("Connect wallet cancelled or failed.");
-    }
-  }
-
-  // Preview update (show simple preview and streak)
-  function previewUpdate(){
-    const fid = (fidInput.value || "anon").trim();
-    const streak = getLocalStreak(fid);
-    preview.innerHTML = `<strong>${fid}</strong><br/>Daily Check-In · Streak: ${streak}`;
-  }
-
-  // Simple local claim logic using localStorage per FID
-  function getLocalStreak(fid){
-    if(!fid) return 0;
-    const key = 'badgehub_local_'+fid;
-    const val = localStorage.getItem(key);
-    if(!val) return 0;
-    try{ return parseInt(val) || 0; } catch(e){ return 0; }
-  }
-  function setLocalStreak(fid, n){
-    if(!fid) return;
-    const key = 'badgehub_local_'+fid;
-    localStorage.setItem(key, String(n));
-  }
-
-  localClaimBtn.addEventListener('click', ()=>{
-    setError("");
-    const fid = (fidInput.value || "anon").trim();
-    if(!fid){ setError("Enter FID first."); return; }
-    const now = Date.now();
-    let s = getLocalStreak(fid);
-    s = s + 1;
-    setLocalStreak(fid, s);
-    setStatus("Badge claimed locally. Streak updated: " + s);
-    previewUpdate();
-  });
-
-  // Mint daily onchain: calls mintBadge(to, fid, badgeType_, date, streak, tokenURI_)
-  mintDailyBtn.addEventListener('click', async ()=>{
-    setError("");
-    if(!signer) {
-      setError("Please connect wallet first.");
+// initialize UI and try to set up provider
+async function initUI() {
+  try {
+    if (!window.ethers) {
+      setStatus('Error initializing provider: ethers is not defined', 'err');
+      console.error('ethers is not defined. Make sure ethers script is loaded.');
       return;
     }
-    const fid = (fidInput.value || "anon").trim();
-    if(!fid){ setError("Enter FID first."); return; }
-    try{
-      setStatus("Preparing transaction...");
-      // simple streak from local
-      let streak = getLocalStreak(fid) || 1;
-      // set date as unix seconds
-      const date = Math.floor(Date.now()/1000);
-      const to = await signer.getAddress();
-      const badgeType = "Daily Check-in";
-      const tokenURI = ""; // <-- put your metadata URI here if you have one
-      const tx = await contract.mintBadge(to, fid, badgeType, date, streak, tokenURI);
-      setStatus("Transaction sent. Waiting for confirmation: " + tx.hash);
-      await tx.wait();
-      setStatus("Mint successful: " + tx.hash);
-      // optionally increment local streak after onchain mint
-      setLocalStreak(fid, streak+1);
-      previewUpdate();
-    } catch (err) {
-      console.error("mintDaily error", err);
-      setError("Mint failed: " + (err && err.message ? err.message : err));
-      setStatus("Mint failed.");
+
+    setStatus('UI ready. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS, 'ok');
+
+    // if window.ethereum present, create provider
+    if (window.ethereum) {
+      provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+      // create contract instance with provider (read-only) for now
+      contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, provider);
+      console.log('contract ready (read-only)', contract.address);
+    } else {
+      setStatus('No Ethereum provider (MetaMask). Local claims only.', 'err');
     }
-  });
 
-  // Mint weekly onchain: calls mintWeekBadge(to, fid, weekNumber, date, streak, tokenURI_)
-  mintWeekBtn.addEventListener('click', async ()=>{
-    setError("");
-    if(!signer) { setError("Please connect wallet first."); return; }
-    const fid = (fidInput.value || "anon").trim();
-    if(!fid){ setError("Enter FID first."); return; }
-    try{
-      setStatus("Preparing weekly mint...");
-      const to = await signer.getAddress();
-      const weekNumber = 1; // change logic to compute weekNumber if you want
-      const date = Math.floor(Date.now()/1000);
-      const streak = getLocalStreak(fid) || 0;
-      const tokenURI = "";
-      const tx = await contract.mintWeekBadge(to, fid, weekNumber, date, streak, tokenURI);
-      setStatus("Transaction sent. Waiting... " + tx.hash);
-      await tx.wait();
-      setStatus("Weekly mint successful: " + tx.hash);
-    } catch(err){
-      console.error("mintWeek error", err);
-      setError("Weekly mint failed: " + (err && err.message ? err.message : err));
-      setStatus("Mint failed.");
-    }
-  });
-
-  connectBtn.addEventListener('click', connectWallet);
-  refreshBtn.addEventListener('click', () => {
-    previewUpdate();
-    setStatus("Refreshed UI.");
-    setError("");
-  });
-
-  // initialize page
-  const ready = await initProvider();
-  if(ready) setStatus("UI ready. CONFIG_CONTRACT_ADDRESS: " + CONFIG_CONTRACT_ADDRESS);
-  previewUpdate();
-
-  // listen for account/chain changes
-  if(window.ethereum){
-    window.ethereum.on('accountsChanged', (accounts) => {
-      if(accounts && accounts.length) {
-        account = accounts[0];
-        setStatus("Account changed: " + account);
-        signer = (provider ? provider.getSigner() : null);
-        contract = signer ? new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer) : new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, provider);
-      } else {
-        account = null;
-        signer = null;
-        setStatus("Not connected");
-      }
-    });
-    window.ethereum.on('chainChanged', (chainId) => {
-      // reload recommended after chain change
-      setStatus("Network/chain changed. Refresh recommended.");
-    });
+    refreshPreview();
+  } catch (err) {
+    console.error('initUI error', err);
+    setStatus('Error initializing UI: ' + (err && err.message), 'err');
   }
+}
 
-})();
+// connect wallet
+async function connectWallet() {
+  try {
+    if (!window.ethereum) throw new Error('No wallet (window.ethereum) found');
+    // request accounts
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    const address = await signer.getAddress();
+    setStatus('Connected: ' + address, 'ok');
+
+    // contract with signer for write calls
+    contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
+
+    console.log('connected signer', address);
+    refreshPreview();
+  } catch (err) {
+    console.error('connectWallet error', err);
+    setStatus('Connect wallet cancelled or failed. See console.', 'err');
+  }
+}
+
+// local claim (store in localStorage)
+function claimLocal() {
+  const fid = (fidInput.value || 'anon').trim();
+  const key = 'badgehub_local_claim_' + fid;
+  const now = Date.now();
+  localStorage.setItem(key, JSON.stringify({ date: now, streak: 1 }));
+  setStatus('Badge claimed (local). Streak set.', 'ok');
+  refreshPreview();
+}
+
+// call mintBadge onchain
+async function mintDailyOnchain() {
+  const fid = (fidInput.value || 'anon').trim();
+  if (!contract || !signer) { setStatus('Wallet not connected or contract not ready', 'err'); return; }
+
+  // prepare params
+  const to = await signer.getAddress();
+  const badgeType = "Daily Check-in";
+  const date = Math.floor(Date.now() / 1000); // unix seconds
+  const streak = 1; // example, you may fetch actual streak
+  const tokenURI = ""; // if you have metadata URI put here
+
+  try {
+    setStatus('Sending mint transaction (daily)...', 'muted');
+    const tx = await contract.mintBadge(to, fid, badgeType, date, streak, tokenURI);
+    console.log('tx sent', tx.hash);
+    setStatus('Transaction sent: ' + tx.hash, 'ok');
+    // wait mined
+    await tx.wait();
+    setStatus('Badge minted onchain 🎉', 'ok');
+    refreshPreview();
+  } catch (err) {
+    console.error('mintDailyOnchain error', err);
+    const msg = err && (err.error && err.error.message) || err.message || String(err);
+    setStatus('Mint failed: ' + msg, 'err');
+  }
+}
+
+// call mintWeekBadge onchain
+async function mintWeeklyOnchain() {
+  const fid = (fidInput.value || 'anon').trim();
+  if (!contract || !signer) { setStatus('Wallet not connected or contract not ready', 'err'); return; }
+
+  const to = await signer.getAddress();
+  const weekNumber = 1; // example week number — change logic as per your app
+  const date = Math.floor(Date.now() / 1000);
+  const streak = 7;
+  const tokenURI = "";
+
+  try {
+    setStatus('Sending mint transaction (weekly)...', 'muted');
+    const tx = await contract.mintWeekBadge(to, fid, weekNumber, date, streak, tokenURI);
+    console.log('weekly tx', tx.hash);
+    setStatus('Transaction sent: ' + tx.hash, 'ok');
+    await tx.wait();
+    setStatus('Weekly badge minted onchain 🎉', 'ok');
+    refreshPreview();
+  } catch (err) {
+    console.error('mintWeeklyOnchain error', err);
+    const msg = err && (err.error && err.error.message) || err.message || String(err);
+    setStatus('Mint failed: ' + msg, 'err');
+  }
+}
+
+// refresh UI preview
+function refreshPreview() {
+  const fid = (fidInput.value || 'anon').trim();
+  previewName.textContent = fid;
+  // check local storage
+  const k = 'badgehub_local_claim_' + fid;
+  const data = localStorage.getItem(k);
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      const last = parsed.date ? new Date(parsed.date).toLocaleString() : '-';
+      streakInfo.textContent = `Streak: ${parsed.streak || 1} | Last claim: ${last}`;
+    } catch(e) {
+      streakInfo.textContent = 'Streak: 0 | Last claim: -';
+    }
+  } else {
+    streakInfo.textContent = 'Streak: 0 | Last claim: -';
+  }
+}
+
+// attach events
+connectBtn.addEventListener('click', async ()=> {
+  try {
+    if (!window.ethereum) {
+      alert('No wallet detected. Install MetaMask or use a browser with wallet extension.');
+      return;
+    }
+    // ensure ethers provider created
+    if (!provider) provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    await connectWallet();
+  } catch (err) {
+    console.error('connectBtn error', err);
+    setStatus('Connect wallet cancelled or failed. See console.', 'err');
+  }
+});
+refreshBtn.addEventListener('click', ()=> {
+  refreshPreview();
+});
+claimLocalBtn.addEventListener('click', ()=> {
+  claimLocal();
+});
+mintDailyBtn.addEventListener('click', async ()=> {
+  await mintDailyOnchain();
+});
+mintWeeklyBtn.addEventListener('click', async ()=> {
+  await mintWeeklyOnchain();
+});
+
+// init on load
+window.addEventListener('load', () => {
+  initUI();
+});
 </script>
 </body>
 </html>
