@@ -2,986 +2,314 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub - Daily & Weekly</title>
+  <title>Badgehub Daily & Weekly — Demo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Ethers v6 (recommended). If you use v5 only, change script accordingly -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
+
   <style>
-    body { font-family: Inter, Arial, sans-serif; background:#071019; color:#dbe7f7; padding:24px; }
-    .card { max-width:720px; margin:0 auto; background:#071826; border-radius:10px; padding:20px; box-shadow:0 6px 30px rgba(0,0,0,.6);}
-    input, button { font-size:16px; padding:10px; border-radius:8px; border:1px solid #2b3b46; background:#0f2934; color:#e7f6fb; width:100%; box-sizing:border-box; }
-    .row { display:flex; gap:12px; margin-top:12px; }
-    button { cursor:pointer; }
-    .small { width:160px; }
-    .msg { margin-top:12px; padding:8px; border-radius:6px; background:#0b2230; color:#9fe7b0; }
-    .err { color:#ff7b7b; background:#2d0b0b; padding:8px; border-radius:6px; margin-top:10px; }
-    .status { margin-top:10px; color:#9fcaff }
+    body{font-family:Inter,system-ui,Arial;background:#061219;color:#e6f0f6;margin:0;padding:20px;}
+    .card{max-width:820px;margin:18px auto;background:#071428;border-radius:12px;padding:22px;box-shadow:0 6px 30px rgba(0,0,0,.6);}
+    h1{margin:0 0 10px;color:#7fe0c8}
+    input[type="text"]{width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:#021018;color:#fff}
+    .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    button{padding:12px 16px;border-radius:10px;border:0;background:#1f8ec7;color:#fff;cursor:pointer}
+    button.secondary{background:#2d3b4c}
+    button.danger{background:#c75252}
+    .muted{color:#99b0bf;font-size:13px;margin-top:8px}
+    .status{margin-top:12px;color:#7fe0c8}
+    .notice{color:#ff8b6b;margin-top:10px}
+    #previewCard{margin-top:18px;padding:14px;border-radius:8px;background:linear-gradient(90deg,#0b2f3a,#003042);min-height:80px}
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>Badgehub Daily & Weekly Badge</h2>
+    <h1>Badgehub Daily & Weekly Badge — Demo</h1>
 
     <label>Your FID / name</label>
-    <input id="fidInput" placeholder="your FID / name" value="anon" />
-
-    <div class="row" style="margin-top:12px;">
-      <button id="connectBtn" class="small">Connect Wallet</button>
-      <button id="refreshBtn" class="small">Refresh</button>
-    </div>
-
-    <div style="margin-top:12px;">
-      <button id="claimLocalBtn">Claim Today's Badge (local)</button>
-    </div>
+    <input id="fidInput" type="text" placeholder="enter FID (eg. your-name)" value="anon" />
 
     <div class="row">
-      <button id="mintOnchainBtn">Mint Daily Badge Onchain</button>
-      <button id="mintWeekBtn">Mint Weekly Badge Onchain</button>
+      <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+      <button id="refreshBtn" onclick="refreshStatus()" class="secondary">Refresh</button>
+      <div id="walletStatus" style="align-self:center;margin-left:auto">Not connected</div>
     </div>
 
-    <div id="status" class="status">Not connected</div>
-    <div id="message" class="msg" style="display:none"></div>
-    <div id="error" class="err" style="display:none"></div>
-
-    <hr style="margin:18px 0; border-color:#123a45" />
-
-    <div>
-      <strong>Preview</strong>
-      <div id="preview" style="margin-top:12px; padding:12px; background:#03181f; border-radius:8px;">
-        <div id="previewName">-</div>
-        <div id="previewStatus" style="margin-top:8px;color:#9fcaff;">Streak: 0 | Last claim: -</div>
-      </div>
+    <div class="row" style="margin-top:18px">
+      <button id="localClaimBtn" onclick="claimLocal()">Claim Today's Badge (local)</button>
+      <button id="mintDailyBtn" onclick="mintOnchain()" disabled>Mint Daily Badge Onchain</button>
+      <button id="mintWeekBtn" onclick="mintWeekOnchain()" disabled>Mint Weekly Badge Onchain</button>
     </div>
+
+    <div class="muted">Note: "local" claim stores data in your browser. Onchain mints call the smart contract.</div>
+    <div id="msg" class="notice"></div>
+
+    <div id="previewCard">
+      <div id="previewTitle">Preview</div>
+      <div id="previewBody" style="margin-top:8px">-</div>
+      <div style="margin-top:8px;font-size:13px;color:#9fb7c1" id="previewMeta">Streak: 0 | Last claim: -</div>
+    </div>
+
+    <div style="margin-top:14px;color:#a9c7d2;font-size:13px">Console logs will show more info (press F12 & open Console).</div>
   </div>
 
-  <!-- ethers UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.umd.min.js"></script>
   <script>
-    // ---------- CONFIG ----------
-    const contractAddress = "0xd0999A9A52270B59c341b4d87ee8c22c9633306E"; // <--- your deployed contract
-    const ABI = /* pasted ABI object */ [
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "ERC721IncorrectOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC721InsufficientApproval",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "approver",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidApprover",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidOperator",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "receiver",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidReceiver",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidSender",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC721NonexistentToken",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "approved",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "ApprovalForAll",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "_fromTokenId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "_toTokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "BatchMetadataUpdate",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "_tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "MetadataUpdate",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "badgeData",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "fid",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "badgeType",
-				"type": "string"
-			},
-			{
-				"internalType": "uint64",
-				"name": "date",
-				"type": "uint64"
-			},
-			{
-				"internalType": "uint32",
-				"name": "streak",
-				"type": "uint32"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "getApproved",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			}
-		],
-		"name": "isApprovedForAll",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "lastMintTime",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "fid",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "badgeType_",
-				"type": "string"
-			},
-			{
-				"internalType": "uint64",
-				"name": "date",
-				"type": "uint64"
-			},
-			{
-				"internalType": "uint32",
-				"name": "streak",
-				"type": "uint32"
-			},
-			{
-				"internalType": "string",
-				"name": "tokenURI_",
-				"type": "string"
-			}
-		],
-		"name": "mintBadge",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "fid",
-				"type": "string"
-			},
-			{
-				"internalType": "uint32",
-				"name": "weekNumber",
-				"type": "uint32"
-			},
-			{
-				"internalType": "uint64",
-				"name": "date",
-				"type": "uint64"
-			},
-			{
-				"internalType": "uint32",
-				"name": "streak",
-				"type": "uint32"
-			},
-			{
-				"internalType": "string",
-				"name": "tokenURI_",
-				"type": "string"
-			}
-		],
-		"name": "mintWeekBadge",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "nextTokenId",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ownerOf",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "data",
-				"type": "bytes"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "setApprovalForAll",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes4",
-				"name": "interfaceId",
-				"type": "bytes4"
-			}
-		],
-		"name": "supportsInterface",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "tokenURI",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "weekBadgeData",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "fid",
-				"type": "string"
-			},
-			{
-				"internalType": "uint32",
-				"name": "weekNumber",
-				"type": "uint32"
-			},
-			{
-				"internalType": "uint64",
-				"name": "date",
-				"type": "uint64"
-			},
-			{
-				"internalType": "uint32",
-				"name": "streak",
-				"type": "uint32"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "weeksMinted",
-		"outputs": [
-			{
-				"internalType": "uint32",
-				"name": "",
-				"type": "uint32"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+  /**************************************************************
+   * CONFIG - replace contract address if you deployed other one
+   **************************************************************/
+  window.CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306E"; // <-- replace if needed
 
-    // ------------------------------
-    let provider, signer, contract;
-    const connectBtn = document.getElementById('connectBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const claimLocalBtn = document.getElementById('claimLocalBtn');
-    const mintOnchainBtn = document.getElementById('mintOnchainBtn');
-    const mintWeekBtn = document.getElementById('mintWeekBtn');
-    const status = document.getElementById('status');
-    const message = document.getElementById('message');
-    const errorBox = document.getElementById('error');
-    const previewName = document.getElementById('previewName');
-    const previewStatus = document.getElementById('previewStatus');
-    const fidInput = document.getElementById('fidInput');
+  // ABI pasted from your contract (trimmed/unchanged from what you provided)
+  window.CONFIG_ABI = [
+    {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+    {"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},
+    {"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},
+    {"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"badgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"nextTokenId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"weeksMinted","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"weekBadgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"}
+  ];
 
-    function showMsg(text){ message.style.display='block'; message.innerText = text; }
-    function showErr(text){ errorBox.style.display='block'; errorBox.innerText = text; }
-    function clearBoxes(){ message.style.display='none'; errorBox.style.display='none'; }
+  /**************************************************************
+   * Application state vars
+   **************************************************************/
+  let provider = null;
+  let signer = null;
+  let userAddress = null;
+  let contract = null;
 
-    async function connectWallet(){
-      clearBoxes();
-      if(!window.ethereum){ showErr('MetaMask not detected'); return; }
-      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-      try{
-        await provider.send("eth_requestAccounts", []);
+  // UI refs
+  const connectBtn = document.getElementById("connectBtn");
+  const walletStatus = document.getElementById("walletStatus");
+  const msgEl = document.getElementById("msg");
+  const previewBody = document.getElementById("previewBody");
+  const previewMeta = document.getElementById("previewMeta");
+  const fidInput = document.getElementById("fidInput");
+  const mintDailyBtn = document.getElementById("mintDailyBtn");
+  const mintWeekBtn = document.getElementById("mintWeekBtn");
+
+  /**************************************************************
+   * Connect Wallet (supports ethers v6 and v5)
+   **************************************************************/
+  async function connectWallet() {
+    try {
+      if (!window.ethereum) {
+        alert("MetaMask / Wallet not found. Install MetaMask.");
+        return;
+      }
+
+      // request accounts
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      userAddress = accounts[0];
+      console.log("accounts:", accounts);
+
+      // Create provider & signer in a version-compatible way
+      if (window.ethers && window.ethers.BrowserProvider) {
+        // ethers v6
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+      } else if (window.ethers && window.ethers.providers && window.ethers.providers.Web3Provider) {
+        // ethers v5
+        provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
-        const addr = await signer.getAddress();
-        status.innerText = `Connected: ${addr}`;
-        contract = new ethers.Contract(contractAddress, ABI, signer);
-        showMsg('Contract connected (read+write)');
-        await updatePreview();
-      }catch(e){
-        console.error(e); showErr('Connection failed: '+ (e?.message||e));
-      }
-    }
-
-    async function refresh(){
-      clearBoxes();
-      if(!contract && window.ethereum){
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-        signer = provider.getSigner();
-        contract = new ethers.Contract(contractAddress, ABI, signer);
-      }
-      await updatePreview();
-    }
-
-    // local claim (no onchain) - uses contract.lastMintTime to check
-    async function claimLocal(){
-      clearBoxes();
-      const fid = fidInput.value.trim() || "anon";
-      try{
-        if(!provider){ showErr('Connect wallet first'); return; }
-        const addr = await signer.getAddress();
-        const last = await contract.lastMintTime(addr);
-        const lastMs = Number(last) * 1000; // if contract uses seconds; if it's unix seconds
-        // If last is 0 - never minted
-        const now = Date.now();
-        const diff = now - lastMs;
-        if(lastMs>0 && diff < 24*60*60*1000){
-          showErr('Already claimed in last 24 hours (contract enforces the rule).');
-          return;
-        }
-        // update UI preview only (not mintage)
-        previewName.innerText = fid;
-        previewStatus.innerText = `Streak: 1 (local) | Last claim: just now`;
-        showMsg('Badge claimed locally (UI updated) — onchain mint will create token');
-      }catch(e){
-        console.error(e); showErr('Error: '+(e?.message||e));
-      }
-    }
-
-    // Mint daily badge onchain
-    async function mintOnchain(){
-      clearBoxes();
-      if(!contract){ showErr('Connect wallet first'); return; }
-      const fid = fidInput.value.trim() || "anon";
-      try{
-        // get signer address
-        const addr = await signer.getAddress();
-
-        // check lastMintTime from contract (prevent immediate re-mint)
-        const last = await contract.lastMintTime(addr);
-        const lastMs = Number(last) * 1000;
-        const now = Date.now();
-        if(lastMs>0 && now - lastMs < 24*60*60*1000){
-          showErr('Already minted in last 24 hours (contract prevents re-mint).');
-          return;
-        }
-
-        const date = Math.floor(Date.now()/1000); // unix seconds
-        const streak = 1; // if you maintain streak logic on backend or contract, adapt accordingly
-        const tokenURI = "https://example.com/token-metadata.json"; // replace with your tokenURI or on-the-fly generated URL
-        showMsg('Sending mint transaction — check MetaMask');
-        const tx = await contract.mintBadge(addr, fid, "Daily Check-in", date, streak, tokenURI);
-        showMsg('Tx sent. Waiting confirmation...');
-        await tx.wait();
-        showMsg('Badge minted onchain 🎉');
-        await updatePreview();
-      }catch(e){
-        console.error(e);
-        showErr('Mint failed: '+(e?.data?.message || e?.message || e));
-      }
-    }
-
-    // Mint weekly onchain
-    async function mintWeekOnchain(){
-      clearBoxes();
-      if(!contract){ showErr('Connect wallet first'); return; }
-      const fid = fidInput.value.trim() || "anon";
-      try{
-        const addr = await signer.getAddress();
-        const weekNumber = 1; // compute your week number logic if you want
-        const date = Math.floor(Date.now()/1000);
-        const streak = 7; // example
-        const tokenURI = "https://example.com/weekly-token.json";
-        showMsg('Sending weekly mint tx — check MetaMask');
-        const tx = await contract.mintWeekBadge(addr, fid, weekNumber, date, streak, tokenURI);
-        await tx.wait();
-        showMsg('Weekly badge minted onchain 🎉');
-        await updatePreview();
-      }catch(e){
-        console.error(e);
-        showErr('Mint failed: '+(e?.data?.message || e?.message || e));
-      }
-    }
-
-    // Update preview by calling contract views (basic)
-    async function updatePreview(){
-      if(!contract) return;
-      try{
-        const act = await signer.getAddress();
-        // Try to read lastMintTime and weeksMinted
-        const last = await contract.lastMintTime(act).catch(()=>0);
-        const weeks = await contract.weeksMinted(act).catch(()=>0);
-        const lastTs = Number(last);
-        const lastText = lastTs ? new Date(lastTs*1000).toLocaleString() : "never";
-        previewName.innerText = fidInput.value || "anon";
-        previewStatus.innerText = `Streak: ? | Last claim: ${lastText} | Weeks minted: ${weeks}`;
-      }catch(e){
-        console.warn('preview update failed', e);
-      }
-    }
-
-    // Wire buttons
-    connectBtn.addEventListener('click', connectWallet);
-    refreshBtn.addEventListener('click', refresh);
-    claimLocalBtn.addEventListener('click', claimLocal);
-    mintOnchainBtn.addEventListener('click', mintOnchain);
-    mintWeekBtn.addEventListener('click', mintWeekOnchain);
-
-    // Auto-check if metamask already connected
-    (async ()=>{
-      if(window.ethereum){
-        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-        try{
-          const accounts = await provider.listAccounts();
-          if(accounts.length>0){
-            signer = provider.getSigner();
-            contract = new ethers.Contract(contractAddress, ABI, signer);
-            status.innerText = `Connected: ${accounts[0]}`;
-            await updatePreview();
-          } else {
-            status.innerText = "Click Connect to use onchain features";
-          }
-        }catch(e){
-          console.warn('auto init', e);
-        }
       } else {
-        status.innerText = 'MetaMask not found';
+        console.error("Ethers not found or incompatible version");
+        alert("Ethers library missing or incompatible.");
+        return;
       }
-    })();
 
+      walletStatus.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      msgEl.innerText = "";
+
+      // Load contract if ABI and address set
+      if (window.CONFIG_CONTRACT_ADDRESS && window.CONFIG_ABI) {
+        contract = new ethers.Contract(window.CONFIG_CONTRACT_ADDRESS, window.CONFIG_ABI, signer);
+        console.log("Contract instance created at:", contract.address);
+        msgEl.innerText = `Contract loaded at ${contract.address}`;
+        mintDailyBtn.disabled = false;
+        mintWeekBtn.disabled = false;
+      } else {
+        console.warn("ABI or contract address missing");
+        msgEl.innerText = "ABI or contract address missing; onchain mint disabled.";
+        mintDailyBtn.disabled = true;
+        mintWeekBtn.disabled = true;
+      }
+
+      // listen for account change
+      window.ethereum.on && window.ethereum.on('accountsChanged', (accs) => {
+        if (accs.length===0) { walletStatus.innerText = "Not connected"; }
+        else { userAddress = accs[0]; walletStatus.innerText = `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`; }
+      });
+
+    } catch (err) {
+      console.error("connectWallet err:", err);
+      msgEl.innerText = "Could not connect. See console.";
+    }
+  }
+
+  /**************************************************************
+   * Local claim (stores in browser localStorage for quick test)
+   **************************************************************/
+  function claimLocal() {
+    const fid = (fidInput.value || "anon").trim();
+    if (!fid) { alert("Enter your FID"); return; }
+
+    // simple record per-FID date & streak in localStorage
+    const key = `badge_claim_${fid}`;
+    const rec = JSON.parse(localStorage.getItem(key) || "null");
+    const now = Date.now();
+    if (rec && (now - rec.lastClaim < 24*3600*1000)) {
+      msgEl.innerText = "Already claimed in last 24 hours (local).";
+      return;
+    }
+
+    const streak = rec ? (rec.streak || 0) + 1 : 1;
+    const newRec = { lastClaim: now, streak };
+    localStorage.setItem(key, JSON.stringify(newRec));
+
+    previewBody.innerText = `#${fid} Daily Check-in badge earned\n\nStreak: ${streak} day(s) | Total: ${streak}\n#Badgehub #Base`;
+    previewMeta.innerText = `Streak: ${streak} | Last claim: ${new Date(now).toLocaleString()}`;
+    msgEl.innerText = "Badge claimed (local). Streak updated.";
+    console.log("Local claim:", newRec);
+  }
+
+  /**************************************************************
+   * Mint onchain daily - calls mintBadge(to, fid, badgeType_, date, streak, tokenURI_)
+   **************************************************************/
+  async function mintOnchain() {
+    if (!contract || !signer) {
+      alert("Connect wallet and ensure contract ABI/address are set.");
+      return;
+    }
+    const fid = (fidInput.value || "anon").trim();
+    if (!fid) { alert("Enter FID"); return; }
+
+    try {
+      // gather onchain parameters
+      const to = await signer.getAddress();
+      const badgeType = "Daily Check-in";
+      const date = Math.floor(Date.now() / 1000); // unix sec
+      // attempt to compute streak from contract or local fallback
+      let streak = 1;
+      try {
+        if (window.ethers && contract.lastMintTime) {
+          // if contract maintains badgeData mapping we can't easily read streak, so use local fallback
+        }
+      } catch(e){ /* ignore */ }
+
+      const tokenURI = ""; // optionally upload metadata and set real tokenURI
+
+      msgEl.innerText = "Sending onchain mint transaction...";
+      console.log("mintBadge params:", {to,fid,badgeType,date,streak,tokenURI});
+
+      const tx = await contract.mintBadge(to, fid, badgeType, date, streak, tokenURI);
+      console.log("mint tx:", tx);
+      msgEl.innerText = "Transaction sent — waiting confirmation...";
+      await tx.wait();
+      msgEl.innerText = `Mint succeeded. TxHash: ${tx.hash}`;
+    } catch (err) {
+      console.error("mintOnchain error:", err);
+      msgEl.innerText = "Mint failed: " + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  /**************************************************************
+   * Mint weekly onchain - calls mintWeekBadge(to, fid, weekNumber, date, streak, tokenURI_)
+   **************************************************************/
+  async function mintWeekOnchain() {
+    if (!contract || !signer) {
+      alert("Connect wallet and ensure contract ABI/address are set.");
+      return;
+    }
+    const fid = (fidInput.value || "anon").trim();
+    if (!fid) { alert("Enter FID"); return; }
+
+    try {
+      const to = await signer.getAddress();
+      const weekNumber = getCurrentWeekNumber(); // simple helper below
+      const date = Math.floor(Date.now() / 1000);
+      const streak = 7; // example, you can compute real streak logic server-side or via contract
+
+      msgEl.innerText = "Sending weekly mint transaction...";
+      console.log("mintWeekBadge params:", {to,fid,weekNumber,date,streak});
+
+      const tx = await contract.mintWeekBadge(to, fid, weekNumber, date, streak, "");
+      console.log("mintWeek tx:", tx);
+      msgEl.innerText = "Transaction sent — waiting confirmation...";
+      await tx.wait();
+      msgEl.innerText = `Weekly mint succeeded. TxHash: ${tx.hash}`;
+    } catch (err) {
+      console.error("mintWeekOnchain error:", err);
+      msgEl.innerText = "Weekly mint failed: " + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  // small helper for week number (ISO-ish): returns year-week integer
+  function getCurrentWeekNumber() {
+    const d = new Date();
+    const onejan = new Date(d.getFullYear(),0,1);
+    const dayOfYear = Math.floor((d - onejan) / (24*60*60*1000)) + 1;
+    const weekNo = Math.ceil((dayOfYear + onejan.getDay()) / 7);
+    return weekNo;
+  }
+
+  // refresh UI preview from localStorage
+  function refreshStatus() {
+    const fid = (fidInput.value || "anon").trim();
+    const key = `badge_claim_${fid}`;
+    const rec = JSON.parse(localStorage.getItem(key) || "null");
+    if (rec) {
+      previewBody.innerText = `#${fid} Daily Check-in badge earned\n\nStreak: ${rec.streak} day(s) | Total: ${rec.streak}\n#Badgehub #Base`;
+      previewMeta.innerText = `Streak: ${rec.streak} | Last claim: ${new Date(rec.lastClaim).toLocaleString()}`;
+    } else {
+      previewBody.innerText = "-";
+      previewMeta.innerText = "Streak: 0 | Last claim: -";
+    }
+  }
+
+  // initialize on load
+  (function init() {
+    refreshStatus();
+    // disable onchain buttons until wallet connected
+    mintDailyBtn.disabled = true;
+    mintWeekBtn.disabled = true;
+
+    // If you want auto-connect if wallet already connected, uncomment below:
+    // if (window.ethereum && window.ethereum.selectedAddress) connectWallet();
+
+    console.log("Badgehub UI ready. CONFIG_CONTRACT_ADDRESS:", window.CONFIG_CONTRACT_ADDRESS);
+  })();
   </script>
 </body>
 </html>
