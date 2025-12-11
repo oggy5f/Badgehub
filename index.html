@@ -1,262 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Badgehub</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badgehub Daily & Weekly Badge</title>
 
-<style>
+  <style>
     body {
-        background:#0a0a0a;
-        color:white;
-        font-family:Arial, sans-serif;
-        padding:20px;
+      background: #0d0f14;
+      font-family: Arial, sans-serif;
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    .container{
-        max-width:420px;
-        margin:auto;
-        background:#111;
-        padding:20px;
-        border-radius:12px;
-        border:1px solid #222;
+
+    .container {
+      width: 380px;
+      background: #11141c;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
     }
-    input, button {
-        width:100%;
-        padding:12px;
-        margin-top:12px;
-        border-radius:8px;
-        border:none;
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 22px;
+      color: #4db8ff;
     }
+
     input {
-        background:#222;
-        color:white;
-        font-size:16px;
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 12px;
+      background: #1a1f27;
+      color: white;
+      font-size: 16px;
     }
+
     button {
-        background:#3478f6;
-        color:white;
-        font-size:16px;
-        cursor:pointer;
-        font-weight:bold;
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      font-weight: bold;
     }
-    button:disabled {
-        background:#444;
-        cursor:not-allowed;
+
+    button:hover { opacity: 0.9; }
+
+    #status {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      color: #66f;
     }
+
     #badgePreview {
-        margin-top:20px;
-        background:#fff;
-        padding:20px;
-        border-radius:12px;
-        text-align:center;
+      margin-top: 20px;
+      padding: 15px;
+      background: #1a1f27;
+      border-radius: 10px;
     }
-</style>
+  </style>
 </head>
 
 <body>
-
-<div class="container">
+  <div class="container">
 
     <h2>Badgehub Daily & Weekly Badge</h2>
 
-    <!-- USER NAME / FID -->
-    <input id="nameInput" placeholder="Your Name / FID" />
+    <input id="nameInput" placeholder="Your FID / Name" />
 
-    <!-- DAILY CLAIM -->
     <button id="claimBtn">Claim Today's Badge</button>
-
-    <!-- ONCHAIN DAILY MINT -->
     <button id="mintDailyBtn">Mint Daily Badge Onchain</button>
+    <button id="weeklyMintBtn" style="display:none;">Mint Weekly Badge</button>
 
-    <!-- WEEKLY MINT BUTTON (hidden until streak 7) -->
-    <button id="weeklyMintBtn" style="display:none; background:#e68a00;">
-        🎉 Mint 1-Week Badge
-    </button>
+    <p id="status">Status: Waiting...</p>
 
     <div id="badgePreview"></div>
 
-    <p id="status" style="color:#66f; margin-top:15px;"></p>
+  </div>
 
-</div>
+  <!-- Ethers -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.8.0/ethers.umd.min.js"></script>
 
+  <!-- MAIN SCRIPT STARTS -->
+  <script>
 
-<!-- Ethers -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.8.0/ethers.umd.min.js"></script>
+  const CONFIG = {
+    chainId: 84532,
+    contractAddress: "" // <<<<<<==== Yaha apna CONTRACT ADDRESS daalo
+  };
 
+  const CONTRACT_ABI = null; 
+  // <<<<<<==== ABI ARRAY yaha paste karna hai 
+  // Example: const CONTRACT_ABI = [ { "inputs": [...], "name": "mintBadge", ... } ];
 
-<script>
+  const nameInput = document.getElementById("nameInput");
+  const claimBtn = document.getElementById("claimBtn");
+  const mintDailyBtn = document.getElementById("mintDailyBtn");
+  const weeklyMintBtn = document.getElementById("weeklyMintBtn");
+  const statusP = document.getElementById("status");
+  const badgePreviewDiv = document.getElementById("badgePreview");
 
-// ------------------------
-// CONFIG
-// ------------------------
+  let streak = Number(localStorage.getItem("streak") || 0);
+  let lastClaim = localStorage.getItem("lastClaim");
 
-const CONFIG = {
-    chainId: 84532,  // Base Sepolia
-    contractAddress: "PASTE_YOUR_NEW_CA_HERE",
-};
+  let provider = null;
+  let signer = null;
+  let contract = null;
 
-// ------------------------
-// CONTRACT ABI (Paste Your ABI Here)
-// ------------------------
-const CONTRACT_ABI = PASTE_YOUR_ABI_HERE;
+  function setStatus(msg, color="cyan") {
+    statusP.innerText = msg;
+    statusP.style.color = color;
+    console.log(msg);
+  }
 
-
-// ------------------------
-// STATE
-// ------------------------
-let streak = 0;
-let lastDailyMint = 0;
-
-
-// ------------------------
-// DAILY CLAIM HANDLER
-// ------------------------
-document.getElementById("claimBtn").onclick = () => {
-    const today = new Date().toDateString();
-    const saved = localStorage.getItem("lastClaim");
-
-    if (saved === today) {
-        alert("Already claimed today!");
-        return;
-    }
-
-    streak++;
-    localStorage.setItem("streak", streak);
-    localStorage.setItem("lastClaim", today);
-
-    updateWeeklyButton();
-    updateBadgePreview();
-
-    document.getElementById("status").innerText = "Daily badge claimed!";
-};
-
-
-// ------------------------
-// UPDATE WEEKLY BUTTON
-// ------------------------
-function updateWeeklyButton() {
-    const btn = document.getElementById("weeklyMintBtn");
-    if (streak >= 7) btn.style.display = "block";
-    else btn.style.display = "none";
-}
-
-
-// ------------------------
-// BADGE SVG PREVIEW
-// ------------------------
-function updateBadgePreview() {
-    const name = document.getElementById("nameInput").value || "User";
-
-    document.getElementById("badgePreview").innerHTML = `
-        <h3 style="color:black;">Daily Badge Preview</h3>
-        <svg width="320" height="200" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#2276f2"/>
-            <text x="50%" y="30%" fill="white" font-size="22px" text-anchor="middle">${name}</text>
-            <text x="50%" y="60%" fill="white" font-size="18px" text-anchor="middle">
-                Daily Check-in • Streak: ${streak}
-            </text>
-        </svg>
+  function updatePreview() {
+    const name = nameInput.value || "Anon";
+    badgePreviewDiv.innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:18px; font-weight:bold;">${name}</div>
+        <div style="font-size:14px;">Daily Check-In • Streak: ${streak}</div>
+      </div>
     `;
-}
+  }
+  updatePreview();
+  nameInput.addEventListener("input", updatePreview);
 
-
-// ------------------------
-// ONCHAIN DAILY MINT
-// ------------------------
-document.getElementById("mintDailyBtn").onclick = async () => {
-    try {
-        if (!window.ethereum) return alert("Connect wallet!");
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
-
-        const name = document.getElementById("nameInput").value || "User";
-
-        const svg = `<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#2276f2"/>
-            <text x="50%" y="30%" fill="white" font-size="22px" text-anchor="middle">${name}</text>
-            <text x="50%" y="60%" fill="white" font-size="18px" text-anchor="middle">
-                Streak: ${streak}
-            </text>
-        </svg>`;
-
-        const svg64 = btoa(svg);
-
-        const tokenURI = `data:application/json;base64,${btoa(JSON.stringify({
-            name: `${name} Daily Badge`,
-            description: "Daily Check-in Badge",
-            image: `data:image/svg+xml;base64,${svg64}`
-        }))}`;
-
-        const tx = await contract.mintBadge(
-            await signer.getAddress(),
-            name,
-            "Daily Check-in",
-            Math.floor(Date.now() / 1000),
-            streak,
-            tokenURI
-        );
-
-        document.getElementById("status").innerText = "Minting daily badge…";
-        await tx.wait();
-        document.getElementById("status").innerText = "Daily badge minted!";
-
-    } catch (e) {
-        alert("Error: " + e.message);
+  claimBtn.addEventListener("click", () => {
+    const today = new Date().toDateString();
+    if (lastClaim === today) {
+      setStatus("Already claimed today ❌", "orange");
+      return;
     }
-};
+    streak++;
+    lastClaim = today;
+    localStorage.setItem("streak", String(streak));
+    localStorage.setItem("lastClaim", today);
+    updatePreview();
+    setStatus("Badge claimed locally ✔️", "lightgreen");
 
+    if (streak >= 7) weeklyMintBtn.style.display = "block";
+  });
 
-// ------------------------
-// WEEKLY BADGE MINT
-// ------------------------
-document.getElementById("weeklyMintBtn").onclick = async () => {
+  async function connectWallet() {
+    if (!window.ethereum) return alert("MetaMask required");
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+
+    if (CONFIG.contractAddress && CONTRACT_ABI) {
+      contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
+    }
+
+    setStatus("Wallet connected ✔️", "lightgreen");
+  }
+
+  mintDailyBtn.addEventListener("click", async () => {
+    if (!signer) await connectWallet();
+    if (!contract) return setStatus("ABI missing — cannot mint onchain", "red");
+
+    const name = nameInput.value || "Anon";
+    const date = Math.floor(Date.now()/1000);
+
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='160'>
+        <rect width='100%' height='100%' fill='#2276f2'/>
+        <text x='50%' y='40%' text-anchor='middle' fill='white' font-size='18'>${name}</text>
+        <text x='50%' y='70%' text-anchor='middle' fill='white' font-size='14'>Streak: ${streak}</text>
+      </svg>`;
+
+    const tokenURI =
+      "data:application/json;base64," +
+      btoa(JSON.stringify({
+        name: `${name} Daily`,
+        description: "Daily badge",
+        image: "data:image/svg+xml;base64," + btoa(svg),
+      }));
+
     try {
-        const name = document.getElementById("nameInput").value || "User";
-
-        if (streak < 7) return alert("You need 7-day streak!");
-
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
-
-        const svg = `<svg width="320" height="260" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#f29e00"/>
-            <text x="50%" y="35%" fill="black" font-size="26px" text-anchor="middle">${name}</text>
-            <text x="50%" y="65%" fill="black" font-size="22px" text-anchor="middle">
-                🎉 1-Week Completed 🎉
-            </text>
-        </svg>`;
-
-        const svg64 = btoa(svg);
-
-        const tokenURI = `data:application/json;base64,${btoa(JSON.stringify({
-            name: `${name} 1-Week Badge`,
-            description: "Weekly Completion Badge",
-            image: `data:image/svg+xml;base64,${svg64}`
-        }))}`;
-
-        const tx = await contract.mintWeekBadge(
-            await signer.getAddress(),
-            name,
-            1,
-            Math.floor(Date.now()/1000),
-            streak,
-            tokenURI
-        );
-
-        document.getElementById("status").innerText = "Minting weekly badge…";
-        await tx.wait();
-
-        alert("🎉 Weekly badge minted successfully!");
-
+      setStatus("Mint transaction sending...", "yellow");
+      const tx = await contract.mintBadge(
+        await signer.getAddress(),
+        name,
+        "Daily",
+        date,
+        streak,
+        tokenURI
+      );
+      await tx.wait();
+      setStatus("Daily badge minted onchain ✔️", "lightgreen");
     } catch (err) {
-        alert("Weekly mint failed: " + err.message);
+      console.error(err);
+      setStatus("Mint failed: " + err.message, "red");
     }
-};
+  });
 
-</script>
+  weeklyMintBtn.addEventListener("click", async () => {
+    if (streak < 7) return setStatus("Need 7 days streak ❌", "orange");
+    setStatus("Weekly mint ready (function not implemented yet)", "yellow");
+  });
+
+  </script>
+  <!-- MAIN SCRIPT ENDS -->
 
 </body>
 </html>
