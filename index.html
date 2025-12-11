@@ -1,31 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub - connect debug (CDN fallback)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Badgehub - Daily / Weekly</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: system-ui, Arial; background:#07121a; color:#e6fff6; padding:22px; }
-    .container{max-width:900px;margin:0 auto}
-    input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid #28474f;background:#0b2a31;color:#fff}
-    button{padding:10px 16px;border-radius:10px;border:0;margin:6px;background:#0b82b7;color:#fff;cursor:pointer}
-    button.secondary{background:#3b3b3b}
-    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .status{margin-top:12px;padding:10px;border-radius:8px}
-    .ok{background:#062d12;color:#a9f7b8}
-    .err{background:#3b0b0b;color:#ffb4b4}
-    .muted{color:#aac7cd}
-    small.muted{color:#aac7cd;display:block;margin-top:8px}
+    body{background:#061021;color:#e6f0ff;font-family:Inter,system-ui,Arial;padding:28px;}
+    .card{max-width:820px;margin:0 auto;background:linear-gradient(180deg,#081426 0%, #041021 100%);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,.6);}
+    h1{margin:0 0 12px;font-size:22px;color:#bfe6ff}
+    input{padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);width:100%;box-sizing:border-box;background:rgba(255,255,255,.02);color:#e6f0ff}
+    .row{display:flex;gap:10px;margin-top:12px}
+    button{padding:10px 14px;border-radius:10px;border:0;background:#1b9cff;color:#fff;cursor:pointer}
+    button.secondary{background:#334155}
+    .muted{color:#9fb5c9;font-size:13px;margin-top:10px}
+    .status{margin-top:12px;padding:10px;border-radius:8px;background:rgba(0,0,0,.2)}
+    pre{background:#02101a;padding:12px;border-radius:8px;overflow:auto;color:#bfe6ff}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Badgehub - debug loader (CDN fallback)</h1>
+  <div class="card">
+    <h1>Badgehub — Daily & Weekly (Demo)</h1>
 
     <label>Your FID / name</label>
-    <input id="fidInput" placeholder="enter your FID (e.g. anon)" />
+    <input id="fidInput" placeholder="enter your FID (e.g. anon)" value="anon"/>
 
-    <div class="row">
+    <div class="row" style="margin-top:12px">
       <button id="connectBtn">Connect Wallet</button>
       <button id="refreshBtn" class="secondary">Refresh</button>
     </div>
@@ -33,189 +32,300 @@
     <div class="row">
       <button id="claimLocalBtn" class="secondary">Claim Today's Badge (local)</button>
       <button id="mintDailyBtn">Mint Daily Badge Onchain</button>
-      <button id="mintWeeklyBtn">Mint Weekly Badge Onchain</button>
+      <button id="mintWeekBtn">Mint Weekly Badge Onchain</button>
     </div>
 
-    <div id="uiStatus" class="status muted">UI initializing...</div>
+    <div id="uiStatus" class="status">UI initializing...</div>
 
-    <small class="muted">If you see "ethers is not defined" — CDN blocked. Download ethers.umd.min.js and put it in <code>/libs/ethers.umd.min.js</code>.</small>
+    <div class="muted">Tip: "local" claim stores data in browser (testing). Onchain mint will call the smart contract.</div>
+
+    <h3 style="margin-top:18px">Preview</h3>
+    <div id="preview" style="padding:12px;border-radius:8px;background:rgba(255,255,255,.02)"></div>
+
+    <h3 style="margin-top:12px">Console / Debug</h3>
+    <pre id="debugLog" style="height:160px">Logs will appear here...</pre>
   </div>
 
-<script>
-/* CONFIG: change if needed */
-const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306";
+  <!-- try loading ethers from CDN -->
+  <script>
+    // small helper to load script
+    function loadScript(src){
+      return new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error('fail load ' + src));
+        document.head.appendChild(s);
+      });
+    }
+  </script>
 
-/* UI helpers */
-const uiStatus = document.getElementById('uiStatus');
-const connectBtn = document.getElementById('connectBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const claimLocalBtn = document.getElementById('claimLocalBtn');
-const mintDailyBtn = document.getElementById('mintDailyBtn');
-const mintWeeklyBtn = document.getElementById('mintWeeklyBtn');
-const fidInput = document.getElementById('fidInput');
-
-function setStatus(msg, type='muted') {
-  uiStatus.className = 'status';
-  if (type === 'ok') uiStatus.classList.add('ok');
-  else if (type === 'err') uiStatus.classList.add('err');
-  else uiStatus.classList.add('muted');
-  uiStatus.textContent = msg;
-  console.log('[UI STATUS]', msg);
-}
-
-/* try-lists for CDN/UMD builds */
-const CDN_UMD_URLS = [
-  'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js',
-  'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js'
-];
-
-function loadScriptUrl(url) {
-  return new Promise((resolve, reject) => {
-    console.log('Attempting to load script:', url);
-    const s = document.createElement('script');
-    s.src = url;
-    s.async = true;
-    s.onload = () => {
-      console.log('Loaded script', url);
-      resolve(url);
+  <script>
+  (async function(){
+    const debug = (m)=> {
+      console.log(m);
+      const p = document.getElementById('debugLog');
+      p.textContent = (p.textContent ? p.textContent + "\n" : "") + (typeof m === 'object' ? JSON.stringify(m) : m);
+      p.scrollTop = p.scrollHeight;
     };
-    s.onerror = (e) => {
-      console.warn('Failed load', url, e);
-      reject(new Error('Failed to load ' + url));
-    };
-    document.head.appendChild(s);
-  });
-}
 
-/* try multiple CDNs then fallback to local file */
-async function ensureEthersWithFallback() {
-  if (window.ethers) {
-    console.log('ethers already present');
-    return;
-  }
-  // try CDN URLs sequentially
-  for (const url of CDN_UMD_URLS) {
+    // Try CDN -> fallback alert if blocked
     try {
-      await loadScriptUrl(url);
-      if (window.ethers) {
-        console.log('ethers ready from', url);
+      await loadScript('https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js');
+      debug("Ethers loaded from CDN.");
+    } catch(e){
+      debug("Failed to load ethers from CDN. If your browser blocks CDN, host ethers locally and update script.");
+      // continue; we will show message in UI if ethers undefined.
+    }
+
+    // ---------- CONFIG ----------
+    const CONFIG = {
+      CHAIN: 'base-sepolia', // informational only
+      CONTRACT_ADDRESS: '0xd0999A9A52270B59c341b4d87ee8c22c9633306' // <-- your deployed contract
+    };
+
+    // ABI (relevant functions included). Replace/extend if your contract differs.
+    const ABI = [
+      {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+      {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+      {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+      {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+      {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"weeksMinted","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
+      {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+      {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
+    ];
+
+    // UI elements
+    const connectBtn = document.getElementById('connectBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const claimLocalBtn = document.getElementById('claimLocalBtn');
+    const mintDailyBtn = document.getElementById('mintDailyBtn');
+    const mintWeekBtn = document.getElementById('mintWeekBtn');
+    const fidInput = document.getElementById('fidInput');
+    const uiStatus = document.getElementById('uiStatus');
+    const preview = document.getElementById('preview');
+
+    // state
+    let provider = null;
+    let signer = null;
+    let account = null;
+    let contract = null;
+
+    // helper
+    function setStatus(msg, isError){
+      uiStatus.innerText = msg;
+      uiStatus.style.background = isError ? 'rgba(255,40,60,0.12)' : 'rgba(0,120,200,0.06)';
+    }
+
+    function formatDateUnix(u){
+      try{
+        const d = new Date(Number(u)*1000);
+        return d.toLocaleString();
+      } catch(e){ return '-' }
+    }
+
+    // init provider (try to use window.ethereum + ethers)
+    async function initProvider(){
+      if(typeof ethers === 'undefined'){
+        setStatus('ethers is not defined. CDN may be blocked — see console.', true);
+        debug('ethers undefined. Host ethers locally or enable CDN.');
         return;
       }
-    } catch (e) {
-      console.warn('cdn attempt failed', url);
+      if(window.ethereum){
+        provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+        debug('provider created');
+        contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, ABI, provider);
+        setStatus('UI ready. CONTRACT: ' + CONFIG.CONTRACT_ADDRESS);
+      } else {
+        setStatus('No window.ethereum found. Install MetaMask.', true);
+      }
     }
-  }
-  // last fallback: local file path (you must place this in repo: libs/ethers.umd.min.js)
-  const local = '/libs/ethers.umd.min.js';
-  try {
-    await loadScriptUrl(local);
-    if (window.ethers) {
-      console.log('ethers loaded from local', local);
-      return;
+
+    // connect wallet
+    async function connectWallet(){
+      try{
+        if(!provider){
+          await initProvider();
+        }
+        if(!provider) return;
+        const accounts = await provider.send('eth_requestAccounts', []);
+        if(!accounts || accounts.length===0){
+          setStatus('Connect failed: wallet returned no accounts', true);
+          debug('no accounts returned');
+          return;
+        }
+        account = accounts[0];
+        signer = provider.getSigner();
+        contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, ABI, signer);
+        setStatus('Connected: ' + account);
+        debug('Connected account: ' + account);
+        refreshUI();
+      } catch(err){
+        console.error(err);
+        debug('connect error: ' + (err.message || err));
+        setStatus('Connect wallet cancelled or failed. See console.', true);
+      }
     }
-  } catch (err) {
-    console.error('local fallback failed', err);
-    throw new Error('All attempts to load ethers failed. Please add /libs/ethers.umd.min.js or allow CDN.');
-  }
-}
 
-/* wallet conflict detect */
-function detectWalletConflicts() {
-  if (!window.ethereum) {
-    setStatus('No wallet detected (window.ethereum missing) — install MetaMask.', 'err');
-    return false;
-  }
-  if (window.ethereum.isBraveWallet && !window.ethereum.isMetaMask) {
-    setStatus('Brave Wallet detected and may block MetaMask. Disable Brave Wallet or enable MetaMask.', 'err');
-    return false;
-  }
-  return true;
-}
-
-/* minimal app init */
-let provider = null;
-let signer = null;
-
-async function appInit() {
-  try {
-    await ensureEthersWithFallback();
-  } catch (err) {
-    console.error(err);
-    setStatus('ethers is not defined. Make sure CDN allowed or host /libs/ethers.umd.min.js', 'err');
-    return;
-  }
-
-  setStatus('ethers loaded. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS, 'ok');
-
-  if (!detectWalletConflicts()) {
-    console.warn('wallet conflict');
-  }
-
-  if (window.ethereum) {
-    try {
-      provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-      console.log('provider created');
-    } catch (err) {
-      console.error('provider error', err);
-      setStatus('Error creating provider: ' + err.message, 'err');
-      return;
-    }
-  } else {
-    setStatus('No wallet extension found — local tests only.', 'err');
-  }
-
-  connectBtn.onclick = async () => {
-    try {
-      if (!provider) {
-        setStatus('No provider. Install MetaMask and reload.', 'err');
+    // refresh UI (read last mint, weeks minted)
+    async function refreshUI(){
+      preview.innerHTML = '-';
+      if(!account){
+        setStatus('Not connected');
         return;
       }
-      await provider.send('eth_requestAccounts', []);
-      signer = provider.getSigner();
-      const addr = await signer.getAddress();
-      setStatus('Connected: ' + addr, 'ok');
-      console.log('connected address', addr);
-      // If you want to create a contract instance for writes, load ABI and do:
-      // contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-    } catch (err) {
-      console.error('connect error', err);
-      setStatus('Connect failed: ' + (err.message||err), 'err');
+      try{
+        // call lastMintTime
+        let last = 0;
+        if(contract && contract.lastMintTime){
+          const res = await contract.lastMintTime(account);
+          last = res ? res.toString() : '0';
+        }
+        // weeks minted
+        let weeks = 0;
+        if(contract && contract.weeksMinted){
+          const w = await contract.weeksMinted(account);
+          weeks = w ? Number(w) : 0;
+        }
+
+        preview.innerHTML = `<strong>${fidInput.value}</strong><br/>Daily Check-In · Streak: (onchain weeksMinted: ${weeks})<br/>Last onchain mint: ${ last && last !== '0' ? formatDateUnix(last) : '-' }`;
+        setStatus('Ready. Connected: ' + account);
+      } catch(err){
+        debug('refreshUI error: ' + (err.message || err));
+        setStatus('Refresh error. See console.', true);
+      }
     }
-  };
 
-  refreshBtn.onclick = () => {
-    setStatus('Refreshed UI info', 'ok');
-    console.log('refresh clicked');
-  };
+    // claim local (store lastClaim time for this fid)
+    function claimLocal(){
+      const fid = String(fidInput.value || 'anon').trim();
+      const key = 'badgehub_local_' + fid;
+      const now = Date.now();
+      // check last claim
+      const last = Number(localStorage.getItem(key) || 0);
+      const diff = now - last;
+      if(last && diff < (24*3600*1000)){
+        const hoursLeft = Math.round(((24*3600*1000) - diff)/3600000);
+        setStatus('Already claimed in last 24h (local). Wait ~' + hoursLeft + 'h', true);
+        return;
+      }
+      localStorage.setItem(key, now.toString());
+      setStatus('Badge claimed locally. Streak updated.');
+      preview.innerHTML = `<strong>${fid}</strong><br/>Daily Check-In · Streak: (local claim)`;
+    }
 
-  claimLocalBtn.onclick = () => {
-    const fid = (fidInput.value || 'anon').trim();
-    const key = 'badgehub_local_claim_' + fid;
-    localStorage.setItem(key, JSON.stringify({ date: Date.now(), streak: 1 }));
-    setStatus('Claim saved to localStorage for ' + fid, 'ok');
-  };
+    // helper to check 24h rule onchain using contract.lastMintTime
+    async function check24hOnchain(){
+      if(!contract || !account) return {ok:false,msg:'Not connected'};
+      try{
+        const lastBN = await contract.lastMintTime(account);
+        const last = lastBN ? Number(lastBN.toString()) : 0;
+        const now = Math.floor(Date.now()/1000);
+        const diff = now - last;
+        if(last !== 0 && diff < 24*3600){
+          return {ok:false,msg:'Already claimed in last 24 hours (onchain).'};
+        }
+        return {ok:true,msg:'OK', last};
+      } catch(err){
+        debug('check24hOnchain error: ' + (err.message||err));
+        return {ok:false,msg:'Error reading onchain lastMintTime'};
+      }
+    }
 
-  mintDailyBtn.onclick = () => {
-    setStatus('Mint button pressed — connect + ABI required. See console.', 'muted');
-    console.log('mintDaily clicked');
-  };
+    // MAKE tokenURI for a simple onchain mint test (you can replace with real JSON URL)
+    function makeTokenURI({fid,badgeType,date,streak}){
+      const data = {
+        name: `${fid} — ${badgeType}`,
+        description: `Badge: ${badgeType} for ${fid} on ${new Date(date*1000).toLocaleDateString()}`,
+        attributes: [{trait_type:'streak', value:streak}],
+      };
+      const json = JSON.stringify(data);
+      // data URL (small demo). For real use a hosted JSON URL or IPFS.
+      return 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(json)));
+    }
 
-  mintWeeklyBtn.onclick = () => {
-    setStatus('Mint weekly pressed — connect + ABI required. See console.', 'muted');
-    console.log('mintWeekly clicked');
-  };
+    // mint daily onchain
+    async function mintDailyOnchain(){
+      if(!signer || !account){
+        setStatus('Connect wallet first', true);
+        return;
+      }
+      try{
+        setStatus('Checking 24h rule...');
+        const chk = await check24hOnchain();
+        if(!chk.ok){ setStatus(chk.msg, true); return; }
 
-  setStatus('Ready. Try Connect Wallet. Check console/network for script loads.', 'ok');
-}
+        const fid = String(fidInput.value || 'anon').trim();
+        const now = Math.floor(Date.now()/1000);
+        const streak = 1; // frontend doesn't know exact streak; contract may update differently - adjust as needed
+        const tokenURI = makeTokenURI({fid,badgeType:'Daily Check-in',date:now,streak});
 
-/* run init */
-window.addEventListener('load', () => {
-  appInit().catch(e => {
-    console.error('appInit error', e);
-    setStatus('Initialization error: ' + (e.message||e), 'err');
-  });
-});
+        setStatus('Sending mint transaction (approve MetaMask)...');
+        debug('mintBadge params', account, fid, 'Daily Check-in', now, streak, tokenURI);
 
-</script>
+        const tx = await contract.mintBadge(account, fid, 'Daily Check-in', now, streak, tokenURI);
+        debug('tx sent: ' + tx.hash);
+        setStatus('Tx submitted: ' + tx.hash);
+        await tx.wait();
+        setStatus('Badge minted onchain! Tx: ' + tx.hash);
+        refreshUI();
+      } catch(err){
+        debug('mintDaily error: ' + (err.message || err));
+        setStatus('Mint failed: ' + (err.message || err), true);
+      }
+    }
+
+    // mint weekly onchain (weekNumber choose: using weeksMinted + 1)
+    async function mintWeeklyOnchain(){
+      if(!signer || !account){
+        setStatus('Connect wallet first', true);
+        return;
+      }
+      try{
+        // check weeksMinted
+        const w = await contract.weeksMinted(account);
+        const weekNumber = (Number(w || 0) + 1);
+        const fid = String(fidInput.value || 'anon').trim();
+        const now = Math.floor(Date.now()/1000);
+        const streak = 7; // example
+        const tokenURI = makeTokenURI({fid,badgeType:'Weekly Check-in',date:now,streak});
+
+        setStatus('Sending weekly mint tx...');
+        const tx = await contract.mintWeekBadge(account, fid, weekNumber, now, streak, tokenURI);
+        debug('week mint tx: ' + tx.hash);
+        setStatus('Tx submitted: ' + tx.hash);
+        await tx.wait();
+        setStatus('Weekly badge minted onchain! Tx: ' + tx.hash);
+        refreshUI();
+      } catch(err){
+        debug('mintWeek error: ' + (err.message || err));
+        setStatus('Mint weekly failed: ' + (err.message || err), true);
+      }
+    }
+
+    // bind UI
+    connectBtn.onclick = connectWallet;
+    refreshBtn.onclick = refreshUI;
+    claimLocalBtn.onclick = claimLocal;
+    mintDailyBtn.onclick = mintDailyOnchain;
+    mintWeekBtn.onclick = mintWeeklyOnchain;
+
+    // initialize
+    await initProvider();
+    setStatus('UI ready. CONTRACT_ADDRESS: ' + CONFIG.CONTRACT_ADDRESS);
+    debug('CONFIG loaded: ' + CONFIG.CONTRACT_ADDRESS);
+
+    // if provider exists and accounts already connected, populate
+    if(window.ethereum && window.ethereum.selectedAddress){
+      // auto connect if metamask already connected in this origin
+      try {
+        const accs = await window.ethereum.request({method:'eth_accounts'});
+        if(accs && accs.length>0){
+          debug('auto-accounts found. auto connecting...');
+          await connectWallet();
+        }
+      } catch(e){ debug('auto connect err: '+ e); }
+    }
+
+  })();
+  </script>
 </body>
 </html>
