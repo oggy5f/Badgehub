@@ -1,1122 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Badgehub – Daily Check-in</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<title>Badgehub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <style>
-    /* ---------- THEME TOKENS ---------- */
-    :root {
-      --bg: #020617;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #1f2937;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.12);
-      --primary-from: #22c55e;
-      --primary-to: #a3e635;
-      --chip-bg: #020617;
-      --chip-border: #374151;
-      --badge-from: #38bdf8;
-      --badge-to: #0ea5e9;
-    }
-
-    body.theme-sky {
-      --bg: #020617;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #1f2937;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.12);
-      --primary-from: #22c55e;
-      --primary-to: #a3e635;
-      --chip-bg: #020617;
-      --chip-border: #374151;
-      --badge-from: #38bdf8;
-      --badge-to: #0ea5e9;
-    }
-
-    body.theme-mint {
-      --bg: #022c22;
-      --bg-soft: #022c22;
-      --panel-bg: #041f19;
-      --panel-border: #064e3b;
-      --accent: #4ade80;
-      --accent-soft: rgba(74, 222, 128, 0.14);
-      --primary-from: #4ade80;
-      --primary-to: #22c55e;
-      --chip-bg: #022c22;
-      --chip-border: #064e3b;
-      --badge-from: #22c55e;
-      --badge-to: #16a34a;
-    }
-
-    body.theme-sunset {
-      --bg: #111827;
-      --bg-soft: #111827;
-      --panel-bg: #020617;
-      --panel-border: #7c2d12;
-      --accent: #fb923c;
-      --accent-soft: rgba(251, 146, 60, 0.15);
-      --primary-from: #fb923c;
-      --primary-to: #facc15;
-      --chip-bg: #020617;
-      --chip-border: #7c2d12;
-      --badge-from: #f97316;
-      --badge-to: #facc15;
-    }
-
-    body.theme-violet {
-      --bg: #0b1020;
-      --bg-soft: #020617;
-      --panel-bg: #020617;
-      --panel-border: #4c1d95;
-      --accent: #a855f7;
-      --accent-soft: rgba(168, 85, 247, 0.16);
-      --primary-from: #a855f7;
-      --primary-to: #6366f1;
-      --chip-bg: #020617;
-      --chip-border: #4c1d95;
-      --badge-from: #a855f7;
-      --badge-to: #6366f1;
-    }
-
-    /* ---------- BASE LAYOUT ---------- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
+<style>
     body {
-      background:
-        radial-gradient(circle at top, var(--bg-soft), #000000 65%);
-      color: #e5e7eb;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
+        background:#0a0a0a;
+        color:white;
+        font-family:Arial, sans-serif;
+        padding:20px;
     }
-
-    .app {
-      width: 100%;
-      max-width: 1100px;
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 24px;
-      background: radial-gradient(circle at top left, var(--bg-soft), #000000);
-      padding: 24px;
-      border-radius: 24px;
-      border: 1px solid var(--panel-border);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    .container{
+        max-width:420px;
+        margin:auto;
+        background:#111;
+        padding:20px;
+        border-radius:12px;
+        border:1px solid #222;
     }
-
-    @media (max-width: 900px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
+    input, button {
+        width:100%;
+        padding:12px;
+        margin-top:12px;
+        border-radius:8px;
+        border:none;
     }
-
-    h1 {
-      font-size: 22px;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+    input {
+        background:#222;
+        color:white;
+        font-size:16px;
     }
-
-    .subtitle {
-      font-size: 12px;
-      color: #9ca3af;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    .panel {
-      border-radius: 18px;
-      border: 1px solid var(--panel-border);
-      padding: 16px;
-      background: var(--panel-bg);
-    }
-
-    .label {
-      font-size: 11px;
-      color: #9ca3af;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .input {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 9px 14px;
-      background: #020617;
-      color: #e5e7eb;
-      font-size: 14px;
-    }
-
-    .input:focus-within {
-      outline: 1px solid var(--accent);
-      border-color: var(--accent);
-    }
-
-    input[type="text"],
-    select {
-      width: 100%;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: inherit;
-      font-size: 14px;
-    }
-
-    .pill {
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      text-transform: uppercase;
-    }
-
-    .toggles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 12px 0;
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid #374151;
-      font-size: 11px;
-      color: #9ca3af;
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .toggle input {
-      accent-color: #22c55e;
-    }
-
     button {
-      width: 100%;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      margin-bottom: 8px;
+        background:#3478f6;
+        color:white;
+        font-size:16px;
+        cursor:pointer;
+        font-weight:bold;
     }
-
-    .btn-primary {
-      background: linear-gradient(90deg, var(--primary-from), var(--primary-to));
-      color: #022c22;
-      font-weight: 600;
-      box-shadow: 0 10px 30px var(--accent-soft);
+    button:disabled {
+        background:#444;
+        cursor:not-allowed;
     }
-
-    .btn-ghost {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #374151;
-      color: #e5e7eb;
-      font-size: 13px;
+    #badgePreview {
+        margin-top:20px;
+        background:#fff;
+        padding:20px;
+        border-radius:12px;
+        text-align:center;
     }
-
-    .btn-small {
-      font-size: 12px;
-      padding: 7px 10px;
-      width: auto;
-    }
-
-    .actions-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .status {
-      font-size: 12px;
-      min-height: 18px;
-      margin-top: 4px;
-      color: #9ca3af;
-    }
-    .status.success { color: #4ade80; }
-    .status.error { color: #f97373; }
-
-    .caption-preview {
-      margin-top: 12px;
-      font-size: 12px;
-      border-radius: 10px;
-      border: 1px dashed #374151;
-      padding: 8px;
-      background: #020617;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .caption-label {
-      font-size: 11px;
-      color: #9ca3af;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 4px;
-    }
-
-    /* ---------- RIGHT SIDE / BADGE ---------- */
-    .right-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .theme-pill {
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 10px;
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #9ca3af;
-      text-transform: uppercase;
-    }
-
-    .theme-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--accent);
-    }
-
-    .theme-select {
-      border-radius: 999px;
-      border: 1px solid #374151;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .theme-select select {
-      border: none;
-      outline: none;
-      background: transparent;
-      color: #e5e7eb;
-      font-size: 11px;
-    }
-
-    .badge-card {
-      border-radius: 20px;
-      border: 1px solid var(--panel-border);
-      padding: 18px;
-      background: var(--panel-bg);
-    }
-
-    .badge {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border-radius: 18px;
-      background: radial-gradient(circle at top left, var(--badge-from), var(--badge-to));
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.6);
-      transition: box-shadow 0.25s ease, transform 0.25s ease;
-    }
-
-    .badge::before {
-      content: "";
-      position: absolute;
-      inset: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: radial-gradient(circle at top, rgba(255,255,255,0.16), transparent 55%);
-      pointer-events: none;
-    }
-
-    /* tier-based glow */
-    .badge-tier-1 {
-      box-shadow: 0 16px 36px rgba(56,189,248,0.3);
-    }
-    .badge-tier-2 {
-      box-shadow: 0 18px 40px rgba(129,140,248,0.45);
-    }
-    .badge-tier-3 {
-      box-shadow: 0 22px 55px rgba(251,191,36,0.7);
-    }
-
-    .badge-level-chip {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      background: rgba(15,23,42,0.75);
-      color: #facc15;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      z-index: 2;
-    }
-
-    .badge-level-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #facc15;
-    }
-
-    .frog-wrapper {
-      position: relative;
-      width: 230px;
-      height: 190px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      z-index: 1;
-    }
-
-    .frog-head {
-      width: 150px;
-      height: 120px;
-      background: #e5f4ff;
-      border-radius: 999px 999px 80px 80px;
-      position: relative;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
-    }
-
-    .frog-eye {
-      position: absolute;
-      top: -18px;
-      width: 38px;
-      height: 38px;
-      background: #e5f4ff;
-      border-radius: 999px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .frog-eye.left { left: 18px; }
-    .frog-eye.right { right: 18px; }
-
-    .frog-eye-inner {
-      width: 16px;
-      height: 16px;
-      background: #020617;
-      border-radius: 999px;
-    }
-
-    .frog-mouth {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      width: 70px;
-      height: 32px;
-      margin-left: -35px;
-      border-bottom: 3px solid #020617;
-      border-radius: 0 0 50px 50px;
-    }
-
-    .frog-pill {
-      margin-top: 18px;
-      width: 210px;
-      height: 34px;
-      border-radius: 999px;
-      background: #e5f4ff;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .frog-pill-label {
-      font-size: 18px;
-      font-weight: 700;
-      color: #022c22;
-      letter-spacing: 0.06em;
-    }
-
-    .badge-name-large {
-      position: absolute;
-      top: 22px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      color: #041014;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
-      z-index: 1;
-    }
-
-    .badge-text {
-      position: absolute;
-      bottom: 10px;
-      left: 16px;
-      right: 16px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #041014;
-      z-index: 1;
-    }
-
-    .badge-meta {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #9ca3af;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .metrics {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chip {
-      border-radius: 999px;
-      border: 1px solid var(--chip-border);
-      padding: 5px 10px;
-      font-size: 11px;
-      color: #9ca3af;
-      background: var(--chip-bg);
-    }
-
-    .chip span {
-      color: #e5e7eb;
-      font-weight: 500;
-      margin-left: 4px;
-    }
-  </style>
+</style>
 </head>
-<body class="theme-sky">
 
-<div class="app">
-  <!-- LEFT SIDE -->
-  <div>
-    <h1>BADGEHUB</h1>
-    <div class="subtitle">Daily check-in mini app</div>
+<body>
 
-    <div class="panel">
-      <!-- FID -->
-      <div class="label">Your name / FID</div>
-      <div class="input-row">
-        <div class="input">
-          <input id="fidInput" type="text" placeholder="Your FID" />
-        </div>
-        <div class="pill">ID</div>
-      </div>
+<div class="container">
 
-      <!-- BADGE TYPE (FIXED, READ-ONLY) -->
-      <div class="label">Badge type</div>
-      <div class="input-row">
-        <div class="input">
-          <input
-            id="badgeTypeInput"
-            type="text"
-            value="Daily Check-in"
-            readonly
-          />
-        </div>
-        <div class="pill">Fixed</div>
-      </div>
+    <h2>Badgehub Daily & Weekly Badge</h2>
 
-      <!-- TOGGLES -->
-      <div class="toggles">
-        <label class="toggle">
-          <input id="randomColorToggle" type="checkbox" />
-          <span>Random badge color</span>
-        </label>
-        <label class="toggle">
-          <input id="autoCopyToggle" type="checkbox" />
-          <span>Auto copy caption after claim</span>
-        </label>
-      </div>
+    <!-- USER NAME / FID -->
+    <input id="nameInput" placeholder="Your Name / FID" />
 
-      <!-- CLAIM -->
-      <button id="claimBtn" class="btn-primary">Claim today's badge</button>
+    <!-- DAILY CLAIM -->
+    <button id="claimBtn">Claim Today's Badge</button>
 
-      <!-- ACTIONS -->
-      <div class="actions-row">
-        <button id="shareXBtn" class="btn-ghost btn-small">Share on X</button>
-        <button id="shareFcBtn" class="btn-ghost btn-small">Share on Farcaster</button>
-        <button id="copyCaptionBtn" class="btn-ghost btn-small">Copy caption</button>
-        <button id="downloadSvgBtn" class="btn-ghost btn-small">Download SVG</button>
-        <button id="mintBtn" class="btn-ghost btn-small">Onchain mint</button>
-      </div>
+    <!-- ONCHAIN DAILY MINT -->
+    <button id="mintDailyBtn">Mint Daily Badge Onchain</button>
 
-      <div id="status" class="status"></div>
+    <!-- WEEKLY MINT BUTTON (hidden until streak 7) -->
+    <button id="weeklyMintBtn" style="display:none; background:#e68a00;">
+        🎉 Mint 1-Week Badge
+    </button>
 
-      <!-- CAPTION PREVIEW -->
-      <div class="caption-preview">
-        <div class="caption-label">Caption preview</div>
-        <div id="captionText"></div>
-      </div>
-    </div>
-  </div>
+    <div id="badgePreview"></div>
 
-  <!-- RIGHT SIDE -->
-  <div>
-    <div class="right-header">
-      <div class="theme-pill">
-        <div class="theme-dot"></div>
-        Badgehub 3 upgraded
-      </div>
-      <div class="theme-select">
-        <span>Theme</span>
-        <select id="themeSelect">
-          <option value="sky">Sky</option>
-          <option value="mint">Mint</option>
-          <option value="sunset">Sunset</option>
-          <option value="violet">Violet</option>
-        </select>
-      </div>
-    </div>
+    <p id="status" style="color:#66f; margin-top:15px;"></p>
 
-    <div class="badge-card">
-      <div class="badge badge-tier-1" id="badgeMain">
-        <div class="badge-level-chip" id="badgeLevelChip">
-          <div class="badge-level-dot"></div>
-          <span id="badgeLevelText">Level: Fresh</span>
-        </div>
-
-        <div class="badge-name-large" id="badgeNameLarge">----</div>
-
-        <div class="frog-wrapper">
-          <div class="frog-head">
-            <div class="frog-eye left">
-              <div class="frog-eye-inner"></div>
-            </div>
-            <div class="frog-eye right">
-              <div class="frog-eye-inner"></div>
-            </div>
-            <div class="frog-mouth"></div>
-          </div>
-          <div class="frog-pill">
-            <span class="frog-pill-label" id="badgePillId">----</span>
-          </div>
-        </div>
-
-        <div class="badge-text">
-          <div id="badgeTypeText" style="font-size:11px;opacity:0.9;">
-            Daily Check-in
-          </div>
-          <div id="badgeDateText">--</div>
-        </div>
-      </div>
-
-      <div class="badge-meta">
-        <span>Badgehub · base mini app</span>
-        <span id="lastClaimLabel">Not claimed yet</span>
-      </div>
-
-      <div class="metrics">
-        <div class="chip">Streak<span id="streakValue">0 day(s)</span></div>
-        <div class="chip">Total claimed<span id="totalValue">0</span></div>
-        <div class="chip">Last claim<span id="lastDayValue">-</span></div>
-      </div>
-    </div>
-  </div>
 </div>
 
-<!-- ethers.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.umd.min.js"></script>
+
+<!-- Ethers -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.8.0/ethers.umd.min.js"></script>
+
 
 <script>
-(function () {
-  /* =========================
-   * CONFIG + FEATURE FLAGS
-   * ========================= */
-  const CONFIG = {
-    contractAddress: "0xB10eddf0216568B624397e648712C7f17145b414", // tumhara Base Sepolia contract
-    chainId: 84532,
-    explorerBase: "https://sepolia.basescan.org"
-  };
 
-  const FEATURES = {
-    farcasterAutoFID: false,
-    persistFIDLocally: true,
-    onchainMint: true
-  };
+// ------------------------
+// CONFIG
+// ------------------------
 
-  const STORAGE_KEYS = {
-    state: "badgehub_state_v11",
-    lastFid: "badgehub_last_fid"
-  };
+const CONFIG = {
+    chainId: 84532,  // Base Sepolia
+    contractAddress: "PASTE_YOUR_NEW_CA_HERE",
+};
 
-  /* =========================
-   * MINIMAL ABI (sirf mintBadge)
-   * ========================= */
-  const ABI = [
-    {
-      "inputs": [
-        { "internalType": "address", "name": "to", "type": "address" },
-        { "internalType": "string",  "name": "fid", "type": "string" },
-        { "internalType": "string",  "name": "badgeType_", "type": "string" },
-        { "internalType": "uint64",  "name": "date", "type": "uint64" },
-        { "internalType": "uint32",  "name": "streak", "type": "uint32" },
-        { "internalType": "string",  "name": "tokenURI_", "type": "string" }
-      ],
-      "name": "mintBadge",
-      "outputs": [
-        { "internalType": "uint256", "name": "", "type": "uint256" }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ];
+// ------------------------
+// CONTRACT ABI (Paste Your ABI Here)
+// ------------------------
+const CONTRACT_ABI = PASTE_YOUR_ABI_HERE;
 
-  /* =========================
-   * ADDRESS CLEAN HELPER
-   * ========================= */
-  function getCleanContractAddress() {
-    const raw = (CONFIG.contractAddress || "").trim();
-    let cleaned = raw.replace(/[^0-9a-fA-Fx]/g, "");
-    if (!cleaned.startsWith("0x")) cleaned = "0x" + cleaned;
-    const body = cleaned.slice(2);
-    const finalAddr = "0x" + body.slice(-40);
-    if (!/^0x[0-9a-fA-F]{40}$/.test(finalAddr)) {
-      throw new Error("Invalid CONFIG.contractAddress: " + CONFIG.contractAddress);
-    }
-    console.log("Using contract address:", finalAddr);
-    return finalAddr;
-  }
 
-  /* =========================
-   * ONCHAIN / WALLET LAYER
-   * ========================= */
-  let provider, signer, contract;
+// ------------------------
+// STATE
+// ------------------------
+let streak = 0;
+let lastDailyMint = 0;
 
-  async function connectWallet() {
-    if (!window.ethereum) {
-      alert("Install MetaMask/Base wallet and switch to Base Sepolia Testnet.");
-      throw new Error("no-wallet");
-    }
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = await provider.getSigner();
 
-    const cleanAddress = getCleanContractAddress();
-    contract = new ethers.Contract(cleanAddress, ABI, signer);
-    return signer.getAddress();
-  }
+// ------------------------
+// DAILY CLAIM HANDLER
+// ------------------------
+document.getElementById("claimBtn").onclick = () => {
+    const today = new Date().toDateString();
+    const saved = localStorage.getItem("lastClaim");
 
-  /* =========================
-   * DOM REFERENCES
-   * ========================= */
-  const fidInput = document.getElementById("fidInput");
-  const badgeTypeInput = document.getElementById("badgeTypeInput");
-  const randomColorToggle = document.getElementById("randomColorToggle");
-  const autoCopyToggle = document.getElementById("autoCopyToggle");
-  const themeSelect = document.getElementById("themeSelect");
-
-  const claimBtn = document.getElementById("claimBtn");
-  const shareXBtn = document.getElementById("shareXBtn");
-  const shareFcBtn = document.getElementById("shareFcBtn");
-  const copyCaptionBtn = document.getElementById("copyCaptionBtn");
-  const downloadSvgBtn = document.getElementById("downloadSvgBtn");
-  const mintBtn = document.getElementById("mintBtn");
-
-  const statusEl = document.getElementById("status");
-  const captionTextEl = document.getElementById("captionText");
-
-  const badgeMain = document.getElementById("badgeMain");
-  const badgeNameLarge = document.getElementById("badgeNameLarge");
-  const badgePillId = document.getElementById("badgePillId");
-  const badgeTypeText = document.getElementById("badgeTypeText");
-  const badgeDateText = document.getElementById("badgeDateText");
-  const badgeLevelText = document.getElementById("badgeLevelText");
-
-  const streakValue = document.getElementById("streakValue");
-  const totalValue = document.getElementById("totalValue");
-  const lastDayValue = document.getElementById("lastDayValue");
-  const lastClaimLabel = document.getElementById("lastClaimLabel");
-
-  /* =========================
-   * UTILITIES
-   * ========================= */
-  function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  function formatDateShort(iso) {
-    if (!iso) return "-";
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString(undefined, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
-  }
-
-  function dayDiff(a, b) {
-    const da = new Date(a + "T00:00:00");
-    const db = new Date(b + "T00:00:00");
-    const ms = da - db;
-    return Math.round(ms / (1000 * 60 * 60 * 24));
-  }
-
-  function applyTheme(theme) {
-    const body = document.body;
-    body.classList.remove("theme-sky","theme-mint","theme-sunset","theme-violet");
-    body.classList.add("theme-" + theme);
-  }
-
-  function randomTheme() {
-    const list = ["sky","mint","sunset","violet"];
-    const t = list[Math.floor(Math.random() * list.length)];
-    themeSelect.value = t;
-    applyTheme(t);
-  }
-
-  function showStatus(msg, type) {
-    statusEl.textContent = msg;
-    statusEl.className = "status " + (type || "");
-  }
-
-  function toBase64Unicode(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-  }
-
-  function loadState() {
-    const raw = localStorage.getItem(STORAGE_KEYS.state);
-    if (!raw) return { total: 0, streak: 0, lastClaimDate: null };
-    try { return JSON.parse(raw); }
-    catch (e) { return { total: 0, streak: 0, lastClaimDate: null }; }
-  }
-
-  function saveState(state) {
-    localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(state));
-  }
-
-  function loadLastFid() {
-    if (!FEATURES.persistFIDLocally) return "";
-    return localStorage.getItem(STORAGE_KEYS.lastFid) || "";
-  }
-
-  function saveLastFid(fid) {
-    if (!FEATURES.persistFIDLocally) return;
-    const clean = (fid || "").trim();
-    if (clean) {
-      localStorage.setItem(STORAGE_KEYS.lastFid, clean);
-    }
-  }
-
-  function updateCaption(state) {
-    const fid = fidInput.value || "Anon";
-    const type = "Daily Check-in";
-    const caption =
-      "#" + fid + " " + type + " badge earned\n\n" +
-      "Streak: " + state.streak + " day(s) | Total: " + state.total +
-      "\n#Badgehub #Base";
-    captionTextEl.textContent = caption;
-    return caption;
-  }
-
-  function getLevelForStreak(streak) {
-    if (streak >= 7) return { label: "Level: Legend", tier: 3 };
-    if (streak >= 3) return { label: "Level: Pro", tier: 2 };
-    if (streak >= 1) return { label: "Level: New", tier: 1 };
-    return { label: "Level: Fresh", tier: 1 };
-  }
-
-  /* =========================
-   * BADGE SVG + PREVIEW
-   * ========================= */
-  function createSvg(state) {
-    const fid = fidInput.value || "Anon";
-    const type = "Daily Check-in";
-    const dateText = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : todayISO();
-    const theme = themeSelect.value;
-    const streak = state.streak || 0;
-    const levelInfo = getLevelForStreak(streak);
-
-    let bg1 = "#38bdf8";
-    let bg2 = "#0ea5e9";
-
-    if (streak >= 7) {
-      bg1 = "#f97316";
-      bg2 = "#facc15";
-    } else if (streak >= 3) {
-      bg1 = "#6366f1";
-      bg2 = "#a855f7";
-    } else {
-      if (theme === "mint") { bg1 = "#22c55e"; bg2 = "#16a34a"; }
-      else if (theme === "sunset") { bg1 = "#f97316"; bg2 = "#facc15"; }
-      else if (theme === "violet") { bg1 = "#a855f7"; bg2 = "#6366f1"; }
+    if (saved === today) {
+        alert("Already claimed today!");
+        return;
     }
 
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">' +
-      '<defs>' +
-      '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0%" stop-color="' + bg1 + '"/>' +
-      '<stop offset="100%" stop-color="' + bg2 + '"/>' +
-      '</linearGradient>' +
-      '<radialGradient id="glow" cx="0.5" cy="0" r="1">' +
-      '<stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>' +
-      '<stop offset="100%" stop-color="rgba(255,255,255,0)"/>' +
-      '</radialGradient>' +
-      '</defs>' +
-      '<rect x="0" y="0" width="1200" height="630" rx="40" fill="url(#bg)"/>' +
-      '<rect x="30" y="30" width="1140" height="570" rx="32" fill="url(#glow)" opacity="0.8"/>' +
-      '<rect x="70" y="70" rx="20" ry="20" width="210" height="40" fill="rgba(15,23,42,0.85)"/>' +
-      '<circle cx="92" cy="90" r="5" fill="#facc15"/>' +
-      '<text x="110" y="96" font-size="20" font-family="system-ui, sans-serif" fill="#e5e7eb" font-weight="500">' +
-      levelInfo.label +
-      '</text>' +
-      '<text x="600" y="150" text-anchor="middle" font-size="56" font-family="system-ui, sans-serif" fill="#022c22" font-weight="800">' +
-      fid + '</text>' +
-      '<g transform="translate(0,40)">' +
-      '<ellipse cx="600" cy="280" rx="130" ry="95" fill="#e5f4ff"/>' +
-      '<circle cx="525" cy="225" r="36" fill="#e5f4ff"/>' +
-      '<circle cx="675" cy="225" r="36" fill="#e5f4ff"/>' +
-      '<circle cx="525" cy="225" r="16" fill="#020617"/>' +
-      '<circle cx="675" cy="225" r="16" fill="#020617"/>' +
-      '<path d="M555 310 Q600 350 645 310" stroke="#020617" stroke-width="4" fill="none"/>' +
-      '</g>' +
-      '<rect x="420" y="410" width="360" height="48" rx="24" fill="#e5f4ff"/>' +
-      '<text x="600" y="441" text-anchor="middle" font-size="30" font-family="system-ui, sans-serif" fill="#022c22" font-weight="700">' +
-      fid + '</text>' +
-      '<text x="80" y="560" font-size="26" font-family="system-ui, sans-serif" fill="#022c22">' +
-      type + '</text>' +
-      '<text x="1040" y="560" text-anchor="end" font-size="24" font-family="system-ui, sans-serif" fill="#022c22">' +
-      dateText + '</text>' +
-      '<text x="80" y="520" font-size="20" font-family="system-ui, sans-serif" fill="#022c22">' +
-      'Streak: ' + streak + ' day(s)' +
-      '</text>' +
-      '</svg>';
+    streak++;
+    localStorage.setItem("streak", streak);
+    localStorage.setItem("lastClaim", today);
 
-    return svg;
-  }
+    updateWeeklyButton();
+    updateBadgePreview();
 
-  function updatePreview(state) {
-    streakValue.textContent = state.streak + " day(s)";
-    totalValue.textContent = String(state.total);
-    lastDayValue.textContent = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : "-";
+    document.getElementById("status").innerText = "Daily badge claimed!";
+};
 
-    if (state.lastClaimDate) {
-      lastClaimLabel.textContent =
-        "Last claimed on " + formatDateShort(state.lastClaimDate);
-    } else {
-      lastClaimLabel.textContent = "Not claimed yet";
-    }
 
-    const fid = fidInput.value || "----";
-    badgeNameLarge.textContent = fid;
-    badgePillId.textContent = fid;
-    badgeTypeText.textContent = "Daily Check-in";
-    badgeDateText.textContent = state.lastClaimDate
-      ? formatDateShort(state.lastClaimDate)
-      : "--";
+// ------------------------
+// UPDATE WEEKLY BUTTON
+// ------------------------
+function updateWeeklyButton() {
+    const btn = document.getElementById("weeklyMintBtn");
+    if (streak >= 7) btn.style.display = "block";
+    else btn.style.display = "none";
+}
 
-    const levelInfo = getLevelForStreak(state.streak || 0);
-    badgeLevelText.textContent = levelInfo.label;
-    badgeMain.classList.remove("badge-tier-1","badge-tier-2","badge-tier-3");
-    badgeMain.classList.add("badge-tier-" + levelInfo.tier);
 
-    if (randomColorToggle.checked) {
-      randomTheme();
-    } else {
-      applyTheme(themeSelect.value);
-    }
+// ------------------------
+// BADGE SVG PREVIEW
+// ------------------------
+function updateBadgePreview() {
+    const name = document.getElementById("nameInput").value || "User";
 
-    updateCaption(state);
-  }
+    document.getElementById("badgePreview").innerHTML = `
+        <h3 style="color:black;">Daily Badge Preview</h3>
+        <svg width="320" height="200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#2276f2"/>
+            <text x="50%" y="30%" fill="white" font-size="22px" text-anchor="middle">${name}</text>
+            <text x="50%" y="60%" fill="white" font-size="18px" text-anchor="middle">
+                Daily Check-in • Streak: ${streak}
+            </text>
+        </svg>
+    `;
+}
 
-  /* =========================
-   * ONCHAIN MINT
-   * ========================= */
-  async function mintOnchain(state) {
-    if (!FEATURES.onchainMint) {
-      showStatus("Onchain mint is disabled in config.", "error");
-      return;
-    }
 
+// ------------------------
+// ONCHAIN DAILY MINT
+// ------------------------
+document.getElementById("mintDailyBtn").onclick = async () => {
     try {
-      showStatus("Connecting wallet...", "");
-      const account = await connectWallet();
-      showStatus("Wallet connected: " + account.slice(0, 8) + "...", "success");
+        if (!window.ethereum) return alert("Connect wallet!");
 
-      const fid = fidInput.value || "Anon";
-      const type = "Daily Check-in";
-      const streak = state.streak || 0;
-      const now = Math.floor(Date.now() / 1000);
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
 
-      const svg = createSvg(state);
-      const svgBase64 = toBase64Unicode(svg);
+        const name = document.getElementById("nameInput").value || "User";
 
-      const metadata = {
-        name: "Badgehub – " + fid,
-        description: fid + " earned a " + type + " badge on Badgehub.",
-        image: "data:image/svg+xml;base64," + svgBase64,
-        attributes: [
-          { trait_type: "FID", value: fid },
-          { trait_type: "Badge Type", value: type },
-          { trait_type: "Streak", value: String(streak) }
-        ]
-      };
+        const svg = `<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#2276f2"/>
+            <text x="50%" y="30%" fill="white" font-size="22px" text-anchor="middle">${name}</text>
+            <text x="50%" y="60%" fill="white" font-size="18px" text-anchor="middle">
+                Streak: ${streak}
+            </text>
+        </svg>`;
 
-      const metaBase64 = toBase64Unicode(JSON.stringify(metadata));
-      const tokenURI = "data:application/json;base64," + metaBase64;
+        const svg64 = btoa(svg);
 
-      showStatus("Sending mint transaction...", "");
-      const tx = await contract.mintBadge(
-        account,
-        fid,
-        type,
-        now,
-        streak,
-        tokenURI
-      );
+        const tokenURI = `data:application/json;base64,${btoa(JSON.stringify({
+            name: `${name} Daily Badge`,
+            description: "Daily Check-in Badge",
+            image: `data:image/svg+xml;base64,${svg64}`
+        }))}`;
 
-      showStatus("Minting... tx " + tx.hash.slice(0, 10) + "...", "success");
-      await tx.wait();
-      showStatus("Badge minted on Base Sepolia 🎉", "success");
+        const tx = await contract.mintBadge(
+            await signer.getAddress(),
+            name,
+            "Daily Check-in",
+            Math.floor(Date.now() / 1000),
+            streak,
+            tokenURI
+        );
+
+        document.getElementById("status").innerText = "Minting daily badge…";
+        await tx.wait();
+        document.getElementById("status").innerText = "Daily badge minted!";
+
+    } catch (e) {
+        alert("Error: " + e.message);
+    }
+};
+
+
+// ------------------------
+// WEEKLY BADGE MINT
+// ------------------------
+document.getElementById("weeklyMintBtn").onclick = async () => {
+    try {
+        const name = document.getElementById("nameInput").value || "User";
+
+        if (streak < 7) return alert("You need 7-day streak!");
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
+
+        const svg = `<svg width="320" height="260" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#f29e00"/>
+            <text x="50%" y="35%" fill="black" font-size="26px" text-anchor="middle">${name}</text>
+            <text x="50%" y="65%" fill="black" font-size="22px" text-anchor="middle">
+                🎉 1-Week Completed 🎉
+            </text>
+        </svg>`;
+
+        const svg64 = btoa(svg);
+
+        const tokenURI = `data:application/json;base64,${btoa(JSON.stringify({
+            name: `${name} 1-Week Badge`,
+            description: "Weekly Completion Badge",
+            image: `data:image/svg+xml;base64,${svg64}`
+        }))}`;
+
+        const tx = await contract.mintWeekBadge(
+            await signer.getAddress(),
+            name,
+            1,
+            Math.floor(Date.now()/1000),
+            streak,
+            tokenURI
+        );
+
+        document.getElementById("status").innerText = "Minting weekly badge…";
+        await tx.wait();
+
+        alert("🎉 Weekly badge minted successfully!");
+
     } catch (err) {
-      console.error(err);
-      showStatus("Mint failed: " + (err.message || String(err)), "error");
+        alert("Weekly mint failed: " + err.message);
     }
-  }
+};
 
-  /* =========================
-   * INIT + EVENT BINDINGS
-   * ========================= */
-  const state = loadState();
-  const lastFid = loadLastFid();
-  if (lastFid) {
-    fidInput.value = lastFid;
-  }
-
-  updatePreview(state);
-  applyTheme(themeSelect.value);
-
-  claimBtn.addEventListener("click", function () {
-    const today = todayISO();
-
-    if (state.lastClaimDate === today) {
-      showStatus("Today's badge already claimed.", "error");
-      return;
-    }
-
-    if (state.lastClaimDate) {
-      const diff = dayDiff(today, state.lastClaimDate);
-      if (diff === 1) state.streak += 1;
-      else state.streak = 1;
-    } else {
-      state.streak = 1;
-    }
-
-    state.total += 1;
-    state.lastClaimDate = today;
-    saveState(state);
-
-    if (fidInput.value) saveLastFid(fidInput.value);
-
-    updatePreview(state);
-    showStatus("Badge claimed. Streak updated.", "success");
-
-    if (autoCopyToggle.checked && navigator.clipboard) {
-      const caption = updateCaption(state);
-      navigator.clipboard.writeText(caption).catch(function () {});
-    }
-  });
-
-  shareXBtn.addEventListener("click", function () {
-    const caption = updateCaption(state);
-    const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(caption);
-    window.open(url, "_blank");
-  });
-
-  shareFcBtn.addEventListener("click", function () {
-    const caption = updateCaption(state);
-    const url = "https://warpcast.com/~/compose?text=" + encodeURIComponent(caption);
-    window.open(url, "_blank");
-  });
-
-  copyCaptionBtn.addEventListener("click", function () {
-    const caption = updateCaption(state);
-    if (!navigator.clipboard) {
-      showStatus("Clipboard API not available.", "error");
-      return;
-    }
-    navigator.clipboard.writeText(caption)
-      .then(function () { showStatus("Caption copied.", "success"); })
-      .catch(function () {
-        showStatus("Clipboard permission blocked.", "error");
-      });
-  });
-
-  downloadSvgBtn.addEventListener("click", function () {
-    const svg = createSvg(state);
-    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "badgehub-badge.svg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showStatus("SVG downloaded.", "success");
-  });
-
-  mintBtn.addEventListener("click", function () {
-    mintOnchain(state);
-  });
-
-  fidInput.addEventListener("input", function () {
-    updatePreview(state);
-    if (fidInput.value) saveLastFid(fidInput.value);
-  });
-
-  randomColorToggle.addEventListener("change", function () {
-    updatePreview(state);
-  });
-
-  themeSelect.addEventListener("change", function () {
-    applyTheme(themeSelect.value);
-    updatePreview(state);
-  });
-
-})();
 </script>
 
 </body>
