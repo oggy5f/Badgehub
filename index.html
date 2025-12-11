@@ -1,232 +1,372 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub — Daily Check-in (Old UI)</title>
+  <title>Badgehub — Daily Check-in (demo)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root{
-      --bg:#071017;
-      --panel:#081921;
-      --accent:#ffb145;
-      --muted:#9fb5c9;
-      --card:#06121a;
-      --glass: rgba(255,255,255,0.03);
-    }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#04121a 0%, #061722 100%);font-family:Inter,Segoe UI,Arial;color:#e6f7ff}
-    .wrap{max-width:1200px;margin:32px auto;padding:20px;}
-    .title{display:flex;justify-content:space-between;align-items:center}
-    h1{margin:0;font-size:20px;color:var(--accent)}
-    .main{display:grid;grid-template-columns:380px 1fr;gap:20px;margin-top:18px}
-    /* left panel */
-    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.03)}
-    label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
-    .input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6f7ff;box-sizing:border-box}
-    .smallbtn{display:inline-block;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);color:#cfe8ff;margin-left:8px;cursor:pointer}
-    .bigbtn{display:block;width:100%;padding:14px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#ff8b36);border:0;color:#04121a;font-weight:700;margin-top:14px;cursor:pointer}
-    .row{display:flex;gap:10px;margin-top:12px}
-    .btn{padding:10px 12px;border-radius:10px;border:0;background:#12323f;color:#cfe8ff;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px;margin-top:10px}
-    .previewbox{height:160px;border-radius:10px;border:1px dashed rgba(255,255,255,0.04);padding:10px;margin-top:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
-    .green{color:#7ee787}
-    /* right preview card */
-    .cardwrap{padding:18px;border-radius:14px;background:linear-gradient(180deg,#081427,#041026);border:1px solid rgba(255,255,255,0.03)}
-    .card{background:linear-gradient(90deg,#ffb84d,#ffd27f);border-radius:14px;padding:18px;color:#04121a;max-width:560px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
-    .card h2{margin:0;font-size:18px}
-    .card .name{margin-top:14px;font-weight:700;font-size:20px}
-    .meta{margin-top:10px;color:rgba(0,0,0,0.6);font-size:13px}
-    .badgestats{display:flex;gap:8px;margin-top:14px}
-    .pill{background:rgba(0,0,0,0.2);padding:6px 10px;border-radius:999px;color:#ffd;}
-    .status{margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02)}
-    pre{background:rgba(0,0,0,0.15);padding:10px;border-radius:8px;color:#dff;}
-    footer{margin-top:18px;color:var(--muted);font-size:13px}
-    @media(max-width:880px){ .main{grid-template-columns:1fr; } }
+    /* Simple styles — tweak to match your theme later */
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;padding:18px;background:#071019;color:#e9f1f7}
+    .container{display:flex;gap:28px;max-width:1200px;margin:0 auto}
+    .left{flex:1;min-width:320px;background:linear-gradient(180deg,#081218,#0a0f14);padding:20px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+    .right{flex:1;min-width:300px;background:linear-gradient(180deg,#0b1a22,#081219);padding:20px;border-radius:12px}
+    h1{margin:0 0 14px 0;color:#ffd18a}
+    label{display:block;margin-top:12px;color:#9fb0c0}
+    input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid #16313a;background:#061318;color:#e9f1f7}
+    .row{display:flex;gap:8px;margin-top:12px}
+    button{padding:12px 14px;border-radius:12px;border:0;background:#1fa2ff;color:white;cursor:pointer}
+    button.secondary{background:#334455}
+    .muted{color:#8fa6b7;font-size:13px;margin-top:8px}
+    .msg{margin-top:12px;padding:10px;border-radius:8px}
+    .msg.error{background:#3b1010;color:#ffb3b3}
+    .msg.ok{background:#092913;color:#90ef9c}
+    .captionBox{border:1px dashed #23424b;padding:12px;border-radius:10px;margin-top:14px;min-height:80px}
+    .bigbtn{width:100%;padding:14px;border-radius:14px;background:linear-gradient(90deg,#ffd18a,#ffa64d);color:#081218;font-weight:700;font-size:16px}
+    .shareRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .note{font-size:13px;color:#89a5b5;margin-top:10px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title">
-      <h1>BADGEHUB — Daily Check-in mini app</h1>
-      <div style="font-size:13px;color:var(--muted)">OLD DESIGN (Preview)</div>
+  <div style="max-width:1200px;margin:0 auto 18px;text-align:center">
+    <h1>BADGEHUB — Daily Check-in (demo)</h1>
+    <div style="color:#9fb0c0">Test UI: connect wallet, claim local badge, or mint onchain (Base Sepolia)</div>
+  </div>
+
+  <div class="container">
+    <div class="left">
+      <label>Your FID / name</label>
+      <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" value="anon">
+
+      <label>Badge Type</label>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="padding:8px;border-radius:10px;background:#071a20;color:#a7d4ff">Daily Check-in</div>
+        <div style="color:#89a5b5">• fixed</div>
+      </div>
+
+      <div class="row">
+        <button id="btnClaim" class="bigbtn">Claim today's badge</button>
+      </div>
+
+      <div class="shareRow">
+        <button id="shareX">Share on X</button>
+        <button id="shareF">Share on Farcaster</button>
+        <button id="copyCap" class="secondary">Copy caption</button>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="btnMint" class="">Mint Daily Badge Onchain</button>
+        <button id="btnMintWeek" class="">Mint Weekly Badge Onchain</button>
+      </div>
+
+      <div id="status" class="msg" style="display:none"></div>
+
+      <div class="captionBox" id="captionPreview">-</div>
+
+      <div class="note">Note: "local" claim stores data in your browser. Onchain mint will call the smart contract.</div>
     </div>
 
-    <div class="main">
-      <!-- left controls -->
-      <div class="panel">
-        <label>YOUR NAME / FID</label>
-        <input id="fid" class="input" placeholder="enter your name or fid" value="gips" />
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
-          <div style="flex:1">
-            <label>BADGE TYPE</label>
-            <div style="background:transparent;border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,0.04);color:#cfe8ff">Daily Check-in <span style="float:right;color:var(--muted);font-size:12px">FIXED</span></div>
-          </div>
-          <div style="margin-left:8px">
-            <button id="idBtn" class="smallbtn">ID</button>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:12px">
-          <label style="margin:0"><input id="randomCol" type="checkbox" checked/> Random badge color</label>
-          <label style="margin:0"><input id="autocopy" type="checkbox"/> Auto copy caption</label>
-        </div>
-
-        <button id="claimBtn" class="bigbtn">Claim today's badge</button>
-
-        <div class="row">
-          <button id="shareX" class="btn">Share on X</button>
-          <button id="shareF" class="btn">Share on Farcaster</button>
-          <button id="copycap" class="btn">Copy caption</button>
-        </div>
-
-        <div class="row">
-          <button id="downloadSvg" class="btn">Download SVG</button>
-          <button id="onchainMint" class="btn">Onchain mint</button>
-        </div>
-
-        <div class="muted green" id="msg">Badge claimed. Streak updated.</div>
-
-        <div class="previewbox">
-          <div style="font-size:13px;color:var(--muted)">CAPTION PREVIEW</div>
-          <pre id="captionPreview" style="height:120px;margin-top:10px;overflow:auto">
-#gips Daily Check-in badge earned
-
-Streak: 1 day(s) | Total: 1
-#Badgehub #Base
-          </pre>
-        </div>
+    <div class="right">
+      <div style="background:#0a2230;padding:14px;border-radius:10px">
+        <div style="font-size:14px;color:#93d2ff">Preview</div>
+        <div style="margin-top:12px;font-weight:700;font-size:22px" id="previewTitle">-</div>
+        <div style="margin-top:8px;color:#9fb0c0" id="previewMeta">Daily Check-In • Streak: 0</div>
       </div>
 
-      <!-- right preview card -->
-      <div class="cardwrap">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1">
-            <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <div style="background:rgba(0,0,0,0.08);padding:6px 8px;border-radius:999px;font-size:12px;color:#fff">LEVEL: NEW</div>
-                <div style="font-size:12px;color:rgba(0,0,0,0.45)">10/12/2025</div>
-              </div>
-
-              <div style="display:flex;align-items:center;margin-top:14px">
-                <div style="width:96px;height:96px;border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center;margin-right:16px">
-                  <!-- cute blob -->
-                  <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="72" height="72" rx="14" fill="#eaf5ff"/><circle cx="31" cy="27" r="6" fill="#04121a"/><circle cx="45" cy="27" r="6" fill="#04121a"/></svg>
-                </div>
-                <div style="flex:1">
-                  <div class="name" id="cardName">gips</div>
-                  <div class="meta">Daily Check-in</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="status">
-              <div style="color:var(--muted)">Badgehub · base mini app</div>
-              <div style="margin-top:8px">Last claimed on <strong id="lastClaim">10/12/2025</strong></div>
-
-              <div class="badgestats">
-                <div class="pill" id="streakPill">Streak 1 day(s)</div>
-                <div class="pill" id="totalPill">Total claimed 1</div>
-                <div class="pill" id="lastPill">Last claim 10/12/2025</div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-        <footer>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>Preview only • Onchain mint calls smart contract</div>
-            <div style="color:var(--muted)">v0.3</div>
-          </div>
-        </footer>
+      <div style="margin-top:14px">
+        <button id="btnConnect" class="secondary">Connect Wallet</button>
+        <button id="btnRefresh" class="secondary">Refresh</button>
+        <div id="uiStatus" class="muted" style="margin-top:8px">UI initializing...</div>
       </div>
 
+      <div style="margin-top:12px;color:#9fb0c0">Contract address in UI: <span id="confAddr" style="color:#ffd18a"></span></div>
     </div>
   </div>
 
-  <!-- Basic JS: match design & simple local claim functionality. -->
+  <!-- Ethers CDN (v5). Replace with local file if CDN blocked. -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
   <script>
-    (function(){
-      const fidInput = document.getElementById('fid');
-      const cardName = document.getElementById('cardName');
-      const captionPreview = document.getElementById('captionPreview');
-      const msg = document.getElementById('msg');
-      const lastClaim = document.getElementById('lastClaim');
-      const streakPill = document.getElementById('streakPill');
-      const totalPill = document.getElementById('totalPill');
+  // ----------------------------
+  // CONFIG — replace contract address with your deployed contract
+  // ----------------------------
+  const CONFIG_CONTRACT_ADDRESS = "0xREPLACE_WITH_YOUR_CONTRACT_ADDRESS"; // <<-- REPLACE THIS
+  document.getElementById('confAddr').innerText = CONFIG_CONTRACT_ADDRESS;
 
-      // Local "db" storage keys (simple)
-      function localKey(fid){ return 'badgehub_local_' + fid; }
-      function localTotalKey(fid){ return 'badgehub_total_' + fid; }
+  // ----------------------------
+  // ABI (paste the ABI JSON you used). I included the ABI snippet you posted earlier.
+  // If your contract ABI differs, replace this variable completely with your contract's ABI JSON
+  // ----------------------------
+  const ABI = [
+    {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+    {"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},
+    {"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},
+    {"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+    {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"badgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"nextTokenId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"weekBadgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"weeksMinted","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"}
+  ];
 
-      // Update preview contents
-      function updatePreview(){
-        const fid = (fidInput.value || 'anon').trim();
-        cardName.innerText = fid;
-        const total = Number(localStorage.getItem(localTotalKey(fid)) || 0);
-        const last = Number(localStorage.getItem(localKey(fid)) || 0);
-        const streak = total>0 ? 1 : 0; // simple preview streak (improve later)
-        captionPreview.innerText = `#${fid} Daily Check-in badge earned\n\nStreak: ${streak} day(s) | Total: ${total}\n#Badgehub #Base`;
-        lastClaim.innerText = last ? new Date(Number(last)).toLocaleDateString() : '-';
-        streakPill.innerText = 'Streak ' + streak + ' day(s)';
-        totalPill.innerText = 'Total claimed ' + total;
+  // ----------------------------
+  // Global UI state
+  // ----------------------------
+  let provider = null; // ethers provider
+  let signer = null;   // ethers signer
+  let contract = null; // ethers contract instance
+
+  const statusEl = document.getElementById('status');
+  const uiStatus = document.getElementById('uiStatus');
+
+  function showStatus(text, type='info'){
+    statusEl.style.display = 'block';
+    statusEl.innerText = text;
+    statusEl.className = 'msg ' + (type === 'error' ? 'error' : (type === 'ok' ? 'ok' : ''));
+  }
+
+  function clearStatus(){
+    statusEl.style.display = 'none';
+  }
+
+  // check ethers loaded
+  function checkEthers(){
+    if(typeof window.ethers === 'undefined'){
+      uiStatus.innerText = 'ethers is not defined. Make sure CDN is available or host ethers locally.';
+      showStatus('Ethers library missing — page cannot interact with blockchain. See console.', 'error');
+      return false;
+    }
+    return true;
+  }
+
+  // UI helpers
+  function updatePreview(){
+    const fid = document.getElementById('fid').value || 'anon';
+    document.getElementById('previewTitle').innerText = fid;
+    // caption preview
+    const caption = `#${fid} Daily Check-in badge earned\n\nStreak: 0 | Total: 0\n#Badgehub #Base`;
+    document.getElementById('captionPreview').innerText = caption;
+  }
+
+  document.getElementById('fid').addEventListener('input', updatePreview);
+
+  // Connect Wallet
+  async function connectWallet(){
+    clearStatus();
+    if(!checkEthers()) return;
+    try {
+      if(!window.ethereum){
+        showStatus('No injected wallet found (MetaMask).', 'error'); return;
       }
 
-      // Claim local (24h check)
-      document.getElementById('claimBtn').addEventListener('click', function(){
-        const fid = (fidInput.value || 'anon').trim();
-        const key = localKey(fid);
-        const totalKey = localTotalKey(fid);
-        const now = Date.now();
-        const last = Number(localStorage.getItem(key) || 0);
-        if(last && (now - last) < (24*3600*1000)){
-          const hrs = Math.ceil(((24*3600*1000) - (now-last))/3600000);
-          msg.innerText = 'Already claimed in last 24h. Try after ~' + hrs + 'h';
-          msg.className = 'muted';
-          msg.style.color = '#ffb3b3';
-          return;
-        }
-        // save
-        localStorage.setItem(key, String(now));
-        localStorage.setItem(totalKey, String(Number(localStorage.getItem(totalKey)||0) + 1));
-        msg.innerText = 'Badge claimed. Streak updated.';
-        msg.style.color = '#7ee787';
-        updatePreview();
+      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+      // request accounts
+      const accounts = await provider.send('eth_requestAccounts', []).catch(e=>{
+        console.error('eth_requestAccounts error', e); throw e;
       });
 
-      // Other small UI actions (placeholders)
-      document.getElementById('copycap').addEventListener('click', function(){
-        navigator.clipboard?.writeText(captionPreview.innerText).then(()=> {
-          msg.innerText = 'Caption copied to clipboard';
-          msg.style.color = '#7ee787';
-        }).catch(()=> {
-          msg.innerText = 'Clipboard copy failed';
-          msg.style.color = '#ffb3b3';
-        });
-      });
+      if(!accounts || accounts.length === 0){
+        showStatus('Connect failed: wallet must have at least one account', 'error'); return;
+      }
 
-      document.getElementById('downloadSvg').addEventListener('click', function(){
-        // simple SVG export placeholder
-        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='400'><rect width='100%' height='100%' fill='#ffbf55'/><text x='50' y='220' font-size='48' fill='#04121a'>${(fidInput.value||'anon')}</text></svg>`;
-        const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-        const a = document.createElement('a'); a.href = url; a.download = 'badge.svg'; a.click();
-        msg.innerText = 'SVG downloaded';
-        msg.style.color = '#7ee787';
-      });
+      signer = provider.getSigner();
+      // create contract instance (read/write)
+      contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
 
-      // Onchain mint placeholder: we won't call contract here yet.
-      document.getElementById('onchainMint').addEventListener('click', function(){
-        msg.innerText = 'Onchain mint clicked — connect wallet and deploy contract then integrate (coming next).';
-        msg.style.color = '#ffd28a';
-      });
+      uiStatus.innerText = 'Connected: ' + accounts[0];
+      showStatus('Wallet connected — ready.', 'ok');
+      console.log('Connected account:', accounts[0]);
 
-      // small quick bindings
-      fidInput.addEventListener('input', updatePreview);
+      // quick check for contract existence (optional)
+      try {
+        // try name() to ensure contract at address matches ABI
+        const name = await contract.name();
+        console.log('Contract name:', name);
+      } catch(err){
+        console.warn('Contract method call failed — verify address & ABI. Err:', err);
+        showStatus('Warning: contract call failed — check address/ABI in UI.', 'error');
+      }
 
-      // init
-      updatePreview();
-    })();
+    } catch(err){
+      console.error('connectWallet error', err);
+      showStatus('Connect wallet cancelled or failed. See console for details.', 'error');
+    }
+  }
+
+  document.getElementById('btnConnect').addEventListener('click', connectWallet);
+
+  // Refresh (UI)
+  document.getElementById('btnRefresh').addEventListener('click', ()=>{ updatePreview(); clearStatus(); });
+
+  // Local claim (stores in localStorage)
+  function claimLocal(){
+    const fid = document.getElementById('fid').value || 'anon';
+    const key = 'badgehub_claim_' + fid;
+    const today = Math.floor(Date.now() / (1000*60*60*24)); // days since epoch
+    const existing = JSON.parse(localStorage.getItem(key) || 'null');
+    if(existing && existing.lastDay === today){
+      showStatus('Already claimed for today (local).', 'error'); return;
+    }
+    let streak = 1;
+    if(existing && existing.lastDay === today - 1){
+      streak = (existing.streak || 0) + 1;
+    }
+    const obj = { lastDay: today, streak, total: ((existing && existing.total)||0) + 1, lastClaim: Date.now() };
+    localStorage.setItem(key, JSON.stringify(obj));
+    updatePreview();
+    showStatus('Badge claimed (local). Streak updated: ' + streak, 'ok');
+  }
+  document.getElementById('btnClaim').addEventListener('click', claimLocal);
+
+  // Share/copy helpers
+  function getCaptionText(){
+    const capEl = document.getElementById('captionPreview');
+    return capEl ? capEl.innerText.trim() : (`#${(document.getElementById('fid')?.value||'anon')} Daily Check-in badge earned`);
+  }
+
+  document.getElementById('copyCap').addEventListener('click', async ()=>{
+    const caption = getCaptionText();
+    try {
+      await navigator.clipboard.writeText(caption);
+      showStatus('Caption copied to clipboard.', 'ok');
+    } catch(e){
+      showStatus('Could not copy automatically. See console.', 'error');
+      console.error(e);
+    }
+  });
+
+  document.getElementById('shareX').addEventListener('click', function(){
+    const caption = getCaptionText();
+    const maxLen = 280;
+    const text = caption.length > maxLen ? caption.slice(0, maxLen-3) + '...' : caption;
+    const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  });
+
+  document.getElementById('shareF').addEventListener('click', async function(){
+    const caption = getCaptionText();
+    // prefer native share
+    if(navigator.share){
+      try {
+        await navigator.share({ text: caption });
+        showStatus('Shared using system share dialog.', 'ok'); return;
+      } catch(err){
+        // fallback
+      }
+    }
+    try { await navigator.clipboard.writeText(caption); showStatus('Caption copied — opening Farcaster...', 'ok'); } catch(e){ showStatus('Opening Farcaster — caption not copied.', 'error'); }
+    const warpUrl = 'https://warpcast.app/compose?text=' + encodeURIComponent(caption);
+    window.open(warpUrl, '_blank', 'noopener,noreferrer');
+  });
+
+  // Mint onchain (daily)
+  async function mintOnchain(){
+    clearStatus();
+    if(!checkEthers()) return;
+    if(!contract || !signer){
+      showStatus('Wallet not connected. Click Connect Wallet first.', 'error'); return;
+    }
+    try {
+      // get current account
+      const user = await signer.getAddress();
+      const fid = document.getElementById('fid').value || 'anon';
+
+      // tokenURI placeholder — you can use your real hosted JSON or svg data uri.
+      const tokenURI = `https://example.com/token-uri/${encodeURIComponent(fid)}`;
+
+      // derive date and streak from local storage (or set defaults)
+      const key = 'badgehub_claim_' + fid;
+      const existing = JSON.parse(localStorage.getItem(key) || 'null');
+      let streak = existing ? (existing.streak || 1) : 1;
+      const dateUint = Math.floor(Date.now() / 1000);
+
+      showStatus('Sending onchain mint transaction — confirm in wallet.', 'ok');
+
+      const tx = await contract.mintBadge(user, fid, "Daily Check-in", dateUint, streak, tokenURI);
+      console.log('mint tx', tx);
+      showStatus('Transaction submitted. Waiting for confirmation...', 'ok');
+
+      const receipt = await tx.wait();
+      console.log('mint receipt', receipt);
+      showStatus('Mint confirmed on chain. Tx: ' + receipt.transactionHash, 'ok');
+
+    } catch(err){
+      console.error('mintOnchain error', err);
+      const reason = (err && err.error && err.error.message) ? err.error.message : (err && err.message) ? err.message : String(err);
+      showStatus('Mint failed: ' + reason, 'error');
+    }
+  }
+  document.getElementById('btnMint').addEventListener('click', mintOnchain);
+
+  // Mint weekly (example)
+  async function mintWeekOnchain(){
+    clearStatus();
+    if(!checkEthers()) return;
+    if(!contract || !signer){
+      showStatus('Wallet not connected. Click Connect Wallet first.', 'error'); return;
+    }
+    try {
+      const user = await signer.getAddress();
+      const fid = document.getElementById('fid').value || 'anon';
+      const tokenURI = `https://example.com/week-token-uri/${encodeURIComponent(fid)}`;
+      const weekNumber = Math.floor(Date.now() / (7*24*60*60*1000));
+      const dateUint = Math.floor(Date.now() / 1000);
+      const key = 'badgehub_claim_' + fid;
+      const existing = JSON.parse(localStorage.getItem(key) || 'null');
+      const streak = existing ? (existing.streak || 1) : 1;
+
+      showStatus('Sending weekly mint transaction — confirm in wallet.', 'ok');
+      const tx = await contract.mintWeekBadge(user, fid, weekNumber, dateUint, streak, tokenURI);
+      await tx.wait();
+      showStatus('Weekly mint confirmed. Tx sent.', 'ok');
+    } catch(err){
+      console.error('mintWeekOnchain error', err);
+      showStatus('Weekly mint failed. See console.', 'error');
+    }
+  }
+  document.getElementById('btnMintWeek').addEventListener('click', mintWeekOnchain);
+
+  // Init UI
+  (function init(){
+    updatePreview();
+    if(!checkEthers()){
+      uiStatus.innerText = 'ethers is not loaded. CDN might be blocked — host ethers locally if needed.';
+      return;
+    }
+    uiStatus.innerText = 'UI ready. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS;
+    // If user already connected wallet (e.g. persistent), we don't auto connect here for privacy.
+    clearStatus();
+  })();
   </script>
 </body>
 </html>
