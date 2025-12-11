@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub - Daily & Weekly Badge</title>
+  <title>Badgehub - connect debug</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: system-ui, Arial; background:#07121a; color:#e6fff6; padding:24px; }
@@ -15,15 +15,11 @@
     .ok{background:#062d12;color:#a9f7b8}
     .err{background:#3b0b0b;color:#ffb4b4}
     .muted{color:#aac7cd}
-    .preview{margin-top:18px;background:#071f25;padding:14px;border-radius:8px}
   </style>
-
-  <!-- load ethers (v5) -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>Badgehub Daily & Weekly Badge</h1>
+    <h1>Badgehub - debug loader</h1>
 
     <label>Your FID / name</label>
     <input id="fidInput" placeholder="enter your FID (e.g. anon)" />
@@ -41,249 +37,169 @@
 
     <div id="uiStatus" class="status muted">UI initializing...</div>
 
-    <div class="preview">
-      <div><strong id="previewName">-</strong></div>
-      <div class="muted" id="streakInfo">Streak: 0 | Last claim: -</div>
-    </div>
   </div>
 
 <script>
 /*
-  IMPORTANT: set your deployed contract address below (the new one from Remix/Blockscout)
+  Drop-in debug page:
+  - dynamically loads ethers.js then runs appInit()
+  - shows clearer console messages
+  - replace CONFIG_CONTRACT_ADDRESS below with your contract if needed
 */
-const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // <- replace if needed
 
-// ------------------ ABI (from your contract) ------------------
-// Use the ABI you provided earlier — trimmed / included exactly:
-const ABI = [
-  {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-  {"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},
-  {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},
-  {"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},
-  {"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},
-  {"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},
-  {"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},
-  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
-  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
-  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"badgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"string","name":"badgeType_","type":"string"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"},{"internalType":"string","name":"tokenURI_","type":"string"}],"name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"nextTokenId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"weeksMinted","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"weekBadgeData","outputs":[{"internalType":"string","name":"fid","type":"string"},{"internalType":"uint32","name":"weekNumber","type":"uint32"},{"internalType":"uint64","name":"date","type":"uint64"},{"internalType":"uint32","name":"streak","type":"uint32"}],"stateMutability":"view","type":"function"}
-];
+const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // change if needed
 
-// ------------------ app code ------------------
-let provider = null;
-let signer = null;
-let contract = null;
-
+const uiStatus = document.getElementById('uiStatus');
 const connectBtn = document.getElementById('connectBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const claimLocalBtn = document.getElementById('claimLocalBtn');
 const mintDailyBtn = document.getElementById('mintDailyBtn');
 const mintWeeklyBtn = document.getElementById('mintWeeklyBtn');
 const fidInput = document.getElementById('fidInput');
-const uiStatus = document.getElementById('uiStatus');
-const previewName = document.getElementById('previewName');
-const streakInfo = document.getElementById('streakInfo');
 
-function setStatus(text, cls = 'muted') {
+function setStatus(msg, type='muted') {
   uiStatus.className = 'status';
-  if (cls === 'ok') uiStatus.classList.add('ok');
-  else if (cls === 'err') uiStatus.classList.add('err');
+  if (type === 'ok') uiStatus.classList.add('ok');
+  else if (type === 'err') uiStatus.classList.add('err');
   else uiStatus.classList.add('muted');
-  uiStatus.textContent = text;
+  uiStatus.textContent = msg;
+  console.log('[UI STATUS]', msg);
 }
 
-// initialize UI and try to set up provider
-async function initUI() {
+// helper to load script and return a promise
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = (e) => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+// try to load ethers if not present
+async function ensureEthers() {
+  if (window.ethers) {
+    console.log('ethers already present');
+    return;
+  }
   try {
-    if (!window.ethers) {
-      setStatus('Error initializing provider: ethers is not defined', 'err');
-      console.error('ethers is not defined. Make sure ethers script is loaded.');
-      return;
-    }
-
-    setStatus('UI ready. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS, 'ok');
-
-    // if window.ethereum present, create provider
-    if (window.ethereum) {
-      provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-      // create contract instance with provider (read-only) for now
-      contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, provider);
-      console.log('contract ready (read-only)', contract.address);
-    } else {
-      setStatus('No Ethereum provider (MetaMask). Local claims only.', 'err');
-    }
-
-    refreshPreview();
+    // try CDN (v5)
+    await loadScript('https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js');
+    if (!window.ethers) throw new Error('ethers did not become available after load');
+    console.log('ethers loaded from CDN');
   } catch (err) {
-    console.error('initUI error', err);
-    setStatus('Error initializing UI: ' + (err && err.message), 'err');
+    console.error('Failed to load ethers from CDN', err);
+    throw err;
   }
 }
 
-// connect wallet
-async function connectWallet() {
-  try {
-    if (!window.ethereum) throw new Error('No wallet (window.ethereum) found');
-    // request accounts
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    const address = await signer.getAddress();
-    setStatus('Connected: ' + address, 'ok');
-
-    // contract with signer for write calls
-    contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-
-    console.log('connected signer', address);
-    refreshPreview();
-  } catch (err) {
-    console.error('connectWallet error', err);
-    setStatus('Connect wallet cancelled or failed. See console.', 'err');
+// check for wallet injection conflicts
+function detectWalletConflicts() {
+  // Brave has window.ethereum but also sets a provider that can cause errors.
+  // We can't programmatically disable Brave wallet, but we can show a helpful message.
+  if (!window.ethereum) {
+    setStatus('No wallet detected (window.ethereum missing) — install MetaMask.', 'err');
+    return false;
   }
-}
-
-// local claim (store in localStorage)
-function claimLocal() {
-  const fid = (fidInput.value || 'anon').trim();
-  const key = 'badgehub_local_claim_' + fid;
-  const now = Date.now();
-  localStorage.setItem(key, JSON.stringify({ date: now, streak: 1 }));
-  setStatus('Badge claimed (local). Streak set.', 'ok');
-  refreshPreview();
-}
-
-// call mintBadge onchain
-async function mintDailyOnchain() {
-  const fid = (fidInput.value || 'anon').trim();
-  if (!contract || !signer) { setStatus('Wallet not connected or contract not ready', 'err'); return; }
-
-  // prepare params
-  const to = await signer.getAddress();
-  const badgeType = "Daily Check-in";
-  const date = Math.floor(Date.now() / 1000); // unix seconds
-  const streak = 1; // example, you may fetch actual streak
-  const tokenURI = ""; // if you have metadata URI put here
-
-  try {
-    setStatus('Sending mint transaction (daily)...', 'muted');
-    const tx = await contract.mintBadge(to, fid, badgeType, date, streak, tokenURI);
-    console.log('tx sent', tx.hash);
-    setStatus('Transaction sent: ' + tx.hash, 'ok');
-    // wait mined
-    await tx.wait();
-    setStatus('Badge minted onchain 🎉', 'ok');
-    refreshPreview();
-  } catch (err) {
-    console.error('mintDailyOnchain error', err);
-    const msg = err && (err.error && err.error.message) || err.message || String(err);
-    setStatus('Mint failed: ' + msg, 'err');
+  // detect Brave's provider meta: Brave sets isBraveWallet or similar. MetaMask sets isMetaMask = true.
+  if (window.ethereum.isBraveWallet && !window.ethereum.isMetaMask) {
+    setStatus('Brave Wallet detected and may block MetaMask. Disable Brave Wallet or enable MetaMask.', 'err');
+    return false;
   }
+  return true;
 }
 
-// call mintWeekBadge onchain
-async function mintWeeklyOnchain() {
-  const fid = (fidInput.value || 'anon').trim();
-  if (!contract || !signer) { setStatus('Wallet not connected or contract not ready', 'err'); return; }
+let provider = null;
+let signer = null;
+let contract = null; // later
 
-  const to = await signer.getAddress();
-  const weekNumber = 1; // example week number — change logic as per your app
-  const date = Math.floor(Date.now() / 1000);
-  const streak = 7;
-  const tokenURI = "";
-
+async function appInit() {
   try {
-    setStatus('Sending mint transaction (weekly)...', 'muted');
-    const tx = await contract.mintWeekBadge(to, fid, weekNumber, date, streak, tokenURI);
-    console.log('weekly tx', tx.hash);
-    setStatus('Transaction sent: ' + tx.hash, 'ok');
-    await tx.wait();
-    setStatus('Weekly badge minted onchain 🎉', 'ok');
-    refreshPreview();
+    await ensureEthers();
   } catch (err) {
-    console.error('mintWeeklyOnchain error', err);
-    const msg = err && (err.error && err.error.message) || err.message || String(err);
-    setStatus('Mint failed: ' + msg, 'err');
+    setStatus('ethers is not defined. Make sure internet allows CDN or host ethers locally.', 'err');
+    return;
   }
-}
 
-// refresh UI preview
-function refreshPreview() {
-  const fid = (fidInput.value || 'anon').trim();
-  previewName.textContent = fid;
-  // check local storage
-  const k = 'badgehub_local_claim_' + fid;
-  const data = localStorage.getItem(k);
-  if (data) {
+  // basic sanity
+  setStatus('ethers loaded. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS, 'ok');
+
+  // detect wallet conflict
+  if (!detectWalletConflicts()) {
+    console.warn('wallet conflict, user should fix extension settings.');
+  }
+
+  // create a read provider if a wallet exists
+  if (window.ethereum) {
     try {
-      const parsed = JSON.parse(data);
-      const last = parsed.date ? new Date(parsed.date).toLocaleString() : '-';
-      streakInfo.textContent = `Streak: ${parsed.streak || 1} | Last claim: ${last}`;
-    } catch(e) {
-      streakInfo.textContent = 'Streak: 0 | Last claim: -';
+      provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+      console.log('created Web3Provider');
+    } catch (err) {
+      console.error('Could not create Web3Provider', err);
+      setStatus('Error creating provider: ' + (err.message||err), 'err');
+      return;
     }
   } else {
-    streakInfo.textContent = 'Streak: 0 | Last claim: -';
+    setStatus('No wallet extension found — local tests only.', 'err');
   }
+
+  // attach simple handlers
+  connectBtn.onclick = async () => {
+    try {
+      if (!provider) {
+        setStatus('No provider. Install MetaMask and reload.', 'err');
+        return;
+      }
+      // request
+      await provider.send('eth_requestAccounts', []);
+      signer = provider.getSigner();
+      const address = await signer.getAddress();
+      setStatus('Connected: ' + address, 'ok');
+
+      // now create contract with signer for writes (if you have ABI later)
+      // contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
+      console.log('connected address', address);
+    } catch (err) {
+      console.error('connect error', err);
+      setStatus('Connect failed: ' + (err && err.message), 'err');
+    }
+  };
+
+  refreshBtn.onclick = () => {
+    setStatus('Refreshed UI info', 'ok');
+    console.log('refresh clicked');
+  };
+
+  claimLocalBtn.onclick = () => {
+    const fid = (fidInput.value || 'anon').trim();
+    const key = 'badgehub_local_claim_' + fid;
+    localStorage.setItem(key, JSON.stringify({ date: Date.now(), streak: 1 }));
+    setStatus('Claim saved to localStorage for ' + fid, 'ok');
+  };
+
+  mintDailyBtn.onclick = () => {
+    setStatus('Mint click pressed — must connect and have ABI/contract. See console.', 'muted');
+    console.log('mintDaily clicked — not wired in debug page');
+  };
+
+  mintWeeklyBtn.onclick = () => {
+    setStatus('Mint week click pressed — must connect and have ABI/contract. See console.', 'muted');
+    console.log('mintWeekly clicked — not wired in debug page');
+  };
+
+  setStatus('Ready. Try Connect Wallet. If connect fails see console logs.', 'ok');
 }
 
-// attach events
-connectBtn.addEventListener('click', async ()=> {
-  try {
-    if (!window.ethereum) {
-      alert('No wallet detected. Install MetaMask or use a browser with wallet extension.');
-      return;
-    }
-    // ensure ethers provider created
-    if (!provider) provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-    await connectWallet();
-  } catch (err) {
-    console.error('connectBtn error', err);
-    setStatus('Connect wallet cancelled or failed. See console.', 'err');
-  }
-});
-refreshBtn.addEventListener('click', ()=> {
-  refreshPreview();
-});
-claimLocalBtn.addEventListener('click', ()=> {
-  claimLocal();
-});
-mintDailyBtn.addEventListener('click', async ()=> {
-  await mintDailyOnchain();
-});
-mintWeeklyBtn.addEventListener('click', async ()=> {
-  await mintWeeklyOnchain();
+// run init on load
+window.addEventListener('load', () => {
+  appInit().catch(e => {
+    console.error('appInit error', e);
+    setStatus('Initialization error: ' + (e && e.message), 'err');
+  });
 });
 
-// init on load
-window.addEventListener('load', () => {
-  initUI();
-});
 </script>
 </body>
 </html>
