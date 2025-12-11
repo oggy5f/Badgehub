@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub - connect debug</title>
+  <title>Badgehub - connect debug (CDN fallback)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, Arial; background:#07121a; color:#e6fff6; padding:24px; }
+    body { font-family: system-ui, Arial; background:#07121a; color:#e6fff6; padding:22px; }
     .container{max-width:900px;margin:0 auto}
     input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid #28474f;background:#0b2a31;color:#fff}
     button{padding:10px 16px;border-radius:10px;border:0;margin:6px;background:#0b82b7;color:#fff;cursor:pointer}
@@ -15,11 +15,12 @@
     .ok{background:#062d12;color:#a9f7b8}
     .err{background:#3b0b0b;color:#ffb4b4}
     .muted{color:#aac7cd}
+    small.muted{color:#aac7cd;display:block;margin-top:8px}
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Badgehub - debug loader</h1>
+    <h1>Badgehub - debug loader (CDN fallback)</h1>
 
     <label>Your FID / name</label>
     <input id="fidInput" placeholder="enter your FID (e.g. anon)" />
@@ -37,18 +38,14 @@
 
     <div id="uiStatus" class="status muted">UI initializing...</div>
 
+    <small class="muted">If you see "ethers is not defined" — CDN blocked. Download ethers.umd.min.js and put it in <code>/libs/ethers.umd.min.js</code>.</small>
   </div>
 
 <script>
-/*
-  Drop-in debug page:
-  - dynamically loads ethers.js then runs appInit()
-  - shows clearer console messages
-  - replace CONFIG_CONTRACT_ADDRESS below with your contract if needed
-*/
+/* CONFIG: change if needed */
+const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306";
 
-const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // change if needed
-
+/* UI helpers */
 const uiStatus = document.getElementById('uiStatus');
 const connectBtn = document.getElementById('connectBtn');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -66,44 +63,68 @@ function setStatus(msg, type='muted') {
   console.log('[UI STATUS]', msg);
 }
 
-// helper to load script and return a promise
-function loadScript(src) {
+/* try-lists for CDN/UMD builds */
+const CDN_UMD_URLS = [
+  'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js',
+  'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js'
+];
+
+function loadScriptUrl(url) {
   return new Promise((resolve, reject) => {
+    console.log('Attempting to load script:', url);
     const s = document.createElement('script');
-    s.src = src;
+    s.src = url;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = (e) => reject(new Error('Failed to load ' + src));
+    s.onload = () => {
+      console.log('Loaded script', url);
+      resolve(url);
+    };
+    s.onerror = (e) => {
+      console.warn('Failed load', url, e);
+      reject(new Error('Failed to load ' + url));
+    };
     document.head.appendChild(s);
   });
 }
 
-// try to load ethers if not present
-async function ensureEthers() {
+/* try multiple CDNs then fallback to local file */
+async function ensureEthersWithFallback() {
   if (window.ethers) {
     console.log('ethers already present');
     return;
   }
+  // try CDN URLs sequentially
+  for (const url of CDN_UMD_URLS) {
+    try {
+      await loadScriptUrl(url);
+      if (window.ethers) {
+        console.log('ethers ready from', url);
+        return;
+      }
+    } catch (e) {
+      console.warn('cdn attempt failed', url);
+    }
+  }
+  // last fallback: local file path (you must place this in repo: libs/ethers.umd.min.js)
+  const local = '/libs/ethers.umd.min.js';
   try {
-    // try CDN (v5)
-    await loadScript('https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js');
-    if (!window.ethers) throw new Error('ethers did not become available after load');
-    console.log('ethers loaded from CDN');
+    await loadScriptUrl(local);
+    if (window.ethers) {
+      console.log('ethers loaded from local', local);
+      return;
+    }
   } catch (err) {
-    console.error('Failed to load ethers from CDN', err);
-    throw err;
+    console.error('local fallback failed', err);
+    throw new Error('All attempts to load ethers failed. Please add /libs/ethers.umd.min.js or allow CDN.');
   }
 }
 
-// check for wallet injection conflicts
+/* wallet conflict detect */
 function detectWalletConflicts() {
-  // Brave has window.ethereum but also sets a provider that can cause errors.
-  // We can't programmatically disable Brave wallet, but we can show a helpful message.
   if (!window.ethereum) {
     setStatus('No wallet detected (window.ethereum missing) — install MetaMask.', 'err');
     return false;
   }
-  // detect Brave's provider meta: Brave sets isBraveWallet or similar. MetaMask sets isMetaMask = true.
   if (window.ethereum.isBraveWallet && !window.ethereum.isMetaMask) {
     setStatus('Brave Wallet detected and may block MetaMask. Disable Brave Wallet or enable MetaMask.', 'err');
     return false;
@@ -111,59 +132,54 @@ function detectWalletConflicts() {
   return true;
 }
 
+/* minimal app init */
 let provider = null;
 let signer = null;
-let contract = null; // later
 
 async function appInit() {
   try {
-    await ensureEthers();
+    await ensureEthersWithFallback();
   } catch (err) {
-    setStatus('ethers is not defined. Make sure internet allows CDN or host ethers locally.', 'err');
+    console.error(err);
+    setStatus('ethers is not defined. Make sure CDN allowed or host /libs/ethers.umd.min.js', 'err');
     return;
   }
 
-  // basic sanity
   setStatus('ethers loaded. CONFIG_CONTRACT_ADDRESS: ' + CONFIG_CONTRACT_ADDRESS, 'ok');
 
-  // detect wallet conflict
   if (!detectWalletConflicts()) {
-    console.warn('wallet conflict, user should fix extension settings.');
+    console.warn('wallet conflict');
   }
 
-  // create a read provider if a wallet exists
   if (window.ethereum) {
     try {
       provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-      console.log('created Web3Provider');
+      console.log('provider created');
     } catch (err) {
-      console.error('Could not create Web3Provider', err);
-      setStatus('Error creating provider: ' + (err.message||err), 'err');
+      console.error('provider error', err);
+      setStatus('Error creating provider: ' + err.message, 'err');
       return;
     }
   } else {
     setStatus('No wallet extension found — local tests only.', 'err');
   }
 
-  // attach simple handlers
   connectBtn.onclick = async () => {
     try {
       if (!provider) {
         setStatus('No provider. Install MetaMask and reload.', 'err');
         return;
       }
-      // request
       await provider.send('eth_requestAccounts', []);
       signer = provider.getSigner();
-      const address = await signer.getAddress();
-      setStatus('Connected: ' + address, 'ok');
-
-      // now create contract with signer for writes (if you have ABI later)
+      const addr = await signer.getAddress();
+      setStatus('Connected: ' + addr, 'ok');
+      console.log('connected address', addr);
+      // If you want to create a contract instance for writes, load ABI and do:
       // contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-      console.log('connected address', address);
     } catch (err) {
       console.error('connect error', err);
-      setStatus('Connect failed: ' + (err && err.message), 'err');
+      setStatus('Connect failed: ' + (err.message||err), 'err');
     }
   };
 
@@ -180,23 +196,23 @@ async function appInit() {
   };
 
   mintDailyBtn.onclick = () => {
-    setStatus('Mint click pressed — must connect and have ABI/contract. See console.', 'muted');
-    console.log('mintDaily clicked — not wired in debug page');
+    setStatus('Mint button pressed — connect + ABI required. See console.', 'muted');
+    console.log('mintDaily clicked');
   };
 
   mintWeeklyBtn.onclick = () => {
-    setStatus('Mint week click pressed — must connect and have ABI/contract. See console.', 'muted');
-    console.log('mintWeekly clicked — not wired in debug page');
+    setStatus('Mint weekly pressed — connect + ABI required. See console.', 'muted');
+    console.log('mintWeekly clicked');
   };
 
-  setStatus('Ready. Try Connect Wallet. If connect fails see console logs.', 'ok');
+  setStatus('Ready. Try Connect Wallet. Check console/network for script loads.', 'ok');
 }
 
-// run init on load
+/* run init */
 window.addEventListener('load', () => {
   appInit().catch(e => {
     console.error('appInit error', e);
-    setStatus('Initialization error: ' + (e && e.message), 'err');
+    setStatus('Initialization error: ' + (e.message||e), 'err');
   });
 });
 
