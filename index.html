@@ -1,263 +1,268 @@
-<!-- === Paste this script into index.html (replace the previous script wiring wallet/mint) === -->
-<script>
-/* CONFIG: put your deployed address here (I used the one you shared) */
-const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306";
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Badgehub - simple debug UI</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* simple clean dark-ish look, small layout like your old */
+    body { background:#0f1114; color:#e6eef6; font-family:Inter,system-ui,Arial; margin:0; padding:20px; }
+    .container { max-width:980px; margin:18px auto; display:flex; gap:20px; }
+    .panel { background: linear-gradient(180deg,#0c0d10,#0f1216); border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.6); flex:1; min-height:240px; }
+    h1 { margin:0 0 8px 0; font-size:20px; color:#ffae00; }
+    label { display:block; font-size:13px; margin-top:10px; color:#bfcbdc; }
+    input[type="text"]{ width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:#0b0c0e; color:#e6eef6; }
+    button { margin-top:12px; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; background:#1ea1ff; color:#041026; font-weight:600; }
+    button[disabled]{ opacity:0.5; cursor:default; }
+    .muted { color:#98a4b6; font-size:13px; margin-top:8px; }
+    .status { margin-top:12px; padding:10px; border-radius:8px; background:#07121a; color:#cfeef5; font-size:14px; }
+    .danger { color:#ff7b7b; }
+    .success { color:#7ef0a3; }
+    .small { font-size:13px; color:#9fb0c7; margin-top:6px; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <h1>Badgehub — simple debug UI</h1>
+      <label>Your FID / name</label>
+      <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" value="anon" />
 
-/* Minimal ABI we need (lastMintTime + mint functions) - replace or extend if your contract differs */
-const ABI = [
-  { "inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function" },
-  { "inputs":[
-      {"internalType":"address","name":"to","type":"address"},
-      {"internalType":"string","name":"fid","type":"string"},
-      {"internalType":"string","name":"badgeType_","type":"string"},
-      {"internalType":"uint64","name":"date","type":"uint64"},
-      {"internalType":"uint32","name":"streak","type":"uint32"},
-      {"internalType":"string","name":"tokenURI_","type":"string"}
-    ],
-    "name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
-  },
-  { "inputs":[
-      {"internalType":"address","name":"to","type":"address"},
-      {"internalType":"string","name":"fid","type":"string"},
-      {"internalType":"uint32","name":"weekNumber","type":"uint32"},
-      {"internalType":"uint64","name":"date","type":"uint64"},
-      {"internalType":"uint32","name":"streak","type":"uint32"},
-      {"internalType":"string","name":"tokenURI_","type":"string"}
-    ],
-    "name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
+      <div class="controls">
+        <button id="connectBtn">Connect Wallet</button>
+        <button id="refreshBtn">Refresh</button>
+      </div>
+
+      <div class="controls">
+        <button id="claimLocalBtn">Claim Today's Badge (local)</button>
+        <button id="mintDailyBtn" disabled>Mint Daily Badge Onchain</button>
+        <button id="mintWeekBtn" disabled>Mint Weekly Badge Onchain</button>
+      </div>
+
+      <div id="statusBox" class="status">UI ready — connect wallet to enable onchain mint.</div>
+      <div class="muted">Tip: "local" claim stores data only in your browser (for testing). Onchain mint calls the smart contract.</div>
+    </div>
+
+    <div class="panel">
+      <h1>Preview</h1>
+      <div id="previewArea" style="margin-top:14px;">
+        <div style="background:#09121a;padding:14px;border-radius:8px;">
+          <div id="previewName" style="font-size:18px;font-weight:700">anon</div>
+          <div id="previewType" class="small">Daily Check-In · Streak: 0</div>
+        </div>
+      </div>
+
+      <div id="debugConsole" style="margin-top:16px;color:#a7bccd;font-size:13px"></div>
+    </div>
+  </div>
+
+  <!-- try load ethers UMD from CDN. If blocked, the script below handles absence gracefully -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <script>
+  // ---------- CONFIG ----------
+  const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // change if needed
+  const ABI = [
+    { "inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function" },
+    { "inputs":[
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"string","name":"fid","type":"string"},
+        {"internalType":"string","name":"badgeType_","type":"string"},
+        {"internalType":"uint64","name":"date","type":"uint64"},
+        {"internalType":"uint32","name":"streak","type":"uint32"},
+        {"internalType":"string","name":"tokenURI_","type":"string"}
+      ],
+      "name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
+    },
+    { "inputs":[
+        {"internalType":"address","name":"to","type":"address"},
+        {"internalType":"string","name":"fid","type":"string"},
+        {"internalType":"uint32","name":"weekNumber","type":"uint32"},
+        {"internalType":"uint64","name":"date","type":"uint64"},
+        {"internalType":"uint32","name":"streak","type":"uint32"},
+        {"internalType":"string","name":"tokenURI_","type":"string"}
+      ],
+      "name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
+    }
+  ];
+  // ---------- END CONFIG ----------
+
+  // UI elements
+  const connectBtn = document.getElementById('connectBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const claimLocalBtn = document.getElementById('claimLocalBtn');
+  const mintDailyBtn = document.getElementById('mintDailyBtn');
+  const mintWeekBtn = document.getElementById('mintWeekBtn');
+  const statusBox = document.getElementById('statusBox');
+  const previewName = document.getElementById('previewName');
+  const previewType = document.getElementById('previewType');
+  const fidInput = document.getElementById('fidInput');
+  const debugConsole = document.getElementById('debugConsole');
+
+  // state
+  let provider = null, signer = null, contract = null, account = null;
+
+  function logDbg(msg, color='#98c4e6'){ debugConsole.innerText += msg + "\\n"; console.log(msg); }
+  function setStatus(msg, type='info'){
+    statusBox.innerText = msg;
+    if(type==='error') statusBox.classList.add('danger'); else statusBox.classList.remove('danger');
   }
-];
 
-/* --- Helpers to find UI elements even if IDs changed --- */
-function findByIdOrText(id, textContains) {
-  const byId = document.getElementById(id);
-  if(byId) return byId;
-  // fallback: find button that contains text
-  const buttons = Array.from(document.querySelectorAll('button, a, input[type="button"], div'));
-  for (const el of buttons) {
-    const t = (el.innerText||el.value||"").toLowerCase();
-    if(t.includes((textContains||"").toLowerCase())) return el;
+  // safe detect ethers global
+  function ethersAvailable(){
+    return (typeof window.ethers !== 'undefined');
   }
-  return null;
-}
 
-/* Elements (tries common names) */
-const btnConnect = findByIdOrText('connectBtn','connect wallet') || findByIdOrText('btnConnect','connect wallet');
-const btnMintDaily = findByIdOrText('btnMintDaily','mint daily') || findByIdOrText('Mint Daily Badge Onchain','mint daily');
-const btnMintWeekly = findByIdOrText('btnMintWeekly','mint weekly') || findByIdOrText('Mint Weekly Badge Onchain','mint weekly');
-const statusEl = document.createElement('div');
-statusEl.style.marginTop = '8px';
-statusEl.style.color = '#ffae00';
-statusEl.id = 'mint24Status';
-(document.body.firstElementChild || document.body).prepend(statusEl);
-
-/* UI helpers */
-function setStatus(msg, color='#ffae00'){ statusEl.innerText = msg; statusEl.style.color = color; }
-function disableBtn(btn){ if(btn) btn.setAttribute('disabled','true'); btn && (btn.style.opacity = 0.6); }
-function enableBtn(btn){ if(btn) btn.removeAttribute('disabled'); btn && (btn.style.opacity = 1); }
-
-/* Ethers variables */
-let provider = null;
-let signer = null;
-let contract = null;
-let connectedAccount = null;
-
-/* 24h seconds */
-const DAY_SECONDS = 24 * 60 * 60;
-
-/* Init UI state */
-function updateUIButtons(){
-  // Default: disable both mint buttons until provider ready
-  if(!btnMintDaily || !btnMintWeekly) {
-    // If buttons not found, create console info
-    console.warn('Mint buttons not found using expected selectors. Buttons are required for disabling/enable logic.');
-  }
-  if(!connectedAccount){
-    setStatus('Wallet not connected — connect wallet to enable onchain mint.', '#ff4d4d');
-    disableBtn(btnMintDaily);
-    disableBtn(btnMintWeekly);
-    return;
-  }
-  // wallet connected: check lastMintTime to decide enabling
-  check24hAndToggleButtons().catch(err=>{
-    console.error('Error in updateUIButtons', err);
-    setStatus('Error checking mint cooldown (see console).', '#ff4d4d');
-    disableBtn(btnMintDaily);
-    disableBtn(btnMintWeekly);
-  });
-}
-
-/* Connect wallet */
-async function connectWallet(){
-  try{
-    if (!window.ethereum) throw new Error('MetaMask (or compatible) not found.');
-    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    connectedAccount = await signer.getAddress();
-    console.log('Connected account:', connectedAccount);
-    contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-    setStatus('Wallet connected: ' + connectedAccount, '#2ecc71');
-    updateUIButtons();
-  }catch(err){
-    console.error('connectWallet error', err);
-    setStatus('Connect wallet failed. See console.', '#ff4d4d');
-    disableBtn(btnMintDaily);
-    disableBtn(btnMintWeekly);
-  }
-}
-
-/* Check lastMintTime and toggle buttons accordingly */
-async function check24hAndToggleButtons(){
-  if(!contract || !connectedAccount) {
-    disableBtn(btnMintDaily);
-    disableBtn(btnMintWeekly);
-    return;
-  }
-  try{
-    const last = await contract.lastMintTime(connectedAccount); // returns BigNumber
-    const lastTs = Number(last.toString()); // seconds since epoch - assumed
-    const nowSec = Math.floor(Date.now() / 1000);
-    const since = nowSec - lastTs;
-    if(lastTs > 0 && since < DAY_SECONDS){
-      const remaining = DAY_SECONDS - since; // seconds to wait
-      const hrs = Math.floor(remaining / 3600);
-      const mins = Math.floor((remaining % 3600)/60);
-      const sec = remaining % 60;
-      const msg = `Already minted onchain in last 24h. Wait ${hrs}h ${mins}m ${sec}s to mint again.`;
-      setStatus(msg, '#ff4d4d');
-      disableBtn(btnMintDaily);
-      // weekly mint may be separate - keep it disabled too to be safe
-      disableBtn(btnMintWeekly);
-      return;
-    } else {
-      setStatus('Ready to mint onchain — you can mint now.', '#2ecc71');
-      enableBtn(btnMintDaily);
-      enableBtn(btnMintWeekly);
+  async function tryInitProviderIfInjected(){
+    if(!window.ethereum){
+      setStatus('No injected wallet found (MetaMask). Onchain disabled. Use "local" claim to test.', 'error');
+      logDbg('No window.ethereum');
       return;
     }
-  }catch(err){
-    console.error('check24hAndToggleButtons error', err);
-    // If contract does not implement lastMintTime or call fails, enable with warning
-    setStatus('Could not read cooldown. Contract call failed — check console.', '#ffae00');
-    enableBtn(btnMintDaily);
-    enableBtn(btnMintWeekly);
-  }
-}
-
-/* Mint daily onchain: checks again locally then calls contract.mintBadge(...) */
-async function mintDailyOnchain(){
-  if(!contract || !signer || !connectedAccount){
-    alert('Connect wallet first.');
-    return;
-  }
-  // second on-chain safety: check lastMintTime again
-  try{
-    const last = await contract.lastMintTime(connectedAccount);
-    const lastTs = Number(last.toString());
-    const nowSec = Math.floor(Date.now() / 1000);
-    if(lastTs > 0 && (nowSec - lastTs) < DAY_SECONDS){
-      alert('Already minted onchain in last 24 hours. Try later.');
-      await check24hAndToggleButtons();
-      return;
-    }
-  }catch(err){
-    console.warn('Could not read lastMintTime — proceeding to mint (but check contract).', err);
-  }
-
-  // Prepare mint args (you likely compute date/streak/tokenURI etc in your UI; placeholder values used here)
-  // Replace `fid`, `badgeType_`, `date`, `streak`, `tokenURI_` with your real data from UI
-  const fid = (document.querySelector('input') && document.querySelector('input').value) || 'anon';
-  const badgeType_ = 'Daily Check-in';
-  const date = Math.floor(Date.now()/1000); // unix seconds
-  const streak = 1; // you should compute streak from your local storage or contract data
-  const tokenURI_ = ''; // optional metadata URI
-
-  try{
-    setStatus('Sending on-chain mint transaction... (confirm in wallet)', '#ffae00');
-    disableBtn(btnMintDaily);
-    const tx = await contract.mintBadge(connectedAccount, fid, badgeType_, date, streak, tokenURI_);
-    console.log('mint tx:', tx);
-    setStatus('Transaction sent — waiting for confirmation...', '#ffae00');
-    await tx.wait();
-    setStatus('Mint successful! Transaction mined.', '#2ecc71');
-    // Update UI cooldown
-    await check24hAndToggleButtons();
-  }catch(err){
-    console.error('mintDailyOnchain error', err);
-    // Show revert reason if available
-    const reason = err?.error?.message || err?.message || JSON.stringify(err);
-    setStatus('Mint failed: see console for details.', '#ff4d4d');
-    alert('Mint failed: ' + (reason || 'unknown'));
-    // Re-enable button so user can retry (but only after inspecting)
-    await check24hAndToggleButtons();
-  }
-}
-
-/* Mint weekly onchain wrapper (similar check; you may want gating for streak >=7) */
-async function mintWeeklyOnchain(){
-  // if you want to require streak >= 7, check local UI or contract then return
-  // For now same flow:
-  if(!contract || !signer || !connectedAccount){
-    alert('Connect wallet first.');
-    return;
-  }
-  // Example gating: require local 'streak' value >=7 (replace with your logic)
-  // const localStreak = parseInt(localStorage.getItem('badge_streak')||'0',10);
-  // if(localStreak < 7){ alert('Weekly mint allowed only after 7 consecutive days.'); return; }
-
-  // Proceed to call mintWeekBadge
-  const fid = (document.querySelector('input') && document.querySelector('input').value) || 'anon';
-  const weekNumber = 1;
-  const date = Math.floor(Date.now()/1000);
-  const streak = 7;
-  const tokenURI_ = '';
-
-  try{
-    setStatus('Sending weekly mint tx... confirm in wallet.', '#ffae00');
-    disableBtn(btnMintWeekly);
-    const tx = await contract.mintWeekBadge(connectedAccount, fid, weekNumber, date, streak, tokenURI_);
-    await tx.wait();
-    setStatus('Weekly mint successful!', '#2ecc71');
-    await check24hAndToggleButtons();
-  }catch(err){
-    console.error('mintWeeklyOnchain error', err);
-    setStatus('Weekly mint failed (see console).', '#ff4d4d');
-    await check24hAndToggleButtons();
-  }
-}
-
-/* Attach events (safe attach using found elements) */
-if(btnConnect) btnConnect.addEventListener('click', connectWallet);
-if(btnMintDaily) btnMintDaily.addEventListener('click', mintDailyOnchain);
-if(btnMintWeekly) btnMintWeekly.addEventListener('click', mintWeeklyOnchain);
-
-/* On load try to auto-create provider if window.ethereum exists (optional) */
-(async function boot(){
-  try{
-    if(window.ethereum){
-      // Try to create provider but do NOT auto-request accounts (we wait for user click)
-      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-      // If accounts already connected (some browsers remember) - safe to request
-      try{
-        const accounts = await provider.listAccounts();
-        if(accounts && accounts.length>0){
+    try{
+      provider = ethersAvailable() ? new window.ethers.providers.Web3Provider(window.ethereum, 'any') : null;
+      if(provider){
+        const accs = await provider.listAccounts();
+        if(accs.length > 0){
           signer = provider.getSigner();
-          connectedAccount = await signer.getAddress();
-          contract = new ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-          setStatus('Wallet auto-detected: ' + connectedAccount, '#2ecc71');
+          account = await signer.getAddress();
+          contract = new window.ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
+          setStatus('Wallet detected: ' + account);
+          logDbg('Auto-detected account: ' + account);
+          // check lastMintTime
+          await checkCooldownAndToggle();
         } else {
-          setStatus('UI ready. Connect wallet to enable onchain mint.', '#ffae00');
+          setStatus('Wallet detected but not connected. Click Connect Wallet.');
         }
-      }catch(err){ console.warn('No accounts auto-detected'); setStatus('UI ready. Connect wallet to enable onchain mint.', '#ffae00'); }
-    } else {
-      setStatus('No injected wallet found. Install MetaMask to enable onchain mint.', '#ff4d4d');
+      } else {
+        setStatus('Ethers lib not found (CDN blocked). Onchain calls disabled.');
+      }
+    }catch(err){
+      console.error(err);
+      setStatus('Init error: see console', 'error');
+      logDbg('init error: ' + (err.message||String(err)));
     }
-  }catch(err){
-    console.error('boot error', err);
-    setStatus('Initialization error (console).', '#ff4d4d');
-  } finally {
-    updateUIButtons();
   }
-})();
-</script>
+
+  connectBtn.addEventListener('click', async ()=>{
+    try{
+      if(!window.ethereum){ alert('No injected wallet found. Install MetaMask.'); return; }
+      if(!ethersAvailable()){ alert('Ethers library not loaded or blocked. Check console.'); return; }
+      provider = new window.ethers.providers.Web3Provider(window.ethereum, 'any');
+      await provider.send('eth_requestAccounts', []);
+      signer = provider.getSigner();
+      account = await signer.getAddress();
+      contract = new window.ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
+      setStatus('Connected: ' + account);
+      logDbg('Connected account: ' + account);
+      await checkCooldownAndToggle();
+    }catch(err){
+      console.error(err);
+      alert('Connect failed: ' + (err.message || err));
+      setStatus('Connect failed (console).', 'error');
+    }
+  });
+
+  refreshBtn.addEventListener('click', async ()=>{ await tryInitProviderIfInjected(); });
+
+  claimLocalBtn.addEventListener('click', ()=>{
+    // very simple local claim logic (store lastClaim time in localStorage by fid)
+    const fid = (fidInput.value || 'anon').trim();
+    const key = 'badge_local_' + fid;
+    const obj = { fid, date: Date.now(), streak: 1 };
+    localStorage.setItem(key, JSON.stringify(obj));
+    previewName.innerText = fid;
+    previewType.innerText = 'Daily Check-In · Streak: ' + obj.streak;
+    setStatus('Badge claimed locally for ' + fid + '. (localStorage)');
+    logDbg('Local claim saved: ' + JSON.stringify(obj));
+    // enable mint buttons if wallet connected
+    if(account) awaitCheckCooldownAndToggleSafe();
+  });
+
+  async function awaitCheckCooldownAndToggleSafe(){
+    try { await checkCooldownAndToggle(); } catch(e){ console.warn('safe toggle check failed', e); }
+  }
+
+  async function checkCooldownAndToggle(){
+    // disable onchain buttons by default
+    mintDailyBtn.disabled = true; mintWeekBtn.disabled = true;
+    if(!account || !contract){
+      setStatus('Connect wallet to enable onchain mint.');
+      return;
+    }
+    try{
+      const last = await contract.lastMintTime(account);
+      const lastTs = Number(last.toString());
+      const nowSec = Math.floor(Date.now()/1000);
+      const DAY = 24*60*60;
+      if(lastTs>0 && (nowSec - lastTs) < DAY){
+        const rem = DAY - (nowSec - lastTs);
+        const h = Math.floor(rem/3600), m = Math.floor((rem%3600)/60), s = rem%60;
+        setStatus(`Already minted within 24h. Wait ${h}h ${m}m ${s}s to mint again.`, 'error');
+        mintDailyBtn.disabled = true; mintWeekBtn.disabled = true;
+      } else {
+        setStatus('Ready to mint onchain.');
+        mintDailyBtn.disabled = false; mintWeekBtn.disabled = false;
+      }
+    }catch(err){
+      console.error('check lastMintTime error', err);
+      setStatus('Could not read contract cooldown — enabling mint with caution.');
+      mintDailyBtn.disabled = false; mintWeekBtn.disabled = false;
+    }
+  }
+
+  mintDailyBtn.addEventListener('click', async ()=>{
+    if(!contract){ alert('Contract not loaded or ethers missing.'); return; }
+    try{
+      const fid = (fidInput.value||'anon').trim();
+      const date = Math.floor(Date.now()/1000);
+      const streak = 1;
+      const tokenURI = '';
+      setStatus('Sending mint tx... confirm in wallet.');
+      const tx = await contract.mintBadge(account, fid, 'Daily Check-in', date, streak, tokenURI);
+      logDbg('mint tx sent: ' + tx.hash);
+      await tx.wait();
+      setStatus('Mint confirmed. Tx: ' + tx.hash);
+      await checkCooldownAndToggle();
+    }catch(err){
+      console.error('mint error', err);
+      setStatus('Mint failed (see console).', 'error');
+      alert('Mint failed: ' + (err?.message || err));
+    }
+  });
+
+  mintWeekBtn.addEventListener('click', async ()=>{
+    if(!contract){ alert('Contract not loaded or ethers missing.'); return; }
+    try{
+      const fid = (fidInput.value||'anon').trim();
+      const date = Math.floor(Date.now()/1000);
+      const streak = 7;
+      const weekNumber = 1;
+      const tokenURI = '';
+      setStatus('Sending weekly mint tx... confirm in wallet.');
+      const tx = await contract.mintWeekBadge(account, fid, weekNumber, date, streak, tokenURI);
+      logDbg('weekly mint tx: ' + tx.hash);
+      await tx.wait();
+      setStatus('Weekly mint confirmed. Tx: ' + tx.hash);
+      await checkCooldownAndToggle();
+    }catch(err){
+      console.error('weekly mint error', err);
+      setStatus('Weekly mint failed (console).', 'error');
+      alert('Weekly mint failed: ' + (err?.message || err));
+    }
+  });
+
+  // boot
+  (async function(){
+    // small safety: if ethers not present, show message but keep UI usable for local claim
+    if(!ethersAvailable()){
+      logDbg('Ethers library not found. CDN might be blocked. Onchain features will be disabled.');
+      setStatus('Ethers lib not loaded — onchain disabled. Use "Connect Wallet" only if ethers is available. (Check console)', 'error');
+      return;
+    }
+    await tryInitProviderIfInjected();
+  })();
+  </script>
+</body>
+</html>
