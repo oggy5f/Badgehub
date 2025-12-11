@@ -1,268 +1,308 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Badgehub - simple debug UI</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    /* simple clean dark-ish look, small layout like your old */
-    body { background:#0f1114; color:#e6eef6; font-family:Inter,system-ui,Arial; margin:0; padding:20px; }
-    .container { max-width:980px; margin:18px auto; display:flex; gap:20px; }
-    .panel { background: linear-gradient(180deg,#0c0d10,#0f1216); border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.6); flex:1; min-height:240px; }
-    h1 { margin:0 0 8px 0; font-size:20px; color:#ffae00; }
-    label { display:block; font-size:13px; margin-top:10px; color:#bfcbdc; }
-    input[type="text"]{ width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:#0b0c0e; color:#e6eef6; }
-    button { margin-top:12px; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; background:#1ea1ff; color:#041026; font-weight:600; }
-    button[disabled]{ opacity:0.5; cursor:default; }
-    .muted { color:#98a4b6; font-size:13px; margin-top:8px; }
-    .status { margin-top:12px; padding:10px; border-radius:8px; background:#07121a; color:#cfeef5; font-size:14px; }
-    .danger { color:#ff7b7b; }
-    .success { color:#7ef0a3; }
-    .small { font-size:13px; color:#9fb0c7; margin-top:6px; }
-    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Badgehub — Old Local UI</title>
+<style>
+  :root{
+    --bg:#071019; --panel:#0e1822; --accent:#ffb347; --muted:#98a0a8;
+    --card:#0b1116; --glass: rgba(255,255,255,0.03);
+  }
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#05070a 0%, #071019 100%); color:#e6eef6;}
+  .wrap{max-width:1100px;margin:28px auto;padding:20px;display:flex;gap:24px}
+  .left{flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.6);}
+  .right{flex:1.2;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.6);}
+  h1{margin:0 0 12px;font-size:20px;color:var(--accent)}
+  label{display:block;margin:12px 0 6px;color:var(--muted);font-size:13px}
+  input[type="text"],select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px}
+  .btn{display:inline-block;padding:12px 18px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#ffd27a);color:#071018;font-weight:700;border:none;cursor:pointer;margin-top:12px;box-shadow:0 6px 18px rgba(255,176,71,0.12)}
+  .btn.secondary{background:transparent;color:#cfe7ff;border:1px solid rgba(255,255,255,0.04);box-shadow:none;font-weight:600}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .muted{color:var(--muted);font-size:13px;margin-top:8px}
+  .previewCard{border-radius:14px;padding:18px;background:linear-gradient(90deg,#ffce66,#ff9f3a);color:#071018;display:flex;align-items:center;gap:20px}
+  .avatar{width:120px;height:120px;border-radius:12px;background:#ffffff88}
+  .badgeName{font-weight:800;font-size:22px}
+  .badgeMeta{font-size:13px;color:#072236}
+  .statPills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .pill{background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:999px;font-size:13px}
+  textarea{width:100%;height:110px;background:transparent;border:1px dashed rgba(255,255,255,0.04);color:inherit;padding:12px;border-radius:8px}
+  .error{color:#ff9494;margin-top:8px}
+  footer.note{margin-top:16px;color:var(--muted);font-size:13px}
+  @media(max-width:900px){.wrap{flex-direction:column}.right{order:-1}}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="panel">
-      <h1>Badgehub — simple debug UI</h1>
-      <label>Your FID / name</label>
-      <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" value="anon" />
+<div class="wrap">
+  <div class="left">
+    <h1>BADGEHUB (old local)</h1>
 
-      <div class="controls">
-        <button id="connectBtn">Connect Wallet</button>
-        <button id="refreshBtn">Refresh</button>
-      </div>
+    <label>Your name / FID</label>
+    <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" />
 
-      <div class="controls">
-        <button id="claimLocalBtn">Claim Today's Badge (local)</button>
-        <button id="mintDailyBtn" disabled>Mint Daily Badge Onchain</button>
-        <button id="mintWeekBtn" disabled>Mint Weekly Badge Onchain</button>
-      </div>
+    <label>Badge type</label>
+    <select id="badgeType">
+      <option value="Daily Check-in">Daily Check-in</option>
+      <option value="Weekly Completion">Weekly Completion</option>
+    </select>
 
-      <div id="statusBox" class="status">UI ready — connect wallet to enable onchain mint.</div>
-      <div class="muted">Tip: "local" claim stores data only in your browser (for testing). Onchain mint calls the smart contract.</div>
+    <div style="margin-top:10px">
+      <button id="claimBtn" class="btn">Claim today's badge</button>
     </div>
 
-    <div class="panel">
-      <h1>Preview</h1>
-      <div id="previewArea" style="margin-top:14px;">
-        <div style="background:#09121a;padding:14px;border-radius:8px;">
-          <div id="previewName" style="font-size:18px;font-weight:700">anon</div>
-          <div id="previewType" class="small">Daily Check-In · Streak: 0</div>
-        </div>
-      </div>
-
-      <div id="debugConsole" style="margin-top:16px;color:#a7bccd;font-size:13px"></div>
+    <div class="actions">
+      <button id="shareX" class="btn secondary">Share on X</button>
+      <button id="farcasterShare" class="btn secondary">Share on Farcaster</button>
+      <button id="copyCaption" class="btn secondary">Copy caption</button>
+      <button id="downloadSVG" class="btn secondary">Download SVG</button>
+      <button id="onchainMint" class="btn secondary" disabled>Onchain mint</button>
     </div>
+
+    <div id="statusMsg" class="muted">Tip: this is local-only version — data saved to your browser.</div>
+
+    <div style="margin-top:12px">
+      <label>Caption preview</label>
+      <textarea id="captionPreview" readonly></textarea>
+    </div>
+
+    <footer class="note">Note: "local" claim stores data in your browser (for testing). Onchain mint not active in this version.</footer>
   </div>
 
-  <!-- try load ethers UMD from CDN. If blocked, the script below handles absence gracefully -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <div class="right">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:14px;color:var(--muted)">Badge preview</div>
+        <div style="font-weight:800;font-size:20px;margin-top:6px">Live card</div>
+      </div>
+      <div id="uiStatus" class="muted">UI ready (local)</div>
+    </div>
 
-  <script>
-  // ---------- CONFIG ----------
-  const CONFIG_CONTRACT_ADDRESS = "0xd0999A9A52270B59c341b4d87ee8c22c9633306"; // change if needed
-  const ABI = [
-    { "inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastMintTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function" },
-    { "inputs":[
-        {"internalType":"address","name":"to","type":"address"},
-        {"internalType":"string","name":"fid","type":"string"},
-        {"internalType":"string","name":"badgeType_","type":"string"},
-        {"internalType":"uint64","name":"date","type":"uint64"},
-        {"internalType":"uint32","name":"streak","type":"uint32"},
-        {"internalType":"string","name":"tokenURI_","type":"string"}
-      ],
-      "name":"mintBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
-    },
-    { "inputs":[
-        {"internalType":"address","name":"to","type":"address"},
-        {"internalType":"string","name":"fid","type":"string"},
-        {"internalType":"uint32","name":"weekNumber","type":"uint32"},
-        {"internalType":"uint64","name":"date","type":"uint64"},
-        {"internalType":"uint32","name":"streak","type":"uint32"},
-        {"internalType":"string","name":"tokenURI_","type":"string"}
-      ],
-      "name":"mintWeekBadge","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"
+    <div style="margin-top:14px" id="cardWrap">
+      <div class="previewCard" id="previewCard">
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="avatar" id="avatarSample"></div>
+          <div style="height:8px"></div>
+          <div style="background:#fff;padding:6px 12px;border-radius:999px;font-weight:700" id="nameBadge">anon</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:18px;font-weight:800" id="cardTitle">Daily Check-in</div>
+          <div style="margin-top:6px" id="cardDate">—</div>
+          <div class="statPills" id="statPills">
+            <div class="pill" id="streakPill">Streak: 0</div>
+            <div class="pill" id="totalPill">Total claimed: 0</div>
+            <div class="pill" id="lastPill">Last claim: -</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/*
+  Local-only badge UI.
+  - store per-FID data in localStorage under key: "badgehub_data_v1"
+  - structure:
+    {
+      "<fid>": {
+         lastClaim: 1680000000000,
+         streak: 3,
+         total: 7,
+         lastDateStr: "2025-12-10"
+       }, ...
     }
-  ];
-  // ---------- END CONFIG ----------
 
-  // UI elements
-  const connectBtn = document.getElementById('connectBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const claimLocalBtn = document.getElementById('claimLocalBtn');
-  const mintDailyBtn = document.getElementById('mintDailyBtn');
-  const mintWeekBtn = document.getElementById('mintWeekBtn');
-  const statusBox = document.getElementById('statusBox');
-  const previewName = document.getElementById('previewName');
-  const previewType = document.getElementById('previewType');
-  const fidInput = document.getElementById('fidInput');
-  const debugConsole = document.getElementById('debugConsole');
+  24h rule: block new local claim if lastClaim + (24*60*60*1000) > now
+  If user changes FID, UI updates.
+*/
 
-  // state
-  let provider = null, signer = null, contract = null, account = null;
+const fidInput = document.getElementById('fidInput');
+const badgeType = document.getElementById('badgeType');
+const claimBtn = document.getElementById('claimBtn');
+const statusMsg = document.getElementById('statusMsg');
+const captionPreview = document.getElementById('captionPreview');
+const nameBadge = document.getElementById('nameBadge');
+const cardTitle = document.getElementById('cardTitle');
+const cardDate = document.getElementById('cardDate');
+const streakPill = document.getElementById('streakPill');
+const totalPill = document.getElementById('totalPill');
+const lastPill = document.getElementById('lastPill');
+const shareX = document.getElementById('shareX');
+const farcasterShare = document.getElementById('farcasterShare');
+const copyCaption = document.getElementById('copyCaption');
+const downloadSVG = document.getElementById('downloadSVG');
+const onchainMint = document.getElementById('onchainMint');
+const uiStatus = document.getElementById('uiStatus');
 
-  function logDbg(msg, color='#98c4e6'){ debugConsole.innerText += msg + "\\n"; console.log(msg); }
-  function setStatus(msg, type='info'){
-    statusBox.innerText = msg;
-    if(type==='error') statusBox.classList.add('danger'); else statusBox.classList.remove('danger');
+const STORAGE_KEY = 'badgehub_data_v1';
+
+function loadStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    console.error('loadStorage err', e);
+    return {};
+  }
+}
+function saveStorage(obj){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+}
+
+function formatDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString();
+}
+
+function updateCardUI(){
+  const fid = (fidInput.value||'').trim() || 'anon';
+  const type = badgeType.value;
+  nameBadge.textContent = fid;
+  cardTitle.textContent = type;
+  const data = loadStorage();
+  const entry = data[fid];
+  if(entry){
+    streakPill.textContent = 'Streak: ' + entry.streak;
+    totalPill.textContent = 'Total claimed: ' + entry.total;
+    lastPill.textContent = 'Last claim: ' + (entry.lastDateStr || formatDate(entry.lastClaim));
+    cardDate.textContent = 'Last claimed: ' + (entry.lastDateStr || '-');
+  } else {
+    streakPill.textContent = 'Streak: 0';
+    totalPill.textContent = 'Total claimed: 0';
+    lastPill.textContent = 'Last claim: -';
+    cardDate.textContent = '-';
   }
 
-  // safe detect ethers global
-  function ethersAvailable(){
-    return (typeof window.ethers !== 'undefined');
+  // caption
+  captionPreview.value = `#${fid} ${type} badge earned\n\nStreak: ${entry?entry.streak:0} | Total: ${entry?entry.total:0}\n#Badgehub #Base`;
+}
+
+function claimLocal(){
+  const fid = (fidInput.value||'').trim();
+  if(!fid){ alert('Please enter your FID / name'); return; }
+  const now = Date.now();
+  const data = loadStorage();
+  const entry = data[fid] || { lastClaim:0, streak:0, total:0, lastDateStr: null };
+
+  // 24h check
+  const ms24 = 24 * 60 * 60 * 1000;
+  if(entry.lastClaim && (entry.lastClaim + ms24 > now)){
+    const remaining = Math.ceil((entry.lastClaim + ms24 - now)/1000);
+    alert('Already claimed in last 24 hours. Wait ' + Math.ceil(remaining/3600) + ' hr(s) or use on next day.');
+    return;
   }
 
-  async function tryInitProviderIfInjected(){
-    if(!window.ethereum){
-      setStatus('No injected wallet found (MetaMask). Onchain disabled. Use "local" claim to test.', 'error');
-      logDbg('No window.ethereum');
+  // simple streak logic: If previous claim was yesterday (between 24h and 48h), streak+1, else reset to 1
+  let newStreak = 1;
+  if(entry.lastClaim){
+    const diff = now - entry.lastClaim;
+    if(diff > ms24 && diff <= (48*60*60*1000)){
+      newStreak = entry.streak ? entry.streak + 1 : 2;
+    } else {
+      newStreak = 1;
+    }
+  }
+
+  entry.lastClaim = now;
+  entry.streak = newStreak;
+  entry.total = (entry.total || 0) + 1;
+  entry.lastDateStr = formatDate(now);
+
+  data[fid] = entry;
+  saveStorage(data);
+  updateCardUI();
+
+  statusMsg.textContent = 'Badge claimed (local). Streak updated.';
+  statusMsg.style.color = '#93f6b6';
+}
+
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  // fallback
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta);
+  ta.select(); document.execCommand('copy'); ta.remove();
+  return Promise.resolve();
+}
+
+// share handlers
+async function shareHandler(platform){
+  const fid = (fidInput.value||'').trim() || 'anon';
+  const type = badgeType.value;
+  const caption = `#${fid} ${type} badge earned\n\nStreak: ${loadStorage()[fid]?.streak||0} | Total: ${loadStorage()[fid]?.total||0}\n#Badgehub #Base`;
+  // try navigator.share first
+  if(navigator.share){
+    try {
+      await navigator.share({text: caption, title: 'Badgehub'});
+      statusMsg.textContent = 'Shared using device share';
       return;
-    }
-    try{
-      provider = ethersAvailable() ? new window.ethers.providers.Web3Provider(window.ethereum, 'any') : null;
-      if(provider){
-        const accs = await provider.listAccounts();
-        if(accs.length > 0){
-          signer = provider.getSigner();
-          account = await signer.getAddress();
-          contract = new window.ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-          setStatus('Wallet detected: ' + account);
-          logDbg('Auto-detected account: ' + account);
-          // check lastMintTime
-          await checkCooldownAndToggle();
-        } else {
-          setStatus('Wallet detected but not connected. Click Connect Wallet.');
-        }
-      } else {
-        setStatus('Ethers lib not found (CDN blocked). Onchain calls disabled.');
-      }
-    }catch(err){
-      console.error(err);
-      setStatus('Init error: see console', 'error');
-      logDbg('init error: ' + (err.message||String(err)));
+    } catch(e){
+      // user cancelled or not supported
     }
   }
-
-  connectBtn.addEventListener('click', async ()=>{
-    try{
-      if(!window.ethereum){ alert('No injected wallet found. Install MetaMask.'); return; }
-      if(!ethersAvailable()){ alert('Ethers library not loaded or blocked. Check console.'); return; }
-      provider = new window.ethers.providers.Web3Provider(window.ethereum, 'any');
-      await provider.send('eth_requestAccounts', []);
-      signer = provider.getSigner();
-      account = await signer.getAddress();
-      contract = new window.ethers.Contract(CONFIG_CONTRACT_ADDRESS, ABI, signer);
-      setStatus('Connected: ' + account);
-      logDbg('Connected account: ' + account);
-      await checkCooldownAndToggle();
-    }catch(err){
-      console.error(err);
-      alert('Connect failed: ' + (err.message || err));
-      setStatus('Connect failed (console).', 'error');
-    }
-  });
-
-  refreshBtn.addEventListener('click', async ()=>{ await tryInitProviderIfInjected(); });
-
-  claimLocalBtn.addEventListener('click', ()=>{
-    // very simple local claim logic (store lastClaim time in localStorage by fid)
-    const fid = (fidInput.value || 'anon').trim();
-    const key = 'badge_local_' + fid;
-    const obj = { fid, date: Date.now(), streak: 1 };
-    localStorage.setItem(key, JSON.stringify(obj));
-    previewName.innerText = fid;
-    previewType.innerText = 'Daily Check-In · Streak: ' + obj.streak;
-    setStatus('Badge claimed locally for ' + fid + '. (localStorage)');
-    logDbg('Local claim saved: ' + JSON.stringify(obj));
-    // enable mint buttons if wallet connected
-    if(account) awaitCheckCooldownAndToggleSafe();
-  });
-
-  async function awaitCheckCooldownAndToggleSafe(){
-    try { await checkCooldownAndToggle(); } catch(e){ console.warn('safe toggle check failed', e); }
+  // fallback: open web intent
+  if(platform === 'x'){
+    const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(caption);
+    window.open(url, '_blank');
+  } else if(platform === 'farcaster'){
+    // No universal Farcaster web compose; open farcaster.to intent page (if available) OR copy caption
+    // We'll copy caption and inform user
+    await copyToClipboard(caption);
+    alert('Caption copied to clipboard. Paste it into Farcaster app to share.');
   }
+}
 
-  async function checkCooldownAndToggle(){
-    // disable onchain buttons by default
-    mintDailyBtn.disabled = true; mintWeekBtn.disabled = true;
-    if(!account || !contract){
-      setStatus('Connect wallet to enable onchain mint.');
-      return;
-    }
-    try{
-      const last = await contract.lastMintTime(account);
-      const lastTs = Number(last.toString());
-      const nowSec = Math.floor(Date.now()/1000);
-      const DAY = 24*60*60;
-      if(lastTs>0 && (nowSec - lastTs) < DAY){
-        const rem = DAY - (nowSec - lastTs);
-        const h = Math.floor(rem/3600), m = Math.floor((rem%3600)/60), s = rem%60;
-        setStatus(`Already minted within 24h. Wait ${h}h ${m}m ${s}s to mint again.`, 'error');
-        mintDailyBtn.disabled = true; mintWeekBtn.disabled = true;
-      } else {
-        setStatus('Ready to mint onchain.');
-        mintDailyBtn.disabled = false; mintWeekBtn.disabled = false;
-      }
-    }catch(err){
-      console.error('check lastMintTime error', err);
-      setStatus('Could not read contract cooldown — enabling mint with caution.');
-      mintDailyBtn.disabled = false; mintWeekBtn.disabled = false;
-    }
-  }
+function downloadSVGBadge(){
+  const fid = (fidInput.value||'').trim() || 'anon';
+  const type = badgeType.value;
+  const color1 = '#ffce66';
+  const color2 = '#ff9f3a';
+  const date = new Date().toLocaleDateString();
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675">
+    <defs>
+      <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="${color1}"/><stop offset="1" stop-color="${color2}"/></linearGradient>
+    </defs>
+    <rect rx="40" width="100%" height="100%" fill="url(#g)"/>
+    <g transform="translate(50,50)">
+      <rect x="30" y="40" width="360" height="360" rx="30" fill="#ffffff88"/>
+      <text x="420" y="170" font-family="Arial" font-size="56" fill="#071018" font-weight="700">${fid}</text>
+      <text x="420" y="240" font-family="Arial" font-size="36" fill="#071018">${type}</text>
+      <text x="920" y="620" font-family="Arial" font-size="24" fill="#071018">${date}</text>
+    </g>
+  </svg>`;
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${fid}_${type.replace(/[^a-z0-9]/gi,'_')}.svg`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
 
-  mintDailyBtn.addEventListener('click', async ()=>{
-    if(!contract){ alert('Contract not loaded or ethers missing.'); return; }
-    try{
-      const fid = (fidInput.value||'anon').trim();
-      const date = Math.floor(Date.now()/1000);
-      const streak = 1;
-      const tokenURI = '';
-      setStatus('Sending mint tx... confirm in wallet.');
-      const tx = await contract.mintBadge(account, fid, 'Daily Check-in', date, streak, tokenURI);
-      logDbg('mint tx sent: ' + tx.hash);
-      await tx.wait();
-      setStatus('Mint confirmed. Tx: ' + tx.hash);
-      await checkCooldownAndToggle();
-    }catch(err){
-      console.error('mint error', err);
-      setStatus('Mint failed (see console).', 'error');
-      alert('Mint failed: ' + (err?.message || err));
-    }
+function setupHandlers(){
+  claimBtn.addEventListener('click', claimLocal);
+  copyCaption.addEventListener('click', async ()=>{
+    const text = captionPreview.value;
+    try{ await copyToClipboard(text); statusMsg.textContent = 'Caption copied to clipboard.'; statusMsg.style.color = '#98f0b9'; }
+    catch(e){ statusMsg.textContent = 'Copy failed'; statusMsg.style.color = '#ff9999'; }
   });
+  shareX.addEventListener('click', ()=>shareHandler('x'));
+  farcasterShare.addEventListener('click', ()=>shareHandler('farcaster'));
+  downloadSVG.addEventListener('click', downloadSVGBadge);
 
-  mintWeekBtn.addEventListener('click', async ()=>{
-    if(!contract){ alert('Contract not loaded or ethers missing.'); return; }
-    try{
-      const fid = (fidInput.value||'anon').trim();
-      const date = Math.floor(Date.now()/1000);
-      const streak = 7;
-      const weekNumber = 1;
-      const tokenURI = '';
-      setStatus('Sending weekly mint tx... confirm in wallet.');
-      const tx = await contract.mintWeekBadge(account, fid, weekNumber, date, streak, tokenURI);
-      logDbg('weekly mint tx: ' + tx.hash);
-      await tx.wait();
-      setStatus('Weekly mint confirmed. Tx: ' + tx.hash);
-      await checkCooldownAndToggle();
-    }catch(err){
-      console.error('weekly mint error', err);
-      setStatus('Weekly mint failed (console).', 'error');
-      alert('Weekly mint failed: ' + (err?.message || err));
-    }
-  });
+  // inputs update UI live
+  fidInput.addEventListener('input', updateCardUI);
+  badgeType.addEventListener('change', updateCardUI);
 
-  // boot
-  (async function(){
-    // small safety: if ethers not present, show message but keep UI usable for local claim
-    if(!ethersAvailable()){
-      logDbg('Ethers library not found. CDN might be blocked. Onchain features will be disabled.');
-      setStatus('Ethers lib not loaded — onchain disabled. Use "Connect Wallet" only if ethers is available. (Check console)', 'error');
-      return;
-    }
-    await tryInitProviderIfInjected();
-  })();
-  </script>
+  // load initial ui
+  updateCardUI();
+}
+
+// on load
+setupHandlers();
+
+</script>
 </body>
 </html>
