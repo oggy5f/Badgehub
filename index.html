@@ -1,249 +1,73 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Badgehub — Onchain (fallback)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badgehub — Onchain</title>
+
+  <link rel="stylesheet" href="./style.css" />
+
+  <!-- Load ethers locally (NOT CDN) -->
+  <script src="./ethers.umd.min.js"></script>
+
+  <!-- App logic -->
+  <script src="./script.js" defer></script>
+
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:#0f1720;color:#e6eef8;margin:0;padding:20px}
-    .card{max-width:900px;margin:20px auto;background:#0b1220;border-radius:12px;padding:20px;box-shadow:0 6px 30px rgba(0,0,0,.6)}
-    h1{margin:0 0 14px 0;color:#ffd27a}
-    label{display:block;font-size:13px;margin-top:8px;color:#cfe3ff}
-    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #233040;background:#071018;color:#e6eef8}
-    .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-    button{background:#ffb74d;border:none;padding:10px 16px;border-radius:8px;color:#08101a;cursor:pointer;font-weight:600}
-    .btn-secondary{background:#1f2b3a;color:#d8eefc}
-    .status{margin-top:14px;padding:10px;border-radius:8px;background:#071218;color:#f7c6b0}
-    .error{background:#3b0f0f;color:#ffd6cf}
-    .muted{color:#9fb0c7;font-size:13px;margin-top:8px}
+    body {
+      background: #0d0d0d;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    .btn {
+      background: orange;
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .error {
+      color: #ff4b4b;
+      margin-top: 10px;
+    }
   </style>
 </head>
+
 <body>
 
-  <div class="card">
-    <h1>Badgehub — Onchain (CDN fallback)</h1>
+  <h1>Badgehub — Onchain</h1>
 
-    <div>
-      <label>Your wallet / account</label>
-      <div class="row">
-        <button id="connectBtn">Connect Wallet</button>
-        <button id="refreshBtn" class="btn-secondary">Refresh</button>
-        <div style="flex:1">
-          <input id="accountInput" type="text" placeholder="Not connected" readonly />
-        </div>
-      </div>
+  <button id="connectBtn" class="btn">Connect Wallet</button>
+  <button id="refreshBtn" class="btn">Refresh</button>
 
-      <label style="margin-top:12px">Contract (onchain)</label>
-      <div style="margin-top:6px" id="contractAddress">-</div>
+  <p id="connStatus">Not connected</p>
 
-      <div class="muted">Address / preview</div>
-      <div style="margin-top:8px">
-        <div>Last claim: <span id="lastClaim">-</span></div>
-        <div>Streak: <span id="streak">-</span></div>
-        <div>Total claims: <span id="total">-</span></div>
-      </div>
+  <p><b>Contract (onchain)</b><br>
+    <span id="contractAddress">0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43</span>
+  </p>
 
-      <div class="row" style="margin-top:16px">
-        <button id="claimBtn">Claim Badge (onchain)</button>
-        <button id="downloadBtn" class="btn-secondary">Download SVG</button>
-      </div>
+  <hr>
 
-      <div id="status" class="status" style="display:none"></div>
-      <div id="error" class="status error" style="display:none"></div>
+  <p><b>Address / preview</b><br>
+    <span id="userAddr">-</span>
+  </p>
 
-      <div class="muted">Tip: make sure MetaMask is on the same network where contract is deployed.</div>
-    </div>
-  </div>
+  <p><b>Last claim</b><br>
+    <span id="lastClaim">-</span>
+  </p>
 
-<script>
-/*
-  IMPORTANT:
-  - If your network/browser blocks cdn.jsdelivr.net then download ethers UMD file and put it at ./libs/ethers.umd.min.js
-    URL to download (example): https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js
-  - This script will try CDN first, onerror it will load ./libs/ethers.umd.min.js
-*/
+  <button id="claimBtn" class="btn">Claim Badge (onchain)</button>
+  <button id="svgBtn" class="btn">Download SVG</button>
 
-// ==== CONFIG ====
-// Put your deployed contract address here:
-const CONTRACT_ADDRESS = "0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43";
-
-// Minimal ABI (based on what you provided)
-const ABI = [
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"streak","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"totalClaims","type":"uint256"}],"name":"BadgeClaimed","type":"event"},
-  {"inputs":[],"name":"claimBadge","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getUser","outputs":[{"internalType":"uint256","name":"last","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"total","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"lastClaim","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"totalClaims","type":"uint256"}],"stateMutability":"view","type":"function"}
-];
-// =================
-
-const connectBtn = document.getElementById('connectBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const accountInput = document.getElementById('accountInput');
-const claimBtn = document.getElementById('claimBtn');
-const lastClaimEl = document.getElementById('lastClaim');
-const streakEl = document.getElementById('streak');
-const totalEl = document.getElementById('total');
-const statusEl = document.getElementById('status');
-const errorEl = document.getElementById('error');
-const contractAddressEl = document.getElementById('contractAddress');
-
-let provider, signer, contract;
-contractAddressEl.innerText = CONTRACT_ADDRESS;
-
-// helper
-function showStatus(msg){ statusEl.style.display='block'; statusEl.innerText = msg; errorEl.style.display='none'; }
-function showError(msg){ errorEl.style.display='block'; errorEl.innerText = msg; statusEl.style.display='none'; }
-function hideStatus(){ statusEl.style.display='none'; errorEl.style.display='none'; }
-
-// try load ethers (CDN first, fallback to local)
-function loadEthersWithFallback(){
-  return new Promise((resolve, reject) => {
-    if(window.ethers){
-      resolve(window.ethers);
-      return;
-    }
-    // try CDN
-    const cdn = 'https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js';
-    const s = document.createElement('script');
-    s.src = cdn;
-    s.async = true;
-    s.onload = () => {
-      if(window.ethers) resolve(window.ethers);
-      else reject(new Error('ethers loaded but window.ethers missing'));
-    };
-    s.onerror = () => {
-      // fallback to local file
-      const local = './libs/ethers.umd.min.js';
-      const s2 = document.createElement('script');
-      s2.src = local;
-      s2.async = true;
-      s2.onload = () => {
-        if(window.ethers) resolve(window.ethers);
-        else reject(new Error('local ethers loaded but window.ethers missing'));
-      };
-      s2.onerror = () => {
-        reject(new Error('Failed to load ethers from CDN and local fallback. Please download ethers UMD to ./libs/ethers.umd.min.js'));
-      };
-      document.head.appendChild(s2);
-    };
-    document.head.appendChild(s);
-  });
-}
-
-async function initProviderAndContract(){
-  hideStatus();
-  try{
-    showStatus('Loading ethers library...');
-    await loadEthersWithFallback();
-    showStatus('Ethers loaded. Checking for MetaMask...');
-    // check window.ethereum
-    if(!window.ethereum){
-      showError('MetaMask (window.ethereum) not found. Install MetaMask and retry.');
-      return;
-    }
-    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-    // request accounts? not yet — let connect button handle
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-    showStatus('Ready. Click Connect Wallet.');
-  }catch(err){
-    showError('Initialization error: ' + (err.message || err));
-    console.error(err);
-  }
-}
-
-async function connectWallet(){
-  hideStatus();
-  try{
-    if(!window.ethereum){
-      showError('MetaMask not found.');
-      return;
-    }
-    // request accounts
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if(!accounts || accounts.length===0){
-      showError('Wallet returned no accounts.');
-      return;
-    }
-    const account = accounts[0];
-    accountInput.value = account;
-    // re-init provider and signer
-    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-    signer = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-    showStatus('Connected: ' + account);
-    // update UI state
-    refreshUI();
-    // listen to accountsChanged / chainChanged
-    window.ethereum.on('accountsChanged', (accs)=> {
-      if(accs.length === 0){
-        accountInput.value = '';
-        showStatus('Disconnected');
-      } else {
-        accountInput.value = accs[0];
-        refreshUI();
-      }
-    });
-    window.ethereum.on('chainChanged', (c) => {
-      // reload so provider network resets
-      showStatus('Network changed, reloading...');
-      setTimeout(()=> location.reload(), 600);
-    });
-  }catch(err){
-    showError('Connect wallet failed: ' + (err.message || err));
-    console.error(err);
-  }
-}
-
-async function refreshUI(){
-  hideStatus();
-  if(!contract) { showError('Contract not initialized.'); return; }
-  try{
-    const acc = accountInput.value || (await provider.listAccounts())[0];
-    if(!acc){ showError('No account connected. Click Connect Wallet.'); return; }
-    showStatus('Fetching onchain user data...');
-    // call getUser
-    const data = await contract.getUser(acc);
-    // data: [last, streak, total]
-    const last = data[0].toNumber ? data[0].toNumber() : Number(data[0]);
-    const streak = data[1].toNumber ? data[1].toNumber() : Number(data[1]);
-    const total = data[2].toNumber ? data[2].toNumber() : Number(data[2]);
-    lastClaimEl.innerText = last === 0 ? '-' : (new Date(last*1000)).toLocaleString();
-    streakEl.innerText = streak;
-    totalEl.innerText = total;
-    showStatus('User data fetched.');
-  }catch(err){
-    console.error(err);
-    showError('Error fetching user: ' + (err.message || err));
-  }
-}
-
-async function claimOnchain(){
-  hideStatus();
-  if(!contract || !signer){
-    showError('Connect wallet first.');
-    return;
-  }
-  try{
-    showStatus('Sending claim transaction (please confirm in MetaMask)...');
-    const tx = await contract.claimBadge();
-    showStatus('Transaction sent: ' + tx.hash + ' — waiting for confirmation...');
-    await tx.wait();
-    showStatus('Transaction confirmed. Refreshing data...');
-    await refreshUI();
-  }catch(err){
-    console.error(err);
-    showError('Claim failed: ' + (err.message || err));
-  }
-}
-
-// wire buttons
-connectBtn.addEventListener('click', connectWallet);
-refreshBtn.addEventListener('click', refreshUI);
-claimBtn.addEventListener('click', claimOnchain);
-
-// initialize on page load
-initProviderAndContract();
-</script>
+  <p id="errBox" class="error"></p>
 
 </body>
 </html>
