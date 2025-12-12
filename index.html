@@ -1,304 +1,193 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Badgehub — 24h Claim (local) — fixed</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Badgehub — DEBUG claim button</title>
 <style>
-  :root{
-    --bg:#0f1720; --card:#0b1220; --accent:#ffb347;
-    --muted:#9aa6b2; --ok:#2ecc71; --err:#ff6b6b;
-    font-family: Inter, system-ui, Arial, sans-serif;
-  }
-  html,body{height:100%}
-  body{ background: linear-gradient(180deg,#071021 0%, #071022 100%); color:#e6eef6; margin:0; padding:24px;}
-  .wrap{ max-width:980px; margin:18px auto; display:grid; grid-template-columns:360px 1fr; gap:20px;}
-  .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
-  h1{ margin:0 0 8px 0; font-size:20px; color:var(--accent) }
-  label{ display:block; font-size:12px; color:var(--muted); margin-top:12px }
-  input[type="text"]{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit; box-sizing:border-box; font-size:14px; }
-  input[readonly]{ background:rgba(255,255,255,0.01); color:var(--muted); }
-  .btn{ margin-top:12px; display:inline-block; padding:12px 16px; border-radius:12px; cursor:pointer; background:linear-gradient(90deg,#ffb347,#ffcc33); color:#061018; font-weight:600; border:none; box-shadow:0 6px 10px rgba(255,179,71,0.12); }
-  .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); box-shadow:none; }
-  .small { font-size:13px; color:var(--muted); margin-top:8px }
-  .msg { margin-top:10px; padding:10px; border-radius:8px; font-size:13px; }
-  .msg.ok { background: rgba(46,204,113,0.08); color:var(--ok); border:1px solid rgba(46,204,113,0.06); }
-  .msg.err { background: rgba(255,107,107,0.06); color:var(--err); border:1px solid rgba(255,107,107,0.06); }
-  .preview{ padding:16px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); min-height:160px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; text-align:center; }
-  .badge{ width:360px; max-width:100%; height:160px; border-radius:12px; background:linear-gradient(90deg,#ffb347,#ffcc33); display:flex; align-items:center; justify-content:center; color:#061018; font-weight:700; font-size:20px; }
-  .meta{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
-  .pill{ background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:999px; color:var(--muted); font-size:13px; border:1px solid rgba(255,255,255,0.02); }
-  pre{ text-align:left; color:var(--muted); background:transparent; overflow:auto; margin:0; font-size:13px; }
-  footer { grid-column: 1 / -1; margin-top:14px; color:var(--muted); font-size:13px; text-align:center;}
-  @media(max-width:880px){ .wrap{ grid-template-columns: 1fr; } }
+  body{font-family:Arial,Helvetica,sans-serif;background:#07101a;color:#e9f0f6;margin:20px}
+  .box{max-width:820px;margin:0 auto;display:flex;gap:20px;flex-wrap:wrap}
+  .panel{background:#0b1320;padding:18px;border-radius:10px;flex:1;min-width:300px}
+  h2{color:#ffb347;margin:0 0 12px 0}
+  label{display:block;color:#9fb0bf;margin-top:8px;font-size:13px}
+  input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);color:inherit}
+  button{margin-top:12px;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
+  .claim{background:linear-gradient(90deg,#ffb347,#ffcc33);color:#071018;font-weight:700}
+  .msg{margin-top:12px;padding:10px;border-radius:8px;display:none}
+  .ok{background:rgba(46,204,113,0.08);color:#2ecc71}
+  .err{background:rgba(255,107,107,0.06);color:#ff6b6b}
+  .preview{background:rgba(255,255,255,0.01);padding:10px;border-radius:8px;margin-top:10px}
+  .small{color:#9fb0bf;font-size:13px}
+  pre{background:transparent;color:#9fb0bf;white-space:pre-wrap}
 </style>
 </head>
 <body>
+  <div class="box">
+    <div class="panel">
+      <h2>Badgehub — Local Claim (debug)</h2>
 
-<div class="wrap">
-  <div class="card">
-    <h1>BADGEHUB — Local Claim (24h)</h1>
-    <div class="small">Local claim demo. 24-hour rate-limit + streak tracking. (No onchain yet)</div>
+      <label for="fid">Your FID / name</label>
+      <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" value="anon"/>
 
-    <label for="fid">Your Name / FID</label>
-    <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" />
+      <label for="badge">Badge type (fixed)</label>
+      <input id="badge" type="text" value="Daily Check-in" readonly/>
 
-    <label for="badgeType">Badge Type (fixed)</label>
-    <!-- readonly so user cannot edit badge type -->
-    <input id="badgeType" type="text" value="Daily Check-in" readonly />
+      <button id="claimBtn" class="claim" type="button">Claim today's badge</button>
+      <div id="msg" class="msg"></div>
 
-    <!-- explicit type="button" prevents form-style submit behavior in some browsers -->
-    <button id="claimBtn" type="button" class="btn">Claim today's badge</button>
-    <button id="downloadSvg" type="button" class="btn secondary">Download SVG</button>
+      <div class="small" style="margin-top:8px">Status / local key</div>
+      <div class="small" id="localKey"></div>
 
-    <div id="message" class="msg" style="display:none;"></div>
+      <div class="preview">
+        <div class="small">Preview</div>
+        <div id="badgeArea" style="margin-top:8px;padding:12px;border-radius:8px;background:#112233;color:#fff;text-align:center">
+          — no badge yet —
+        </div>
+        <div style="margin-top:8px" class="small">
+          Streak: <strong id="streak">0</strong> | Total: <strong id="total">0</strong> | Last claim: <span id="last">-</span>
+        </div>
+        <pre id="raw">-</pre>
+      </div>
+    </div>
 
-    <div style="margin-top:12px">
-      <div class="small">Preview / Status</div>
-      <div id="streakInfo" class="small" style="margin-top:8px">Streak: <strong id="streak">0</strong> | Total: <strong id="total">0</strong> | Last claim: <span id="lastClaim">-</span></div>
-      <div style="margin-top:8px" class="small">Local storage key: <code id="localKey" style="color:var(--muted)"></code></div>
+    <div class="panel">
+      <h2>Debug console logs</h2>
+      <div class="small">Open browser DevTools → Console to see logs. If claim fails paste the console output here.</div>
+      <pre id="log" style="height:360px;overflow:auto;"></pre>
     </div>
   </div>
-
-  <div class="card preview">
-    <div style="width:100%; display:flex; justify-content:space-between; align-items:center">
-      <div style="font-size:14px; color:var(--muted)">Badge preview</div>
-      <div id="countdown" style="font-size:13px; color:var(--muted)"></div>
-    </div>
-
-    <div id="badgeArea" class="badge">— no badge yet —</div>
-    <div class="meta">
-      <div class="pill" id="pillType">Daily Check-in</div>
-      <div class="pill" id="pillDate">-</div>
-      <div class="pill" id="pillFid">anon</div>
-    </div>
-
-    <pre id="rawPreview" style="margin-top:10px">-</pre>
-  </div>
-
-  <footer class="card">Local-only demo. When ready we'll wire onchain mint & verified contract address.</footer>
-</div>
 
 <script>
-/* --- local claim storage + 24h rate-limit + streak logic --- */
+/* Minimal working local-only claim with 24h lock. Lots of logs to help debug. */
 
-const fidInput = document.getElementById('fid');
-const badgeTypeInput = document.getElementById('badgeType');
 const claimBtn = document.getElementById('claimBtn');
-const downloadBtn = document.getElementById('downloadSvg');
-const msgEl = document.getElementById('message');
+const fidInput = document.getElementById('fid');
+const badgeInput = document.getElementById('badge');
+const msg = document.getElementById('msg');
 const badgeArea = document.getElementById('badgeArea');
-const pillType = document.getElementById('pillType');
-const pillDate = document.getElementById('pillDate');
-const pillFid = document.getElementById('pillFid');
+const raw = document.getElementById('raw');
 const streakEl = document.getElementById('streak');
 const totalEl = document.getElementById('total');
-const lastClaimEl = document.getElementById('lastClaim');
-const rawPreview = document.getElementById('rawPreview');
+const lastEl = document.getElementById('last');
 const localKeyEl = document.getElementById('localKey');
-const countdownEl = document.getElementById('countdown');
+const logEl = document.getElementById('log');
 
-let countdownTimer = null;
-
-function getLocalKey(fid){
-  const safe = (fid || 'anon').trim().replace(/\s+/g,'_').toLowerCase();
-  return `badgehub_local_${safe}`;
+function log(...args){
+  console.log(...args);
+  try {
+    const text = args.map(a => (typeof a==='object'? JSON.stringify(a): String(a))).join(' ');
+    logEl.textContent = text + '\n' + logEl.textContent;
+  } catch(e){}
 }
 
-function loadLocal(fid){
+function localKeyFor(fid){
+  return 'badgehub_debug_' + (fid||'anon').trim().replace(/\s+/g,'_').toLowerCase();
+}
+
+function readRecord(fid){
   try{
-    const key = getLocalKey(fid);
-    const raw = localStorage.getItem(key);
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){ console.error('loadLocal error', e); return null; }
+    const v = localStorage.getItem(localKeyFor(fid));
+    log('readRecord key:', localKeyFor(fid), 'raw:', v);
+    return v ? JSON.parse(v) : null;
+  }catch(e){ log('readRecord error', e); return null; }
 }
-
-function saveLocal(fid, data){
+function writeRecord(fid, rec){
   try{
-    const key = getLocalKey(fid);
-    localStorage.setItem(key, JSON.stringify(data));
-    localKeyEl.textContent = key;
-  }catch(e){ console.error('saveLocal error', e); }
+    localStorage.setItem(localKeyFor(fid), JSON.stringify(rec));
+    log('writeRecord stored', rec);
+  }catch(e){ log('writeRecord error', e); }
 }
 
-function nowMs(){ return Date.now(); }
-function toIsoDate(ms){
-  const d = new Date(ms);
-  return d.toISOString().slice(0,10);
-}
-function fmtDate(ms){
-  try{ return new Date(ms).toLocaleString(); }catch(e){ return '-'; }
+function now(){ return Date.now(); }
+const DAY = 24*60*60*1000;
+
+function canClaim(fid){
+  const r = readRecord(fid);
+  if(!r) return true;
+  if(!r.last) return true;
+  return (now() - r.last) >= DAY;
 }
 
-function canClaimNow(fid){
-  const rec = loadLocal(fid);
-  if(!rec || !rec.lastClaim) return true;
-  const elapsed = nowMs() - rec.lastClaim;
-  const dayMs = 24 * 60 * 60 * 1000;
-  return elapsed >= dayMs;
-}
-function remainingMsToClaim(fid){
-  const rec = loadLocal(fid);
-  if(!rec || !rec.lastClaim) return 0;
-  const elapsed = nowMs() - rec.lastClaim;
-  const dayMs = 24 * 60 * 60 * 1000;
-  return Math.max(0, dayMs - elapsed);
-}
-function msToDHMS(ms){
-  const s = Math.floor(ms/1000);
-  const d = Math.floor(s/86400); const h = Math.floor((s%86400)/3600);
-  const m = Math.floor((s%3600)/60); const sec = s%60;
-  if(d>0) return `${d}d ${h}h ${m}m`;
-  if(h>0) return `${h}h ${m}m`;
-  if(m>0) return `${m}m ${sec}s`;
-  return `${sec}s`;
+function timeLeftMs(fid){
+  const r = readRecord(fid);
+  if(!r || !r.last) return 0;
+  const left = DAY - (now() - r.last);
+  return left>0 ? left : 0;
 }
 
-function updateUIFor(fid){
-  const rec = loadLocal(fid);
-  pillFid.textContent = fid || 'anon';
-  pillType.textContent = badgeTypeInput.value || 'Daily Check-in';
-  if(rec){
-    streakEl.textContent = rec.streak || 0;
-    totalEl.textContent = rec.total || 0;
-    lastClaimEl.textContent = rec.lastClaim ? fmtDate(rec.lastClaim) : '-';
-    pillDate.textContent = rec.lastClaim ? toIsoDate(rec.lastClaim) : '-';
-    badgeArea.textContent = `${(rec.fid || fid).toUpperCase()} — ${(badgeTypeInput.value || 'Daily Check-in')}`;
-    rawPreview.textContent = JSON.stringify(rec, null, 2);
+function updateUI(){
+  const fid = (fidInput.value||'anon').trim();
+  const r = readRecord(fid);
+  localKeyEl.textContent = localKeyFor(fid);
+  if(r){
+    badgeArea.textContent = (r.fid||fid).toUpperCase() + ' — ' + r.total + ' times';
+    streakEl.textContent = r.streak || 0;
+    totalEl.textContent = r.total || 0;
+    lastEl.textContent = r.last ? new Date(r.last).toLocaleString() : '-';
+    raw.textContent = JSON.stringify(r, null, 2);
   } else {
-    streakEl.textContent = 0;
-    totalEl.textContent = 0;
-    lastClaimEl.textContent = '-';
-    pillDate.textContent = '-';
-    badgeArea.textContent = `— no badge yet —`;
-    rawPreview.textContent = '-';
+    badgeArea.textContent = '— no badge yet —';
+    streakEl.textContent = '0';
+    totalEl.textContent = '0';
+    lastEl.textContent = '-';
+    raw.textContent = '-';
   }
-  // countdown and claim button state
-  if(canClaimNow(fid)){
+  if(canClaim(fid)){
     claimBtn.disabled = false;
-    claimBtn.textContent = 'Claim today\'s badge';
-    countdownEl.textContent = '';
-    if(countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+    claimBtn.textContent = "Claim today's badge";
   } else {
     claimBtn.disabled = true;
-    const rem = remainingMsToClaim(fid);
-    claimBtn.textContent = 'Already claimed — locked';
-    countdownEl.textContent = `Retry in ${msToDHMS(rem)}`;
-    if(countdownTimer) clearInterval(countdownTimer);
-    countdownTimer = setInterval(()=>{
-      const r = remainingMsToClaim(fid);
-      countdownEl.textContent = `Retry in ${msToDHMS(r)}`;
-      if(r<=0){ clearInterval(countdownTimer); countdownTimer=null; updateUIFor(fid); }
-    }, 1000);
+    const ms = timeLeftMs(fid);
+    claimBtn.textContent = "Locked for " + Math.ceil(ms/1000) + "s";
+    // optional visual countdown in console
+    log('Locked ms left:', ms);
   }
 }
 
-function showMsg(text, type='ok'){
-  console.log('UI message:', type, text);
-  msgEl.style.display = 'block';
-  msgEl.className = 'msg ' + (type==='ok' ? 'ok' : 'err');
-  msgEl.textContent = text;
-  setTimeout(()=>{ msgEl.style.display='none'; }, 6000);
+function showMessage(text, type='ok'){
+  msg.style.display = 'block';
+  msg.className = 'msg ' + (type==='ok' ? 'ok' : 'err');
+  msg.textContent = text;
+  setTimeout(()=>{ msg.style.display = 'none'; }, 4000);
 }
 
-// keep daily list for weekly logic (not used now but handy)
-function addDailyRecord(fid){
+claimBtn.addEventListener('click', function(e){
+  log('claim button clicked', {fid: fidInput.value});
   try{
-    const key = getLocalKey(fid) + '_days';
-    const arr = JSON.parse(localStorage.getItem(key) || '[]');
-    const today = toIsoDate(nowMs());
-    if(!arr.includes(today)) arr.push(today);
-    const trimmed = arr.slice(-30);
-    localStorage.setItem(key, JSON.stringify(trimmed));
-    return trimmed;
-  }catch(e){ console.error('addDailyRecord', e); return []; }
-}
-
-function claimNow(){
-  try{
-    const fid = (fidInput.value || 'anon').trim();
-    if(!fid){
-      showMsg('Enter a valid FID', 'err'); return;
-    }
-    if(!canClaimNow(fid)){
-      showMsg('You already claimed in the last 24 hours. Wait and try again.', 'err');
-      return;
-    }
-    const prev = loadLocal(fid);
-    let newStreak = 1;
-    if(prev && prev.lastClaim){
-      const gap = nowMs() - prev.lastClaim;
-      const twoDays = 48 * 60 * 60 * 1000;
-      newStreak = (gap <= twoDays) ? ((prev.streak||0) + 1) : 1;
-    }
-    const newTotal = (prev ? (prev.total || 0) : 0) + 1;
-    const rec = {
-      fid,
-      lastClaim: nowMs(),
-      streak: newStreak,
-      total: newTotal
-    };
-    rec.days = addDailyRecord(fid);
-    saveLocal(fid, rec);
-    updateUIFor(fid);
-    showMsg('Badge claimed. Streak updated.', 'ok');
-    console.log('Claim saved:', rec);
+    const fid = (fidInput.value||'anon').trim();
+    if(!fid){ showMessage('Please enter FID', 'err'); log('empty fid'); return; }
+    if(!canClaim(fid)){ showMessage('Already claimed in last 24h', 'err'); log('cannot claim yet'); updateUI(); return; }
+    const prev = readRecord(fid) || {fid, streak:0, total:0, last:0};
+    // if gap <= 48h count as consecutive streak, else reset streak
+    const gap = now() - (prev.last || 0);
+    const consecutive = (prev.last && gap <= (2*DAY));
+    const newStreak = consecutive ? (prev.streak||0) + 1 : 1;
+    const newTotal = (prev.total||0) + 1;
+    const rec = { fid, streak: newStreak, total: newTotal, last: now() };
+    writeRecord(fid, rec);
+    updateUI();
+    showMessage('Claim saved — streak ' + newStreak, 'ok');
+    log('claim saved', rec);
   }catch(err){
-    console.error('claimNow error', err);
-    showMsg('Claim failed (see console)', 'err');
+    log('claim handler error', err);
+    showMessage('Claim failed (see console)', 'err');
   }
-}
-
-claimBtn.addEventListener('click', claimNow);
-
-// update UI when input changes
-fidInput.addEventListener('input', ()=>{
-  const fid = (fidInput.value || 'anon').trim();
-  updateUIFor(fid);
-});
-badgeTypeInput.addEventListener('input', ()=>{
-  // ignore — readonly by design; just reflect
-  pillType.textContent = badgeTypeInput.value || 'Daily Check-in';
 });
 
-// download SVG
-downloadBtn.addEventListener('click', ()=>{
-  const fid = (fidInput.value || 'anon').trim();
-  const type = badgeTypeInput.value || 'Daily Check-in';
-  const date = new Date().toLocaleDateString();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300">
-    <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ffcc33"/></linearGradient></defs>
-    <rect width="100%" height="100%" rx="16" fill="url(#g)"/>
-    <text x="50%" y="45%" font-family="Inter, Arial" font-size="42" text-anchor="middle" fill="#061018">${escapeXml(fid)}</text>
-    <text x="50%" y="72%" font-family="Inter, Arial" font-size="22" text-anchor="middle" fill="#061018">${escapeXml(type)} — ${escapeXml(date)}</text>
-  </svg>`;
-  const blob = new Blob([svg], {type:'image/svg+xml'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `${(fid||'anon')}_badge.svg`; document.body.appendChild(a); a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
-});
+// when fid input changes update UI
+fidInput.addEventListener('input', updateUI);
 
-function escapeXml(s){ return (''+s).replace(/[&<>'"]/g, (c)=>{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]); }
-
-// init
+// initial load
 (function init(){
   try{
-    const lastUsed = localStorage.getItem('badgehub_last_fid') || '';
-    if(lastUsed) fidInput.value = lastUsed;
-    const fid = (fidInput.value || 'anon').trim();
-    localKeyEl.textContent = getLocalKey(fid);
-    updateUIFor(fid);
-    console.log('Badgehub UI ready for', fid);
-  }catch(e){ console.error('init error', e); }
+    log('Init start, localStorage available?', typeof localStorage !== 'undefined');
+    updateUI();
+    log('Init done');
+  }catch(e){
+    log('Init error', e);
+    showMessage('Init error (see console)', 'err');
+  }
 })();
-
-fidInput.addEventListener('blur', ()=> {
-  const v = (fidInput.value || '').trim();
-  if(v) localStorage.setItem('badgehub_last_fid', v);
-});
 </script>
-
 </body>
 </html>
