@@ -1,350 +1,249 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub — Onchain (CDN-fallback)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Badgehub — Onchain (fallback)</title>
   <style>
-    body{font-family:Inter,system-ui,Arial; background:#0b0f14; color:#e6eef6; margin:0; padding:18px;}
-    .card{max-width:920px;margin:20px auto;padding:20px;border-radius:12px;background:linear-gradient(180deg,#061018 0%, #071722 100%);box-shadow:0 6px 30px rgba(0,0,0,.6);}
-    h1{margin:0 0 12px 0;font-size:22px;color:#ffd66b}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    input[type=text]{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:#07121a;color:#fff;min-width:280px}
-    button{padding:10px 14px;border-radius:9px;border:none;cursor:pointer}
-    .btn-primary{background:#ffb24a;color:#08202a}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.08);color:#fff}
-    .muted{color:#9fb0c3;font-size:13px}
-    .stat{background:rgba(255,255,255,.02);padding:12px;border-radius:8px;margin-top:12px}
-    .error{color:#ff6b6b;margin-top:10px}
-    .success{color:#7ee5a6;margin-top:10px}
-    small{color:#9fb0c3}
-    .center{text-align:center}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:#0f1720;color:#e6eef8;margin:0;padding:20px}
+    .card{max-width:900px;margin:20px auto;background:#0b1220;border-radius:12px;padding:20px;box-shadow:0 6px 30px rgba(0,0,0,.6)}
+    h1{margin:0 0 14px 0;color:#ffd27a}
+    label{display:block;font-size:13px;margin-top:8px;color:#cfe3ff}
+    input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #233040;background:#071018;color:#e6eef8}
+    .row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    button{background:#ffb74d;border:none;padding:10px 16px;border-radius:8px;color:#08101a;cursor:pointer;font-weight:600}
+    .btn-secondary{background:#1f2b3a;color:#d8eefc}
+    .status{margin-top:14px;padding:10px;border-radius:8px;background:#071218;color:#f7c6b0}
+    .error{background:#3b0f0f;color:#ffd6cf}
+    .muted{color:#9fb0c7;font-size:13px;margin-top:8px}
   </style>
 </head>
 <body>
+
   <div class="card">
     <h1>Badgehub — Onchain (CDN fallback)</h1>
 
-    <div class="row" style="align-items:center;margin-bottom:10px">
-      <button id="connectBtn" class="btn-primary">Connect Wallet</button>
-      <button id="refreshBtn" class="btn-ghost">Refresh</button>
-      <div id="addr" style="margin-left:8px" class="muted">Not connected</div>
-    </div>
-
-    <div style="margin-top:10px">
-      <div class="muted">Contract (onchain)</div>
-      <div style="margin-top:6px" class="muted"><small id="contractAddr"></small></div>
-    </div>
-
-    <div class="stat" id="statusBox">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:16px;font-weight:600" id="fidDisplay">—</div>
-          <div class="muted" id="subText">Address / preview</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:13px;color:#c9dff0" id="streakDisplay">Streak: -</div>
-          <div style="font-size:13px;color:#c9dff0" id="totalDisplay">Total claimed: -</div>
+    <div>
+      <label>Your wallet / account</label>
+      <div class="row">
+        <button id="connectBtn">Connect Wallet</button>
+        <button id="refreshBtn" class="btn-secondary">Refresh</button>
+        <div style="flex:1">
+          <input id="accountInput" type="text" placeholder="Not connected" readonly />
         </div>
       </div>
 
-      <div style="margin-top:12px">
-        <div class="muted">Last claim</div>
-        <div id="lastClaim" style="margin-top:6px">-</div>
+      <label style="margin-top:12px">Contract (onchain)</label>
+      <div style="margin-top:6px" id="contractAddress">-</div>
+
+      <div class="muted">Address / preview</div>
+      <div style="margin-top:8px">
+        <div>Last claim: <span id="lastClaim">-</span></div>
+        <div>Streak: <span id="streak">-</span></div>
+        <div>Total claims: <span id="total">-</span></div>
       </div>
 
-      <div style="margin-top:14px" class="row">
-        <button id="claimBtn" class="btn-primary">Claim Badge (onchain)</button>
-        <button id="downloadSvg" class="btn-ghost">Download SVG</button>
+      <div class="row" style="margin-top:16px">
+        <button id="claimBtn">Claim Badge (onchain)</button>
+        <button id="downloadBtn" class="btn-secondary">Download SVG</button>
       </div>
 
-      <div id="uiMsg" style="margin-top:12px"></div>
-    </div>
+      <div id="status" class="status" style="display:none"></div>
+      <div id="error" class="status error" style="display:none"></div>
 
-    <div style="margin-top:14px" class="muted">
-      <div>Tip: make sure MetaMask is on the same network where contract is deployed.</div>
+      <div class="muted">Tip: make sure MetaMask is on the same network where contract is deployed.</div>
     </div>
   </div>
 
 <script>
 /*
-  CDNs to try (UMD build for ethers v5)
-  Order: jsdelivr -> unpkg -> skypack
+  IMPORTANT:
+  - If your network/browser blocks cdn.jsdelivr.net then download ethers UMD file and put it at ./libs/ethers.umd.min.js
+    URL to download (example): https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js
+  - This script will try CDN first, onerror it will load ./libs/ethers.umd.min.js
 */
-const ETHERS_CDNS = [
-  "https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js",
-  "https://unpkg.com/ethers@5.7.umd/dist/ethers.umd.min.js",
-  "https://cdn.skypack.dev/ethers@5.7.0?min"
-];
 
-function loadScript(url){
-  return new Promise((resolve, reject)=>{
+// ==== CONFIG ====
+// Put your deployed contract address here:
+const CONTRACT_ADDRESS = "0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43";
+
+// Minimal ABI (based on what you provided)
+const ABI = [
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"streak","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"totalClaims","type":"uint256"}],"name":"BadgeClaimed","type":"event"},
+  {"inputs":[],"name":"claimBadge","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getUser","outputs":[{"internalType":"uint256","name":"last","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"total","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"lastClaim","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"totalClaims","type":"uint256"}],"stateMutability":"view","type":"function"}
+];
+// =================
+
+const connectBtn = document.getElementById('connectBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const accountInput = document.getElementById('accountInput');
+const claimBtn = document.getElementById('claimBtn');
+const lastClaimEl = document.getElementById('lastClaim');
+const streakEl = document.getElementById('streak');
+const totalEl = document.getElementById('total');
+const statusEl = document.getElementById('status');
+const errorEl = document.getElementById('error');
+const contractAddressEl = document.getElementById('contractAddress');
+
+let provider, signer, contract;
+contractAddressEl.innerText = CONTRACT_ADDRESS;
+
+// helper
+function showStatus(msg){ statusEl.style.display='block'; statusEl.innerText = msg; errorEl.style.display='none'; }
+function showError(msg){ errorEl.style.display='block'; errorEl.innerText = msg; statusEl.style.display='none'; }
+function hideStatus(){ statusEl.style.display='none'; errorEl.style.display='none'; }
+
+// try load ethers (CDN first, fallback to local)
+function loadEthersWithFallback(){
+  return new Promise((resolve, reject) => {
+    if(window.ethers){
+      resolve(window.ethers);
+      return;
+    }
+    // try CDN
+    const cdn = 'https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js';
     const s = document.createElement('script');
-    s.src = url;
+    s.src = cdn;
     s.async = true;
-    s.onload = ()=>resolve(url);
-    s.onerror = ()=>reject(new Error('failed to load '+url));
+    s.onload = () => {
+      if(window.ethers) resolve(window.ethers);
+      else reject(new Error('ethers loaded but window.ethers missing'));
+    };
+    s.onerror = () => {
+      // fallback to local file
+      const local = './libs/ethers.umd.min.js';
+      const s2 = document.createElement('script');
+      s2.src = local;
+      s2.async = true;
+      s2.onload = () => {
+        if(window.ethers) resolve(window.ethers);
+        else reject(new Error('local ethers loaded but window.ethers missing'));
+      };
+      s2.onerror = () => {
+        reject(new Error('Failed to load ethers from CDN and local fallback. Please download ethers UMD to ./libs/ethers.umd.min.js'));
+      };
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   });
 }
 
-/*
- try loading CDNs sequentially until window.ethers is available.
- timeoutPer = ms to wait after each script (gives browser time to init).
-*/
-async function ensureEthersLoaded(timeoutPer = 2500){
-  for(const u of ETHERS_CDNS){
-    try{
-      await loadScript(u);
-      // wait a bit for UMD to attach
-      const start = Date.now();
-      while((typeof window.ethers === 'undefined') && (Date.now()-start < timeoutPer)){
-        await new Promise(r=>setTimeout(r, 80));
-      }
-      if(typeof window.ethers !== 'undefined'){
-        console.log('Loaded ethers from', u);
-        return true;
-      } else {
-        console.warn('Script loaded but window.ethers still undefined:', u);
-      }
-    }catch(e){
-      console.warn('Failed to load', u, e);
-    }
-  }
-  return false;
-}
-
-/* main app starts only after ethers is available or a clear error shown */
-(async function boot(){
-  const ok = await ensureEthersLoaded(2200);
-  if(!ok){
-    // show helpful instructions and stop
-    const uiMsg = document.getElementById('uiMsg');
-    uiMsg.innerHTML = `<div class="error">
-      ethers library could not be loaded from public CDNs. Possible reasons:
-      <ul>
-        <li>Your network blocks CDNs (common on some VPNs / corporate networks / Brave privacy settings).</li>
-        <li>Browser blocked mixed content / third-party scripts.</li>
-      </ul>
-      <strong>Quick fixes:</strong>
-      <ol>
-        <li>Try opening the page in a different browser (Chrome) or disable strict privacy extensions.</li>
-        <li>OR download <code>ethers.umd.min.js</code> manually and place it in the same folder as this HTML:
-          <br><code>https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js</code> (save this file)
-        </li>
-        <li>Then add this tag above the closing &lt;head&gt;: <br>
-          <code>&lt;script src="./ethers.umd.min.js"&gt;&lt;/script&gt;</code>
-        </li>
-      </ol>
-      After that reload this page.
-      </div>`;
-    return;
-  }
-  // ethers loaded — proceed to app
-  startApp();
-})();
-
-function startApp(){
-  // --------------------------
-  // CONFIG: contract + ABI
-  // --------------------------
-  const CONTRACT_ADDRESS = "0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43";
-  const ABI = [
-    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"streak","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"totalClaims","type":"uint256"}],"name":"BadgeClaimed","type":"event"},
-    {"inputs":[],"name":"claimBadge","outputs":[],"stateMutability":"nonpayable","type":"function"},
-    {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getUser","outputs":[{"internalType":"uint256","name":"last","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"total","type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"lastClaim","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"totalClaims","type":"uint256"}],"stateMutability":"view","type":"function"}
-  ];
-
-  // UI elements
-  const connectBtn = document.getElementById('connectBtn');
-  const refreshBtn = document.getElementById('refreshBtn');
-  const addrEl = document.getElementById('addr');
-  const contractAddrEl = document.getElementById('contractAddr');
-  const fidDisplay = document.getElementById('fidDisplay');
-  const subText = document.getElementById('subText');
-  const lastClaimEl = document.getElementById('lastClaim');
-  const streakDisplay = document.getElementById('streakDisplay');
-  const totalDisplay = document.getElementById('totalDisplay');
-  const claimBtn = document.getElementById('claimBtn');
-  const uiMsg = document.getElementById('uiMsg');
-  contractAddrEl.textContent = CONTRACT_ADDRESS;
-
-  let provider, signer, contract;
-  let currentAccount = null;
-
-  function showError(msg){ uiMsg.innerHTML = '<div class="error">'+msg+'</div>'; }
-  function showSuccess(msg){ uiMsg.innerHTML = '<div class="success">'+msg+'</div>'; }
-  function clearMsg(){ uiMsg.innerHTML = ''; }
-
-  // Check for window.ethereum
-  if(!window.ethereum){
-    showError("MetaMask not found. Install MetaMask and reload.");
-    connectBtn.disabled = true;
-    claimBtn.disabled = true;
-    return;
-  }
-
-  // Initialize provider+contract when wallet connected
-  async function initProvider(){
-    try{
-      provider = new window.ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      contract = new window.ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-      const accounts = await provider.listAccounts();
-      if(accounts && accounts.length>0){
-        currentAccount = accounts[0];
-        addrEl.textContent = shortAddr(currentAccount);
-        connectBtn.textContent = 'Connected';
-      } else {
-        addrEl.textContent = 'Not connected';
-        connectBtn.textContent = 'Connect Wallet';
-      }
-    }catch(err){
-      console.error('initProvider error',err);
-      showError('Error initializing provider: '+(err.message||err));
-    }
-  }
-
-  // connect wallet
-  async function connectWallet(){
-    clearMsg();
-    try{
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      await initProvider();
-      await refreshUI();
-      showSuccess('Wallet connected.');
-    }catch(err){
-      console.error('connect error',err);
-      showError('Connect failed: '+(err.message||err));
-    }
-  }
-
-  // short address helper
-  function shortAddr(a){
-    if(!a) return '-';
-    return a.slice(0,6)+'…'+a.slice(-4);
-  }
-
-  function formatTSSec(ts){
-    if(!ts || ts==0) return 'Never';
-    try{
-      const d = new Date(ts*1000);
-      return d.toLocaleString();
-    }catch(e){ return String(ts); }
-  }
-
-  // refresh UI by reading contract.getUser(account)
-  async function refreshUI(){
-    clearMsg();
-    if(!contract){
-      await initProvider();
-      if(!contract) return;
-    }
-    try{
-      if(!currentAccount){
-        const accts = await provider.listAccounts();
-        if(!accts || accts.length===0){
-          addrEl.textContent = 'Not connected';
-          showError('Wallet not connected. Click Connect Wallet.');
-          return;
-        }
-        currentAccount = accts[0];
-      }
-
-      addrEl.textContent = shortAddr(currentAccount);
-      // call getUser(currentAccount)
-      const r = await contract.getUser(currentAccount);
-      const last = r.last ? (r.last.toNumber ? r.last.toNumber() : Number(r.last)) : 0;
-      const streak = r.streak ? (r.streak.toNumber ? r.streak.toNumber() : Number(r.streak)) : 0;
-      const total = r.total ? (r.total.toNumber ? r.total.toNumber() : Number(r.total)) : 0;
-
-      fidDisplay.textContent = currentAccount;
-      subText.textContent = 'Daily Check-in • onchain';
-      lastClaimEl.textContent = formatTSSec(last);
-      streakDisplay.textContent = 'Streak: ' + streak;
-      totalDisplay.textContent = 'Total claimed: ' + total;
-
-      // 24h client-side UI gating
-      const nowS = Math.floor(Date.now()/1000);
-      const secondsSince = last ? (nowS - last) : 9999999;
-      const secondsLeft = Math.max(0, 24*3600 - secondsSince);
-
-      if(last===0 || secondsSince >= 24*3600){
-        claimBtn.disabled = false;
-        claimBtn.textContent = 'Claim Badge (onchain)';
-      } else {
-        claimBtn.disabled = true;
-        claimBtn.textContent = `Claim disabled: ${formatTimeLeft(secondsLeft)} left`;
-      }
-
-    }catch(err){
-      console.error('refreshUI err',err);
-      showError('Failed to read contract: '+ (err.message||err));
-    }
-  }
-
-  function formatTimeLeft(sec){
-    if(sec<=0) return '0s';
-    const h = Math.floor(sec/3600); sec%=3600;
-    const m = Math.floor(sec/60); const s = sec%60;
-    return `${h}h ${m}m ${s}s`;
-  }
-
-  // claim badge (calls contract.claimBadge())
-  async function claimBadge(){
-    clearMsg();
-    if(!contract){
-      showError('Provider not initialized.');
+async function initProviderAndContract(){
+  hideStatus();
+  try{
+    showStatus('Loading ethers library...');
+    await loadEthersWithFallback();
+    showStatus('Ethers loaded. Checking for MetaMask...');
+    // check window.ethereum
+    if(!window.ethereum){
+      showError('MetaMask (window.ethereum) not found. Install MetaMask and retry.');
       return;
     }
-    try{
-      claimBtn.disabled = true;
-      claimBtn.textContent = 'Sending tx...';
-      const tx = await contract.claimBadge();
-      showSuccess('Transaction sent. Waiting confirmation...');
-      await tx.wait();
-      showSuccess('Claim successful! Tx confirmed.');
-      setTimeout(()=>refreshUI(), 1200);
-    }catch(err){
-      console.error('claim err',err);
-      showError('Claim failed: '+(err && err.message ? err.message : err));
-      setTimeout(()=>refreshUI(), 800);
-    }
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    // request accounts? not yet — let connect button handle
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+    showStatus('Ready. Click Connect Wallet.');
+  }catch(err){
+    showError('Initialization error: ' + (err.message || err));
+    console.error(err);
   }
-
-  function downloadSVG(){
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'><rect width='100%' height='100%' rx='20' fill='#ffb24a'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='40' fill='#08202a'>Badgehub</text></svg>`;
-    const blob = new Blob([svg], {type:'image/svg+xml'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'badge.svg';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showSuccess('SVG downloaded (placeholder).');
-  }
-
-  // events
-  connectBtn.addEventListener('click', connectWallet);
-  refreshBtn.addEventListener('click', refreshUI);
-  claimBtn.addEventListener('click', claimBadge);
-  document.getElementById('downloadSvg').addEventListener('click', downloadSVG);
-
-  // external wallet events
-  window.ethereum.on && window.ethereum.on('accountsChanged', (accs) => {
-    currentAccount = accs && accs.length ? accs[0] : null;
-    initProvider().then(()=>refreshUI());
-  });
-  window.ethereum.on && window.ethereum.on('chainChanged', (chainId) => {
-    initProvider().then(()=>refreshUI());
-  });
-
-  // init
-  initProvider().then(()=>refreshUI());
 }
+
+async function connectWallet(){
+  hideStatus();
+  try{
+    if(!window.ethereum){
+      showError('MetaMask not found.');
+      return;
+    }
+    // request accounts
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if(!accounts || accounts.length===0){
+      showError('Wallet returned no accounts.');
+      return;
+    }
+    const account = accounts[0];
+    accountInput.value = account;
+    // re-init provider and signer
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    signer = provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    showStatus('Connected: ' + account);
+    // update UI state
+    refreshUI();
+    // listen to accountsChanged / chainChanged
+    window.ethereum.on('accountsChanged', (accs)=> {
+      if(accs.length === 0){
+        accountInput.value = '';
+        showStatus('Disconnected');
+      } else {
+        accountInput.value = accs[0];
+        refreshUI();
+      }
+    });
+    window.ethereum.on('chainChanged', (c) => {
+      // reload so provider network resets
+      showStatus('Network changed, reloading...');
+      setTimeout(()=> location.reload(), 600);
+    });
+  }catch(err){
+    showError('Connect wallet failed: ' + (err.message || err));
+    console.error(err);
+  }
+}
+
+async function refreshUI(){
+  hideStatus();
+  if(!contract) { showError('Contract not initialized.'); return; }
+  try{
+    const acc = accountInput.value || (await provider.listAccounts())[0];
+    if(!acc){ showError('No account connected. Click Connect Wallet.'); return; }
+    showStatus('Fetching onchain user data...');
+    // call getUser
+    const data = await contract.getUser(acc);
+    // data: [last, streak, total]
+    const last = data[0].toNumber ? data[0].toNumber() : Number(data[0]);
+    const streak = data[1].toNumber ? data[1].toNumber() : Number(data[1]);
+    const total = data[2].toNumber ? data[2].toNumber() : Number(data[2]);
+    lastClaimEl.innerText = last === 0 ? '-' : (new Date(last*1000)).toLocaleString();
+    streakEl.innerText = streak;
+    totalEl.innerText = total;
+    showStatus('User data fetched.');
+  }catch(err){
+    console.error(err);
+    showError('Error fetching user: ' + (err.message || err));
+  }
+}
+
+async function claimOnchain(){
+  hideStatus();
+  if(!contract || !signer){
+    showError('Connect wallet first.');
+    return;
+  }
+  try{
+    showStatus('Sending claim transaction (please confirm in MetaMask)...');
+    const tx = await contract.claimBadge();
+    showStatus('Transaction sent: ' + tx.hash + ' — waiting for confirmation...');
+    await tx.wait();
+    showStatus('Transaction confirmed. Refreshing data...');
+    await refreshUI();
+  }catch(err){
+    console.error(err);
+    showError('Claim failed: ' + (err.message || err));
+  }
+}
+
+// wire buttons
+connectBtn.addEventListener('click', connectWallet);
+refreshBtn.addEventListener('click', refreshUI);
+claimBtn.addEventListener('click', claimOnchain);
+
+// initialize on page load
+initProviderAndContract();
 </script>
+
 </body>
 </html>
