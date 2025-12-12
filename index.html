@@ -1,394 +1,283 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
+  <title>Badgehub — Onchain (connect + claim)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Badgehub — Daily Check-in (local + robust Farcaster share)</title>
+  <!-- Ethers v5 UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js"></script>
   <style>
-    :root{
-      --bg:#07111a; --card:#0f1720; --accent:#ffb347; --muted:#9aa4b2; --text:#e6eef6;
-      --ok:#27b26a; --err:#ff6b6b; --btn:#1687d9;
-    }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#05060a,#07111a);color:var(--text)}
-    .container{max-width:1100px;margin:28px auto;padding:18px;display:flex;gap:20px;align-items:flex-start}
-    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,12,0.6);flex:0 0 420px}
-    .preview{flex:1;padding:18px;border-radius:12px}
-    h1{margin:0 0 6px;font-size:20px;color:var(--accent)}
-    label{display:block;color:var(--muted);font-size:13px;margin-top:12px}
-    input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
-    .badgeTypeBox{display:inline-block;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.02);color:var(--muted)}
-    button{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--accent),#ff7a59);color:#071018;font-weight:700}
-    .smallBtn{padding:8px 10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--text);cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-    .info{margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);color:var(--muted);font-size:13px}
-    .status{margin-top:10px}
-    .green{color:var(--ok)} .red{color:var(--err)}
-    .cardPreview{background:linear-gradient(90deg,#ffb347,#ff7a59);height:220px;border-radius:12px;color:#071018;display:flex;justify-content:space-between;align-items:flex-end;padding:18px;box-sizing:border-box}
-    .rightStats{margin-top:12px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px}
-    .disabled{opacity:0.45;cursor:not-allowed}
-    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
-    @media(max-width:980px){.container{flex-direction:column}.panel{flex:unset}}
+    body{font-family:Inter,system-ui,Arial; background:#0b0f14; color:#e6eef6; margin:0; padding:18px;}
+    .card{max-width:920px;margin:20px auto;padding:20px;border-radius:12px;background:linear-gradient(180deg,#061018 0%, #071722 100%);box-shadow:0 6px 30px rgba(0,0,0,.6);}
+    h1{margin:0 0 12px 0;font-size:22px;color:#ffd66b}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    input[type=text]{padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:#07121a;color:#fff;min-width:280px}
+    button{padding:10px 14px;border-radius:9px;border:none;cursor:pointer}
+    .btn-primary{background:#ffb24a;color:#08202a}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.08);color:#fff}
+    .muted{color:#9fb0c3;font-size:13px}
+    .stat{background:rgba(255,255,255,.02);padding:12px;border-radius:8px;margin-top:12px}
+    .error{color:#ff6b6b;margin-top:10px}
+    .success{color:#7ee5a6;margin-top:10px}
+    small{color:#9fb0c3}
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Left: Controls -->
-    <div class="panel">
-      <h1>BADGEHUB</h1>
-      <div class="muted">Daily Check-in — Local demo (24h rate-limit)</div>
-
-      <label for="fid">Your name / FID</label>
-      <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" value="anon" />
-
-      <label>Badge type (fixed)</label>
-      <div class="badgeTypeBox" id="badgeType">Daily Check-in</div>
-
-      <div style="margin-top:16px">
-        <button id="claimBtn">Claim today's badge</button>
-      </div>
-
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button id="shareX" class="smallBtn">Share on X</button>
-        <button id="shareFarcaster" class="smallBtn">Share on Farcaster</button>
-        <button id="copyCaption" class="smallBtn">Copy caption</button>
-      </div>
-
-      <div style="margin-top:12px;display:flex;gap:8px;">
-        <button id="downloadSvg" class="smallBtn">Download SVG</button>
-        <button id="connectWallet" class="smallBtn">Connect Wallet</button>
-        <button id="onchainMint" class="smallBtn" disabled title="Onchain mint disabled until contract set">Onchain mint</button>
-      </div>
-
-      <div class="info" id="statusBox">
-        <div id="statusMsg" class="muted">Tip: claims saved locally. Replace with onchain when ready.</div>
-        <div class="status" id="uiStatus"></div>
-      </div>
-
-      <div class="info" style="margin-top:10px">
-        <div id="streakInfo">Streak: 0 | Total: 0 | Last claim: -</div>
-        <div id="countdown" style="margin-top:8px"></div>
-        <div style="margin-top:8px">Local key: <span id="lsKey" class="muted"></span></div>
-      </div>
+  <div class="card">
+    <h1>Badgehub — Onchain</h1>
+    <div class="row" style="align-items:center;margin-bottom:10px">
+      <button id="connectBtn" class="btn-primary">Connect Wallet</button>
+      <button id="refreshBtn" class="btn-ghost">Refresh</button>
+      <div id="addr" style="margin-left:8px" class="muted">Not connected</div>
     </div>
 
-    <!-- Right: Preview -->
-    <div class="preview">
-      <div class="cardPreview" id="cardPreview">
-        <div style="flex:1">
-          <div id="cardTitle" style="font-weight:800;font-size:22px">— no badge yet —</div>
-          <div style="height:8px"></div>
+    <div style="margin-top:10px">
+      <div class="muted">Contract (onchain)</div>
+      <div style="margin-top:6px" class="muted"><small id="contractAddr"></small></div>
+    </div>
+
+    <div class="stat" id="statusBox">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:16px;font-weight:600" id="fidDisplay">—</div>
+          <div class="muted" id="subText">Address / preview</div>
         </div>
         <div style="text-align:right">
-          <div id="cardName" style="font-weight:800">anon</div>
-          <div id="cardMeta" class="muted">Daily Check-in</div>
+          <div style="font-size:13px;color:#c9dff0" id="streakDisplay">Streak: -</div>
+          <div style="font-size:13px;color:#c9dff0" id="totalDisplay">Total claimed: -</div>
         </div>
       </div>
 
-      <div class="rightStats">
-        <div style="font-weight:700">Preview / Details</div>
-        <div id="previewText" class="muted" style="margin-top:8px">—</div>
+      <div style="margin-top:12px">
+        <div class="muted">Last claim</div>
+        <div id="lastClaim" style="margin-top:6px">-</div>
       </div>
+
+      <div style="margin-top:14px" class="row">
+        <button id="claimBtn" class="btn-primary">Claim Badge (onchain)</button>
+        <button id="downloadSvg" class="btn-ghost">Download SVG</button>
+      </div>
+
+      <div id="uiMsg" style="margin-top:12px"></div>
+    </div>
+
+    <div style="margin-top:14px" class="muted">
+      <div>Tip: make sure MetaMask is on the same network where contract is deployed.</div>
     </div>
   </div>
 
-  <footer>Badgehub — local demo. We'll wire onchain & polish after UI is stable.</footer>
-
 <script>
-/* ============================================
-   Full index.html with:
-   - 24h rate-limit local claim
-   - robust Farcaster share (deep link + warpcast + system share + clipboard)
-   - X share, copy caption, download SVG
-   - Connect-wallet placeholder
-   ============================================ */
-
-const DAY_MS = 24*60*60*1000;
-const fidInput = document.getElementById('fid');
-const badgeTypeEl = document.getElementById('badgeType');
-const claimBtn = document.getElementById('claimBtn');
-const shareXBtn = document.getElementById('shareX');
-const shareFarcasterBtn = document.getElementById('shareFarcaster');
-const copyCaptionBtn = document.getElementById('copyCaption');
-const downloadSvgBtn = document.getElementById('downloadSvg');
-const connectWalletBtn = document.getElementById('connectWallet');
-const onchainMintBtn = document.getElementById('onchainMint');
-
-const lsKeyEl = document.getElementById('lsKey');
-const uiStatus = document.getElementById('uiStatus');
-const statusMsg = document.getElementById('statusMsg');
-const previewText = document.getElementById('previewText');
-const cardTitle = document.getElementById('cardTitle');
-const cardName = document.getElementById('cardName');
-const cardMeta = document.getElementById('cardMeta');
-const streakInfo = document.getElementById('streakInfo');
-const countdownEl = document.getElementById('countdown');
-
-let countdownInterval = null;
-
-// Storage key helper
-function storageKey(fid, badgeType){
-  return `badgehub_claim_${(fid||'anon').trim().toLowerCase().replace(/\s+/g,'_')}_${(badgeType||'daily').trim().toLowerCase().replace(/\s+/g,'_')}`;
-}
-
-// Read/write claim info
-function readInfo(fid, badgeType){
-  const key = storageKey(fid, badgeType);
-  lsKeyEl.textContent = key;
-  const raw = localStorage.getItem(key);
-  if(!raw) return { lastClaim:0, streak:0, total:0, key };
-  try {
-    const obj = JSON.parse(raw);
-    return { lastClaim: obj.lastClaim || 0, streak: obj.streak || 0, total: obj.total || 0, key };
-  } catch(e){
-    console.warn('readInfo parse error', e);
-    return { lastClaim:0, streak:0, total:0, key };
-  }
-}
-function writeInfo(key, obj){
-  localStorage.setItem(key, JSON.stringify({ lastClaim: obj.lastClaim, streak: obj.streak, total: obj.total }));
-}
-
-// Format date
-function fmt(ms){
-  if(!ms) return '-';
-  return new Date(ms).toLocaleString();
-}
-
-// Update UI
-function updateUI(){
-  const fid = (fidInput.value||'anon').trim();
-  const badgeType = badgeTypeEl.textContent.trim();
-  const info = readInfo(fid, badgeType);
-  cardName.textContent = fid;
-  cardMeta.textContent = badgeType;
-  cardTitle.textContent = info.total ? `#${fid} — ${badgeType}` : '— no badge yet —';
-  previewText.innerHTML = `Streak: ${info.streak} | Total: ${info.total} <br> Last claim: ${fmt(info.lastClaim)}`;
-  streakInfo.textContent = `Streak: ${info.streak} | Total: ${info.total} | Last claim: ${fmt(info.lastClaim)}`;
-
-  const now = Date.now();
-  const rem = info.lastClaim ? Math.max(0, (info.lastClaim + DAY_MS) - now) : 0;
-  if(rem > 0){
-    setClaimDisabled(true);
-    startCountdown(rem);
-    uiStatus.innerHTML = `<span class="red">Already claimed in last 24 hours</span>`;
-  } else {
-    setClaimDisabled(false);
-    stopCountdown();
-    countdownEl.textContent = '';
-    uiStatus.innerHTML = `<span class="green">You can claim now</span>`;
-  }
-}
-
-// Disable/enable claim button
-function setClaimDisabled(d){
-  if(d){ claimBtn.disabled = true; claimBtn.classList.add('disabled'); }
-  else { claimBtn.disabled = false; claimBtn.classList.remove('disabled'); }
-}
-
-// Claim action
-function claimNow(){
-  const fid = (fidInput.value||'anon').trim();
-  if(!fid){ alert('Enter your FID'); return; }
-  const badgeType = badgeTypeEl.textContent.trim();
-  const info = readInfo(fid, badgeType);
-  const now = Date.now();
-  if(info.lastClaim && (now - info.lastClaim) < DAY_MS){
-    alert('Already claimed in last 24 hours');
-    updateUI();
-    return;
-  }
-  // streak logic: if last claim within 48h => increment else reset
-  const newStreak = (info.lastClaim && (now - info.lastClaim) <= 2*DAY_MS) ? (info.streak + 1) : 1;
-  const newTotal = info.total + 1;
-  const obj = { lastClaim: now, streak: newStreak, total: newTotal };
-  writeInfo(info.key, obj);
-  statusMsg.textContent = 'Badge claimed locally — streak updated';
-  statusMsg.className = 'muted';
-  updateUI();
-}
-
-// countdown helpers
-function startCountdown(ms){
-  stopCountdown();
-  updateCountdown(ms);
-  countdownInterval = setInterval(()=> {
-    ms -= 1000;
-    if(ms <= 0){ stopCountdown(); updateUI(); }
-    else updateCountdown(ms);
-  }, 1000);
-}
-function stopCountdown(){
-  if(countdownInterval){ clearInterval(countdownInterval); countdownInterval = null; }
-}
-function updateCountdown(ms){
-  const s = Math.floor(ms/1000);
-  const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); const sec = s%60;
-  countdownEl.textContent = `Next claim available in ${h}h ${m}m ${sec}s`;
-}
-
-// Copy caption
-function buildCaption(fid, badgeType){
-  const info = readInfo(fid, badgeType);
-  return `#${fid} ${badgeType} badge earned\n\nStreak: ${info.streak} | Total: ${info.total}\n#Badgehub #Base`;
-}
-copyCaptionBtn.addEventListener('click', async ()=>{
-  const fid = (fidInput.value||'anon').trim();
-  const badgeType = badgeTypeEl.textContent.trim();
-  const caption = buildCaption(fid, badgeType);
-  try {
-    await navigator.clipboard.writeText(caption);
-    uiStatus.innerHTML = `<span class="green">Caption copied to clipboard</span>`;
-  } catch(e){
-    alert('Copy failed — allow clipboard permissions or copy manually:\n\n' + caption);
-  }
-});
-
-// Download SVG
-downloadSvgBtn.addEventListener('click', ()=>{
-  const fid = (fidInput.value||'anon').trim();
-  const badgeType = badgeTypeEl.textContent.trim();
-  const date = new Date().toLocaleDateString();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512"><rect width="100%" height="100%" rx="30" fill="#ffb347"/><text x="50%" y="45%" text-anchor="middle" font-family="sans-serif" font-size="64" fill="#071018">${escapeXml(fid)}</text><text x="50%" y="68%" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#071018">${escapeXml(badgeType)} — ${escapeXml(date)}</text></svg>`;
-  const blob = new Blob([svg], {type:'image/svg+xml'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `${fid}_badge.svg`; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=> URL.revokeObjectURL(url), 200);
-});
-
-function escapeXml(s){ return (''+s).replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c])); }
-
-// X share
-shareXBtn.addEventListener('click', ()=>{
-  const fid = encodeURIComponent((fidInput.value||'anon').trim());
-  const badgeType = encodeURIComponent(badgeTypeEl.textContent.trim());
-  const text = `#${fid} ${badgeType} badge earned\n\n#Badgehub #Base`;
-  const url = `https://twitter.com/intent/tweet?text=${text}`;
-  window.open(url,'_blank','noopener');
-});
-
-// Robust Farcaster share
-shareFarcasterBtn.addEventListener('click', async ()=>{
-  const fid = (fidInput.value||'anon').trim();
-  const badgeType = badgeTypeEl.textContent.trim();
-  const caption = buildCaption(fid, badgeType);
-
-  // 1) Try deep-link to app (mobile)
-  const deepUrls = [
-    `farcaster://cast?text=${encodeURIComponent(caption)}`,
-    `farcaster://compose?text=${encodeURIComponent(caption)}`
+(async function(){
+  // --------------------------
+  // CONFIG: contract + ABI
+  // --------------------------
+  const CONTRACT_ADDRESS = "0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43";
+  const ABI = [
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"streak","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"totalClaims","type":"uint256"}],"name":"BadgeClaimed","type":"event"},
+    {"inputs":[],"name":"claimBadge","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getUser","outputs":[{"internalType":"uint256","name":"last","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"total","type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"lastClaim","type":"uint256"},{"internalType":"uint256","name":"streak","type":"uint256"},{"internalType":"uint256","name":"totalClaims","type":"uint256"}],"stateMutability":"view","type":"function"}
   ];
 
-  // 2) Try web composer (warpcast) - works on desktop & mobile web
-  const webCompose = `https://warpcast.com/~/compose?text=${encodeURIComponent(caption)}`;
+  // UI elements
+  const connectBtn = document.getElementById('connectBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const addrEl = document.getElementById('addr');
+  const contractAddrEl = document.getElementById('contractAddr');
+  const fidDisplay = document.getElementById('fidDisplay');
+  const subText = document.getElementById('subText');
+  const lastClaimEl = document.getElementById('lastClaim');
+  const streakDisplay = document.getElementById('streakDisplay');
+  const totalDisplay = document.getElementById('totalDisplay');
+  const claimBtn = document.getElementById('claimBtn');
+  const uiMsg = document.getElementById('uiMsg');
 
-  // 3) fallback: navigator.share and clipboard
+  contractAddrEl.textContent = CONTRACT_ADDRESS;
 
-  // Try open deep-link then fallback to web compose after brief delay
-  let openedDeep = false;
-  try {
-    // Some browsers block immediate navigation via window.open for custom protocols.
-    // We attempt document.location.href then setTimeout fallback to webCompose.
-    // Note: This approach may create a blank tab on desktop; but webCompose fallback ensures a working flow.
-    window.location.href = deepUrls[0];
-    openedDeep = true;
-  } catch(e){
-    openedDeep = false;
-    console.warn('deep link attempt failed', e);
-  }
+  let provider, signer, contract;
+  let currentAccount = null;
 
-  // Always attempt webCompose in a new tab (but after a short delay so app deep-link can take over on mobile)
-  setTimeout(() => {
-    try {
-      window.open(webCompose, '_blank', 'noopener');
-    } catch(e){
-      console.warn('web compose open failed', e);
-    }
-  }, 600);
+  function showError(msg){ uiMsg.innerHTML = '<div class="error">'+msg+'</div>'; }
+  function showSuccess(msg){ uiMsg.innerHTML = '<div class="success">'+msg+'</div>'; }
+  function clearMsg(){ uiMsg.innerHTML = ''; }
 
-  // Then try system share if available (non-blocking)
-  if(navigator.share){
-    try {
-      await navigator.share({ text: caption });
-      uiStatus.innerHTML = `<span class="green">Shared via system dialog</span>`;
-      return;
-    } catch(e){
-      // user cancelled or failed, continue to clipboard fallback
-      console.warn('navigator.share failed or canceled', e);
-    }
-  }
-
-  // Clipboard fallback
-  try {
-    await navigator.clipboard.writeText(caption);
-    uiStatus.innerHTML = `<span class="muted">Farcaster app not detected — caption copied to clipboard. Paste into Farcaster app.</span>`;
-    alert('Farcaster share: caption copied to clipboard. Open Farcaster and paste to post.');
-  } catch(e){
-    // final fallback: prompt so user can copy manually
-    window.prompt('Copy this caption and paste into Farcaster:', caption);
-  }
-});
-
-// Connect wallet (basic)
-connectWalletBtn.addEventListener('click', async ()=>{
+  // Check for window.ethereum
   if(!window.ethereum){
-    alert('MetaMask or other wallet not found in this browser.');
+    showError("MetaMask not found. Install MetaMask and reload.");
+    connectBtn.disabled = true;
+    claimBtn.disabled = true;
     return;
   }
-  try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    connectWalletBtn.textContent = `Connected ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`;
-    connectWalletBtn.disabled = true;
-    connectWalletBtn.classList.add('disabled');
-  } catch(e){
-    console.error('connect failed', e);
-    alert('Wallet connection failed or rejected.');
+
+  // Initialize provider+contract when wallet connected
+  async function initProvider(){
+    try{
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      // detect account if available
+      const accounts = await provider.listAccounts();
+      if(accounts && accounts.length>0){
+        currentAccount = accounts[0];
+        addrEl.textContent = shortAddr(currentAccount);
+        connectBtn.textContent = 'Connected';
+      } else {
+        addrEl.textContent = 'Not connected';
+        connectBtn.textContent = 'Connect Wallet';
+      }
+    }catch(err){
+      console.error('initProvider error',err);
+      showError('Error initializing provider: '+(err.message||err));
+    }
   }
-});
 
-// Onchain mint placeholder (disabled until you set contract)
-onchainMintBtn.addEventListener('click', ()=>{
-  alert('Onchain mint not configured yet. Provide contract address & ABI to enable.');
-});
+  // connect wallet
+  async function connectWallet(){
+    clearMsg();
+    try{
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await initProvider();
+      await refreshUI();
+      showSuccess('Wallet connected.');
+    }catch(err){
+      console.error('connect error',err);
+      showError('Connect failed: '+(err.message||err));
+    }
+  }
 
-// Claim button
-claimBtn.addEventListener('click', () => {
-  try {
-    const fid = (fidInput.value||'anon').trim();
-    const badgeType = badgeTypeEl.textContent.trim();
-    if(!fid){ alert('Enter your FID'); return; }
-    const info = readInfo(fid, badgeType);
-    const now = Date.now();
-    if(info.lastClaim && (now - info.lastClaim) < DAY_MS){
-      alert('Already claimed in last 24 hours.');
-      updateUI();
+  // short address helper
+  function shortAddr(a){
+    if(!a) return '-';
+    return a.slice(0,6)+'…'+a.slice(-4);
+  }
+
+  // format timestamp (seconds) to human
+  function formatTSSec(ts){
+    if(!ts || ts==0) return 'Never';
+    try{
+      const d = new Date(ts*1000);
+      return d.toLocaleString();
+    }catch(e){ return String(ts); }
+  }
+
+  // refresh UI by reading contract.getUser(account)
+  async function refreshUI(){
+    clearMsg();
+    if(!contract){
+      await initProvider();
+      if(!contract) return;
+    }
+    try{
+      if(!currentAccount){
+        const accts = await provider.listAccounts();
+        if(!accts || accts.length===0){
+          addrEl.textContent = 'Not connected';
+          showError('Wallet not connected. Click Connect Wallet.');
+          return;
+        }
+        currentAccount = accts[0];
+      }
+
+      addrEl.textContent = shortAddr(currentAccount);
+      // call getUser(currentAccount)
+      const r = await contract.getUser(currentAccount);
+      // r -> [last, streak, total]
+      const last = r.last ? r.last.toNumber?.() ?? Number(r.last) : 0;
+      const streak = r.streak ? r.streak.toNumber?.() ?? Number(r.streak) : 0;
+      const total = r.total ? r.total.toNumber?.() ?? Number(r.total) : 0;
+
+      fidDisplay.textContent = currentAccount;
+      subText.textContent = 'Daily Check-in • onchain';
+      lastClaimEl.textContent = formatTSSec(last);
+      streakDisplay.textContent = 'Streak: ' + streak;
+      totalDisplay.textContent = 'Total claimed: ' + total;
+
+      // 24h rate limit logic (client-side UI only)
+      const nowS = Math.floor(Date.now()/1000);
+      const secondsSince = last ? (nowS - last) : 9999999;
+      const secondsLeft = Math.max(0, 24*3600 - secondsSince);
+
+      if(last===0 || secondsSince >= 24*3600){
+        claimBtn.disabled = false;
+        claimBtn.textContent = 'Claim Badge (onchain)';
+      } else {
+        claimBtn.disabled = true;
+        claimBtn.textContent = `Claim disabled: ${formatTimeLeft(secondsLeft)} left`;
+      }
+
+      clearMsg();
+    }catch(err){
+      console.error('refreshUI err',err);
+      showError('Failed to read contract: '+ (err.message||err));
+    }
+  }
+
+  function formatTimeLeft(sec){
+    if(sec<=0) return '0s';
+    const h = Math.floor(sec/3600); sec%=3600;
+    const m = Math.floor(sec/60); const s = sec%60;
+    return `${h}h ${m}m ${s}s`;
+  }
+
+  // claim badge (calls contract.claimBadge())
+  async function claimBadge(){
+    clearMsg();
+    if(!contract){
+      showError('Provider not initialized.');
       return;
     }
-    const newStreak = (info.lastClaim && (now - info.lastClaim) <= 2*DAY_MS) ? (info.streak + 1) : 1;
-    const newTotal = info.total + 1;
-    writeInfo(info.key, { lastClaim: now, streak: newStreak, total: newTotal });
-    statusMsg.textContent = 'Badge claimed locally — streak updated';
-    updateUI();
-  } catch(e){
-    console.error('claim err', e);
-    alert('Claim failed (see console)');
+    try{
+      claimBtn.disabled = true;
+      claimBtn.textContent = 'Sending tx...';
+      const tx = await contract.claimBadge();
+      showSuccess('Transaction sent. Waiting confirmation...');
+      await tx.wait();
+      showSuccess('Claim successful! Tx confirmed.');
+      // refresh UI after claim
+      setTimeout(()=>refreshUI(), 1200);
+    }catch(err){
+      console.error('claim err',err);
+      showError('Claim failed: '+(err && err.message ? err.message : err));
+      // refresh UI to re-enable button state
+      setTimeout(()=>refreshUI(), 800);
+    }
   }
-});
 
-// Persist last used fid
-fidInput.addEventListener('blur', () => {
-  const v = (fidInput.value||'').trim();
-  if(v) localStorage.setItem('badgehub_last_fid', v);
-});
+  // Download an example SVG (preview) — simple placeholder
+  function downloadSVG(){
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'><rect width='100%' height='100%' rx='20' fill='#ffb24a'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='40' fill='#08202a'>Badgehub</text></svg>`;
+    const blob = new Blob([svg], {type:'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'badge.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showSuccess('SVG downloaded (placeholder).');
+  }
 
-fidInput.addEventListener('input', updateUI);
+  // events
+  connectBtn.addEventListener('click', connectWallet);
+  refreshBtn.addEventListener('click', refreshUI);
+  claimBtn.addEventListener('click', claimBadge);
+  document.getElementById('downloadSvg').addEventListener('click', downloadSVG);
 
-// init
-(function init(){
-  const last = localStorage.getItem('badgehub_last_fid') || '';
-  if(last) fidInput.value = last;
-  updateUI();
-  uiStatus.innerHTML = '<span class="muted">UI ready</span>';
-  console.log('Badgehub ready');
+  // listen account/network changes
+  window.ethereum.on && window.ethereum.on('accountsChanged', (accs) => {
+    currentAccount = accs && accs.length ? accs[0] : null;
+    initProvider().then(()=>refreshUI());
+  });
+  window.ethereum.on && window.ethereum.on('chainChanged', (chainId) => {
+    // simple refresh on chain change
+    initProvider().then(()=>refreshUI());
+  });
+
+  // init on load
+  await initProvider();
+  await refreshUI();
+
 })();
 </script>
 </body>
