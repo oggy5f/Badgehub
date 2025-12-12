@@ -3,306 +3,374 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Badgehub — Old Local UI</title>
+<title>Badgehub — Daily Check-in (Local)</title>
 <style>
   :root{
-    --bg:#071019; --panel:#0e1822; --accent:#ffb347; --muted:#98a0a8;
-    --card:#0b1116; --glass: rgba(255,255,255,0.03);
+    --bg:#0b0f14; --card:#0f1720; --accent:#ffb347; --muted:#9aa4af; --glass: rgba(255,255,255,0.03);
+    --btn:#0ea5a4; --btn-text:#fff;
   }
-  body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#05070a 0%, #071019 100%); color:#e6eef6;}
-  .wrap{max-width:1100px;margin:28px auto;padding:20px;display:flex;gap:24px}
-  .left{flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.6);}
-  .right{flex:1.2;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:20px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.6);}
-  h1{margin:0 0 12px;font-size:20px;color:var(--accent)}
+  body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#04111b 0%, #07121a 100%);color:#e6eef3;min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .wrap{width:100%;max-width:1100px;padding:28px;box-sizing:border-box}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 6px 30px rgba(2,6,12,.6);border:1px solid rgba(255,255,255,0.03)}
+  h1{margin:0 0 10px 0;font-size:20px;color:var(--accent)}
   label{display:block;margin:12px 0 6px;color:var(--muted);font-size:13px}
-  input[type="text"],select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:15px}
-  .btn{display:inline-block;padding:12px 18px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#ffd27a);color:#071018;font-weight:700;border:none;cursor:pointer;margin-top:12px;box-shadow:0 6px 18px rgba(255,176,71,0.12)}
-  .btn.secondary{background:transparent;color:#cfe7ff;border:1px solid rgba(255,255,255,0.04);box-shadow:none;font-weight:600}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .muted{color:var(--muted);font-size:13px;margin-top:8px}
-  .previewCard{border-radius:14px;padding:18px;background:linear-gradient(90deg,#ffce66,#ff9f3a);color:#071018;display:flex;align-items:center;gap:20px}
-  .avatar{width:120px;height:120px;border-radius:12px;background:#ffffff88}
-  .badgeName{font-weight:800;font-size:22px}
-  .badgeMeta{font-size:13px;color:#072236}
-  .statPills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-  .pill{background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:999px;font-size:13px}
-  textarea{width:100%;height:110px;background:transparent;border:1px dashed rgba(255,255,255,0.04);color:inherit;padding:12px;border-radius:8px}
-  .error{color:#ff9494;margin-top:8px}
-  footer.note{margin-top:16px;color:var(--muted);font-size:13px}
-  @media(max-width:900px){.wrap{flex-direction:column}.right{order:-1}}
+  input[type="text"]{width:100%;padding:12px;border-radius:10px;border:none;background:var(--glass);color:#fff;box-sizing:border-box}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btn{background:var(--btn);color:var(--btn-text);padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+  .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04);color:var(--muted)}
+  .small{font-size:13px;color:var(--muted)}
+  .preview{height:260px;border-radius:10px;background:linear-gradient(120deg,#0c1320,#071229);display:flex;align-items:center;justify-content:center;position:relative}
+  #svgPreview{max-width:100%;max-height:100%;display:block}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#0b2b22;padding:10px 16px;border-radius:8px;color:#bfffe1;border:1px solid rgba(255,255,255,0.04)}
+  .muted{color:var(--muted)}
+  .notice{margin-top:10px;color:#60e38a}
+  .danger{color:#ff7b7b}
+  footer{margin-top:12px;color:var(--muted);font-size:13px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="left">
-    <h1>BADGEHUB (old local)</h1>
-
-    <label>Your name / FID</label>
-    <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" />
-
-    <label>Badge type</label>
-    <select id="badgeType">
-      <option value="Daily Check-in">Daily Check-in</option>
-      <option value="Weekly Completion">Weekly Completion</option>
-    </select>
-
-    <div style="margin-top:10px">
-      <button id="claimBtn" class="btn">Claim today's badge</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div>
+      <h1>BADGEHUB</h1>
+      <div class="small muted">Daily Check-in — local demo</div>
     </div>
-
-    <div class="actions">
-      <button id="shareX" class="btn secondary">Share on X</button>
-      <button id="farcasterShare" class="btn secondary">Share on Farcaster</button>
-      <button id="copyCaption" class="btn secondary">Copy caption</button>
-      <button id="downloadSVG" class="btn secondary">Download SVG</button>
-      <button id="onchainMint" class="btn secondary" disabled>Onchain mint</button>
-    </div>
-
-    <div id="statusMsg" class="muted">Tip: this is local-only version — data saved to your browser.</div>
-
-    <div style="margin-top:12px">
-      <label>Caption preview</label>
-      <textarea id="captionPreview" readonly></textarea>
-    </div>
-
-    <footer class="note">Note: "local" claim stores data in your browser (for testing). Onchain mint not active in this version.</footer>
+    <div class="small muted">v1 — local-only</div>
   </div>
 
-  <div class="right">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:14px;color:var(--muted)">Badge preview</div>
-        <div style="font-weight:800;font-size:20px;margin-top:6px">Live card</div>
+  <div class="grid">
+    <!-- left -->
+    <div class="card">
+      <label>Your name / FID</label>
+      <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" />
+
+      <label>Badge type</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small muted" style="padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.02)">Daily Check-in</div>
+        <div class="small muted" style="padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.02)">fixed</div>
       </div>
-      <div id="uiStatus" class="muted">UI ready (local)</div>
+
+      <div class="row" style="margin-top:16px">
+        <label style="margin:0"><input id="randColor" type="checkbox" checked /> Random badge color</label>
+      </div>
+
+      <div class="row">
+        <button id="claimBtn" class="btn">Claim today's badge</button>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button id="shareXBtn" class="btn secondary">Share on X</button>
+        <button id="shareFarcasterBtn" class="btn secondary">Share on Farcaster</button>
+        <button id="copyCaptionBtn" class="btn secondary">Copy caption</button>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button id="downloadSvgBtn" class="btn ghost">Download SVG</button>
+        <button id="onchainMintBtn" class="btn ghost">Onchain mint (disabled)</button>
+      </div>
+
+      <div id="status" class="notice" style="display:none"></div>
+      <div id="error" class="danger" style="display:none"></div>
+
+      <div style="margin-top:18px" class="small muted">
+        <div>Caption preview</div>
+        <div id="captionPreview" style="margin-top:8px;padding:12px;border-radius:8px;border:1px dashed rgba(255,255,255,0.04);min-height:70px"></div>
+      </div>
+
+      <footer>
+        Tip: "local" claim stores data in your browser (for testing). Onchain mint will be added later.
+      </footer>
     </div>
 
-    <div style="margin-top:14px" id="cardWrap">
-      <div class="previewCard" id="previewCard">
-        <div style="display:flex;flex-direction:column;align-items:center">
-          <div class="avatar" id="avatarSample"></div>
-          <div style="height:8px"></div>
-          <div style="background:#fff;padding:6px 12px;border-radius:999px;font-weight:700" id="nameBadge">anon</div>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:18px;font-weight:800" id="cardTitle">Daily Check-in</div>
-          <div style="margin-top:6px" id="cardDate">—</div>
-          <div class="statPills" id="statPills">
-            <div class="pill" id="streakPill">Streak: 0</div>
-            <div class="pill" id="totalPill">Total claimed: 0</div>
-            <div class="pill" id="lastPill">Last claim: -</div>
-          </div>
+    <!-- right -->
+    <div class="card">
+      <div class="preview">
+        <div id="svgContainer" style="width:90%;height:90%;display:flex;align-items:center;justify-content:center">
+          <!-- SVG goes here -->
+          <div id="svgPreviewWrapper"></div>
         </div>
       </div>
-    </div>
 
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:space-between">
+        <div class="small muted">Preview</div>
+        <div id="streakInfo" class="small muted">Streak: 0 | Last claim: -</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
-/*
-  Local-only badge UI.
-  - store per-FID data in localStorage under key: "badgehub_data_v1"
-  - structure:
-    {
-      "<fid>": {
-         lastClaim: 1680000000000,
-         streak: 3,
-         total: 7,
-         lastDateStr: "2025-12-10"
-       }, ...
-    }
+<!-- Toast -->
+<div id="toast" class="toast" style="display:none"></div>
 
-  24h rule: block new local claim if lastClaim + (24*60*60*1000) > now
-  If user changes FID, UI updates.
+<script>
+/* ===== Simple local-only badge app =====
+   - localStorage key-based claims
+   - 24h rate-limit per (fid + type)
+   - generates simple SVG (downloadable)
+   - share on X, share on Farcaster (best-effort)
+   - no external libs
 */
 
-const fidInput = document.getElementById('fidInput');
-const badgeType = document.getElementById('badgeType');
-const claimBtn = document.getElementById('claimBtn');
-const statusMsg = document.getElementById('statusMsg');
-const captionPreview = document.getElementById('captionPreview');
-const nameBadge = document.getElementById('nameBadge');
-const cardTitle = document.getElementById('cardTitle');
-const cardDate = document.getElementById('cardDate');
-const streakPill = document.getElementById('streakPill');
-const totalPill = document.getElementById('totalPill');
-const lastPill = document.getElementById('lastPill');
-const shareX = document.getElementById('shareX');
-const farcasterShare = document.getElementById('farcasterShare');
-const copyCaption = document.getElementById('copyCaption');
-const downloadSVG = document.getElementById('downloadSVG');
-const onchainMint = document.getElementById('onchainMint');
-const uiStatus = document.getElementById('uiStatus');
+const CONFIG = {
+  storagePrefix: 'badgehub_local_v1',
+  badgeType: 'Daily Check-in'
+};
 
-const STORAGE_KEY = 'badgehub_data_v1';
+function nowSec(){ return Math.floor(Date.now()/1000); }
+function daysDiff(a,b){ return Math.floor((a-b)/86400); }
 
-function loadStorage(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){
-    console.error('loadStorage err', e);
-    return {};
-  }
-}
-function saveStorage(obj){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+function makeKey(fid, type){ return `${CONFIG.storagePrefix}::${fid}::${type}`; }
+
+function toast(msg, timeout=2500){
+  const el = document.getElementById('toast');
+  el.innerText = msg; el.style.display='block';
+  setTimeout(()=> el.style.display='none', timeout);
 }
 
-function formatDate(ts){
-  const d = new Date(ts);
-  return d.toLocaleDateString();
+// generate a nice random color-ish gradient base
+function randomColorSeed(name){
+  // deterministic-ish from name
+  let h = 0; for(let i=0;i<name.length;i++) h = ((h<<5)-h)+name.charCodeAt(i);
+  h = Math.abs(h) % 360;
+  return `hsl(${h} 85% 55%)`;
 }
 
-function updateCardUI(){
-  const fid = (fidInput.value||'').trim() || 'anon';
-  const type = badgeType.value;
-  nameBadge.textContent = fid;
-  cardTitle.textContent = type;
-  const data = loadStorage();
-  const entry = data[fid];
-  if(entry){
-    streakPill.textContent = 'Streak: ' + entry.streak;
-    totalPill.textContent = 'Total claimed: ' + entry.total;
-    lastPill.textContent = 'Last claim: ' + (entry.lastDateStr || formatDate(entry.lastClaim));
-    cardDate.textContent = 'Last claimed: ' + (entry.lastDateStr || '-');
-  } else {
-    streakPill.textContent = 'Streak: 0';
-    totalPill.textContent = 'Total claimed: 0';
-    lastPill.textContent = 'Last claim: -';
-    cardDate.textContent = '-';
-  }
-
-  // caption
-  captionPreview.value = `#${fid} ${type} badge earned\n\nStreak: ${entry?entry.streak:0} | Total: ${entry?entry.total:0}\n#Badgehub #Base`;
-}
-
-function claimLocal(){
-  const fid = (fidInput.value||'').trim();
-  if(!fid){ alert('Please enter your FID / name'); return; }
-  const now = Date.now();
-  const data = loadStorage();
-  const entry = data[fid] || { lastClaim:0, streak:0, total:0, lastDateStr: null };
-
-  // 24h check
-  const ms24 = 24 * 60 * 60 * 1000;
-  if(entry.lastClaim && (entry.lastClaim + ms24 > now)){
-    const remaining = Math.ceil((entry.lastClaim + ms24 - now)/1000);
-    alert('Already claimed in last 24 hours. Wait ' + Math.ceil(remaining/3600) + ' hr(s) or use on next day.');
-    return;
-  }
-
-  // simple streak logic: If previous claim was yesterday (between 24h and 48h), streak+1, else reset to 1
-  let newStreak = 1;
-  if(entry.lastClaim){
-    const diff = now - entry.lastClaim;
-    if(diff > ms24 && diff <= (48*60*60*1000)){
-      newStreak = entry.streak ? entry.streak + 1 : 2;
-    } else {
-      newStreak = 1;
-    }
-  }
-
-  entry.lastClaim = now;
-  entry.streak = newStreak;
-  entry.total = (entry.total || 0) + 1;
-  entry.lastDateStr = formatDate(now);
-
-  data[fid] = entry;
-  saveStorage(data);
-  updateCardUI();
-
-  statusMsg.textContent = 'Badge claimed (local). Streak updated.';
-  statusMsg.style.color = '#93f6b6';
-}
-
-function copyToClipboard(text){
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    return navigator.clipboard.writeText(text);
-  }
-  // fallback
-  const ta = document.createElement('textarea');
-  ta.value = text; document.body.appendChild(ta);
-  ta.select(); document.execCommand('copy'); ta.remove();
-  return Promise.resolve();
-}
-
-// share handlers
-async function shareHandler(platform){
-  const fid = (fidInput.value||'').trim() || 'anon';
-  const type = badgeType.value;
-  const caption = `#${fid} ${type} badge earned\n\nStreak: ${loadStorage()[fid]?.streak||0} | Total: ${loadStorage()[fid]?.total||0}\n#Badgehub #Base`;
-  // try navigator.share first
-  if(navigator.share){
-    try {
-      await navigator.share({text: caption, title: 'Badgehub'});
-      statusMsg.textContent = 'Shared using device share';
-      return;
-    } catch(e){
-      // user cancelled or not supported
-    }
-  }
-  // fallback: open web intent
-  if(platform === 'x'){
-    const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(caption);
-    window.open(url, '_blank');
-  } else if(platform === 'farcaster'){
-    // No universal Farcaster web compose; open farcaster.to intent page (if available) OR copy caption
-    // We'll copy caption and inform user
-    await copyToClipboard(caption);
-    alert('Caption copied to clipboard. Paste it into Farcaster app to share.');
-  }
-}
-
-function downloadSVGBadge(){
-  const fid = (fidInput.value||'').trim() || 'anon';
-  const type = badgeType.value;
-  const color1 = '#ffce66';
-  const color2 = '#ff9f3a';
-  const date = new Date().toLocaleDateString();
+function generateSVG(fid, color, dateStr){
+  // Very simple card-like SVG
+  const safe = (s)=> String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const name = safe(fid || 'anon');
+  const d = safe(dateStr || new Date().toLocaleDateString());
   const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675">
-    <defs>
-      <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="${color1}"/><stop offset="1" stop-color="${color2}"/></linearGradient>
-    </defs>
-    <rect rx="40" width="100%" height="100%" fill="url(#g)"/>
-    <g transform="translate(50,50)">
-      <rect x="30" y="40" width="360" height="360" rx="30" fill="#ffffff88"/>
-      <text x="420" y="170" font-family="Arial" font-size="56" fill="#071018" font-weight="700">${fid}</text>
-      <text x="420" y="240" font-family="Arial" font-size="36" fill="#071018">${type}</text>
-      <text x="920" y="620" font-family="Arial" font-size="24" fill="#071018">${date}</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="${color}" stop-opacity="1"/>
+      <stop offset="1" stop-color="#ffd580" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-opacity="0.18" flood-color="#000"/>
+    </filter>
+  </defs>
+  <rect rx="22" width="100%" height="100%" fill="#071028"/>
+  <g transform="translate(40,40)">
+    <rect width="820" height="440" rx="18" fill="url(#g)" filter="url(#s)"/>
+    <g transform="translate(28,20)">
+      <rect width="200" height="120" rx="14" fill="#ffffff" opacity="0.95"/>
+      <text x="110" y="76" text-anchor="middle" font-family="sans-serif" font-size="46" fill="#0a1720" font-weight="700">${name}</text>
+      <text x="260" y="160" font-family="sans-serif" font-size="20" fill="#0a1720">${safe(CONFIG.badgeType)}</text>
+      <text x="640" y="160" font-family="sans-serif" font-size="18" text-anchor="end" fill="#0a1720">${d}</text>
     </g>
-  </svg>`;
-  const blob = new Blob([svg], {type:'image/svg+xml'});
+  </g>
+</svg>`;
+  return svg.trim();
+}
+
+function setSVGPreview(svg){
+  const wrapper = document.getElementById('svgPreviewWrapper');
+  wrapper.innerHTML = svg; // safe: svg content only
+  // add id to svg node for download
+  const svgEl = wrapper.querySelector('svg');
+  if(svgEl) svgEl.id = 'svgPreview';
+}
+
+// update caption preview based on current state
+function updateCaptionPreview(fid, streak, total){
+  const cap = `#${fid} ${CONFIG.badgeType} badge earned\n\nStreak: ${streak} | Total: ${total}\n#Badgehub #Base`;
+  document.getElementById('captionPreview').innerText = cap;
+  return cap;
+}
+
+// local claim logic: enforces 24h rule and tracks streak
+function claimLocal(fid){
+  if(!fid) { showError('Please enter a name / FID'); return; }
+  const key = makeKey(fid, CONFIG.badgeType);
+  const data = JSON.parse(localStorage.getItem(key) || 'null');
+  const now = nowSec();
+
+  if(data && data.lastClaimAt){
+    const diff = now - data.lastClaimAt;
+    if(diff < 24*3600){
+      showError('Already claimed in last 24 hours');
+      return { ok:false, reason:'claimed24' };
+    }
+  }
+
+  // calculate streak: if last claim was yesterday (within 48..24h earlier and on previous calendar day)
+  let streak = 1, total = 1;
+  if(data){
+    total = (data.total||0) + 1;
+    // if last claim was within 48..24h and previous calendar day, increment streak
+    const last = data.lastClaimAt || 0;
+    const lastDay = new Date(last*1000).getUTCDate();
+    const nowDay = new Date(now*1000).getUTCDate();
+    // simpler: if lastClaimAt between 24h and 48h ago -> streak++ (best-effort)
+    if(now - last >= 24*3600 && now - last <= 48*3600){
+      streak = (data.streak || 0) + 1;
+    } else {
+      streak = 1;
+    }
+  }
+
+  const payload = { lastClaimAt: now, streak, total };
+  localStorage.setItem(key, JSON.stringify(payload));
+  showStatus('Badge claimed. Streak updated.');
+  return { ok:true, payload };
+}
+
+function loadLocalState(fid){
+  if(!fid) return {streak:0,total:0,lastClaimAt:null};
+  const key = makeKey(fid, CONFIG.badgeType);
+  const data = JSON.parse(localStorage.getItem(key) || 'null');
+  if(!data) return {streak:0,total:0,lastClaimAt:null};
+  return {streak:data.streak||0,total:data.total||0,lastClaimAt:data.lastClaimAt||null};
+}
+
+function showStatus(msg){
+  const el = document.getElementById('status'); el.style.display='block'; el.innerText=msg;
+  const err = document.getElementById('error'); err.style.display='none';
+}
+function showError(msg){
+  const el = document.getElementById('error'); el.style.display='block'; el.innerText=msg;
+  const st = document.getElementById('status'); st.style.display='none';
+}
+
+function updateUIFromInput(){
+  const fid = document.getElementById('fidInput').value.trim() || 'anon';
+  const seedColor = randomColorSeed(fid);
+  const useRand = document.getElementById('randColor').checked;
+  const color = useRand ? seedColor : '#ffb347';
+  const s = loadLocalState(fid);
+  const lastDate = s.lastClaimAt ? new Date(s.lastClaimAt*1000).toLocaleString() : '-';
+  document.getElementById('streakInfo').innerText = `Streak: ${s.streak||0} | Last claim: ${lastDate}`;
+  const svg = generateSVG(fid, color, lastDate==='-'? new Date().toLocaleDateString(): lastDate);
+  setSVGPreview(svg);
+  const cap = updateCaptionPreview(fid, s.streak||0, s.total||0);
+  return { fid, svg, cap, color };
+}
+
+function downloadSVGFile(svgString, filename='badge.svg'){
+  const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `${fid}_${type.replace(/[^a-z0-9]/gi,'_')}.svg`;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
-function setupHandlers(){
-  claimBtn.addEventListener('click', claimLocal);
-  copyCaption.addEventListener('click', async ()=>{
-    const text = captionPreview.value;
-    try{ await copyToClipboard(text); statusMsg.textContent = 'Caption copied to clipboard.'; statusMsg.style.color = '#98f0b9'; }
-    catch(e){ statusMsg.textContent = 'Copy failed'; statusMsg.style.color = '#ff9999'; }
+/* ===== Share to Farcaster robust function =====
+   1) try deep links (farcaster://...)
+   2) try web compose URLs (best-effort)
+   3) navigator.share (system)
+   4) clipboard fallback & prompt
+*/
+async function shareToFarcaster(captionText){
+  // deep link patterns to try
+  const deepLinks = [
+    `farcaster://cast?text=${encodeURIComponent(captionText)}`,
+    `farcaster://compose?text=${encodeURIComponent(captionText)}`,
+    `farcaster://share?text=${encodeURIComponent(captionText)}`
+  ];
+  // web fallback attempts (may not exist)
+  const webLinks = [
+    `https://web.farcaster.xyz/compose?text=${encodeURIComponent(captionText)}`,
+    `https://farcaster.to/compose?text=${encodeURIComponent(captionText)}`,
+    `https://share.farcaster.xyz/?text=${encodeURIComponent(captionText)}`
+  ];
+  function openUrl(url){ try { window.open(url,'_blank','noopener'); return true } catch(e){ return false } }
+
+  // Try deep links quickly (mobile with Farcaster app installed may open)
+  for(const url of deepLinks){
+    openUrl(url);
+    // small wait to allow app to open if available
+    await new Promise(r=>setTimeout(r,600));
+  }
+  // Try web links
+  for(const url of webLinks){
+    try{ openUrl(url); return {ok:true,method:'weblink',url} }catch(e){}
+  }
+
+  // System share
+  if(navigator.share){
+    try{ await navigator.share({text:captionText}); return {ok:true,method:'system-share'} }
+    catch(e){ /* user closed or failed */ }
+  }
+
+  // Clipboard fallback
+  try{
+    await navigator.clipboard.writeText(captionText);
+    alert('Caption copied to clipboard. Open Farcaster app and paste to post.');
+    return {ok:true,method:'clipboard'};
+  }catch(e){
+    window.prompt('Copy and paste this caption into Farcaster:', captionText);
+    return {ok:false,method:'prompt'};
+  }
+}
+
+/* ===== X (Twitter) share via intent ===== */
+function shareToX(captionText){
+  const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(captionText);
+  window.open(url,'_blank','noopener');
+}
+
+/* ===== Wire up DOM ===== */
+document.addEventListener('DOMContentLoaded', ()=>{
+
+  // initial render
+  updateUIFromInput();
+
+  document.getElementById('fidInput').addEventListener('input', updateUIFromInput);
+  document.getElementById('randColor').addEventListener('change', updateUIFromInput);
+
+  // Claim today's badge
+  document.getElementById('claimBtn').addEventListener('click', ()=>{
+    const fid = document.getElementById('fidInput').value.trim() || 'anon';
+    const res = claimLocal(fid);
+    if(res.ok){
+      // update preview & caption
+      const ui = updateUIFromInput();
+      const last = res.payload.lastClaimAt ? new Date(res.payload.lastClaimAt*1000).toLocaleString() : '-';
+      document.getElementById('streakInfo').innerText = `Streak: ${res.payload.streak} | Last claim: ${last}`;
+      const cap = updateCaptionPreview(fid, res.payload.streak, res.payload.total);
+      toast('Badge claimed locally!');
+    }
   });
-  shareX.addEventListener('click', ()=>shareHandler('x'));
-  farcasterShare.addEventListener('click', ()=>shareHandler('farcaster'));
-  downloadSVG.addEventListener('click', downloadSVGBadge);
 
-  // inputs update UI live
-  fidInput.addEventListener('input', updateCardUI);
-  badgeType.addEventListener('change', updateCardUI);
+  // Download SVG
+  document.getElementById('downloadSvgBtn').addEventListener('click', ()=>{
+    const ui = updateUIFromInput();
+    downloadSVGFile(ui.svg, `${ui.fid || 'anon'}-badge.svg`);
+    toast('SVG download started');
+  });
 
-  // load initial ui
-  updateCardUI();
-}
+  // Copy caption
+  document.getElementById('copyCaptionBtn').addEventListener('click', async ()=>{
+    const ui = updateUIFromInput();
+    try{ await navigator.clipboard.writeText(ui.cap); toast('Caption copied to clipboard'); }
+    catch(e){ window.prompt('Copy caption:', ui.cap); }
+  });
 
-// on load
-setupHandlers();
+  // Share to X
+  document.getElementById('shareXBtn').addEventListener('click', ()=>{
+    const ui = updateUIFromInput();
+    shareToX(ui.cap);
+  });
 
+  // Share to Farcaster
+  document.getElementById('shareFarcasterBtn').addEventListener('click', async ()=>{
+    const ui = updateUIFromInput();
+    const r = await shareToFarcaster(ui.cap);
+    console.log('farcaster share result', r);
+  });
+
+  // onchain mint disabled (placeholder)
+  const onchain = document.getElementById('onchainMintBtn');
+  onchain.addEventListener('click', ()=>{ alert('Onchain mint not configured in this demo. Deploy contract and integrate later.'); });
+
+  // small safety: prevent accidental form submit on Enter
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') e.preventDefault(); });
+
+}); // DOMContentLoaded
 </script>
 </body>
 </html>
