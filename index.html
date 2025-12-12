@@ -3,19 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Badgehub — 24h Claim (local)</title>
+<title>Badgehub — 24h Claim (local) — fixed</title>
 <style>
   :root{
     --bg:#0f1720; --card:#0b1220; --accent:#ffb347;
     --muted:#9aa6b2; --ok:#2ecc71; --err:#ff6b6b;
     font-family: Inter, system-ui, Arial, sans-serif;
   }
+  html,body{height:100%}
   body{ background: linear-gradient(180deg,#071021 0%, #071022 100%); color:#e6eef6; margin:0; padding:24px;}
   .wrap{ max-width:980px; margin:18px auto; display:grid; grid-template-columns:360px 1fr; gap:20px;}
   .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);}
   h1{ margin:0 0 8px 0; font-size:20px; color:var(--accent) }
   label{ display:block; font-size:12px; color:var(--muted); margin-top:12px }
   input[type="text"]{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit; box-sizing:border-box; font-size:14px; }
+  input[readonly]{ background:rgba(255,255,255,0.01); color:var(--muted); }
   .btn{ margin-top:12px; display:inline-block; padding:12px 16px; border-radius:12px; cursor:pointer; background:linear-gradient(90deg,#ffb347,#ffcc33); color:#061018; font-weight:600; border:none; box-shadow:0 6px 10px rgba(255,179,71,0.12); }
   .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04); box-shadow:none; }
   .small { font-size:13px; color:var(--muted); margin-top:8px }
@@ -36,16 +38,18 @@
 <div class="wrap">
   <div class="card">
     <h1>BADGEHUB — Local Claim (24h)</h1>
-    <div class="small">Simple local-only claim system with 24-hour rate limit and streak tracking. Use later for onchain mint wiring.</div>
+    <div class="small">Local claim demo. 24-hour rate-limit + streak tracking. (No onchain yet)</div>
 
     <label for="fid">Your Name / FID</label>
     <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" />
 
-    <label for="badgeType">Badge Type</label>
-    <input id="badgeType" type="text" value="Daily Check-in" />
+    <label for="badgeType">Badge Type (fixed)</label>
+    <!-- readonly so user cannot edit badge type -->
+    <input id="badgeType" type="text" value="Daily Check-in" readonly />
 
-    <button id="claimBtn" class="btn">Claim today's badge</button>
-    <button id="downloadSvg" class="btn secondary">Download SVG</button>
+    <!-- explicit type="button" prevents form-style submit behavior in some browsers -->
+    <button id="claimBtn" type="button" class="btn">Claim today's badge</button>
+    <button id="downloadSvg" type="button" class="btn secondary">Download SVG</button>
 
     <div id="message" class="msg" style="display:none;"></div>
 
@@ -76,17 +80,7 @@
 </div>
 
 <script>
-/*
-  Local storage schema (per fid):
-  key: badgehub_local_{fid}
-  value: {
-    fid: string,
-    lastClaim: number (ms UTC),
-    streak: number,
-    total: number,
-    days: [ 'YYYY-MM-DD', ... ]   // optional daily record for weekly logic
-  }
-*/
+/* --- local claim storage + 24h rate-limit + streak logic --- */
 
 const fidInput = document.getElementById('fid');
 const badgeTypeInput = document.getElementById('badgeType');
@@ -106,7 +100,6 @@ const countdownEl = document.getElementById('countdown');
 
 let countdownTimer = null;
 
-// helpers
 function getLocalKey(fid){
   const safe = (fid || 'anon').trim().replace(/\s+/g,'_').toLowerCase();
   return `badgehub_local_${safe}`;
@@ -118,13 +111,15 @@ function loadLocal(fid){
     const raw = localStorage.getItem(key);
     if(!raw) return null;
     return JSON.parse(raw);
-  }catch(e){ console.error(e); return null; }
+  }catch(e){ console.error('loadLocal error', e); return null; }
 }
 
 function saveLocal(fid, data){
-  const key = getLocalKey(fid);
-  localStorage.setItem(key, JSON.stringify(data));
-  localKeyEl.textContent = key;
+  try{
+    const key = getLocalKey(fid);
+    localStorage.setItem(key, JSON.stringify(data));
+    localKeyEl.textContent = key;
+  }catch(e){ console.error('saveLocal error', e); }
 }
 
 function nowMs(){ return Date.now(); }
@@ -133,11 +128,9 @@ function toIsoDate(ms){
   return d.toISOString().slice(0,10);
 }
 function fmtDate(ms){
-  const d = new Date(ms);
-  return d.toLocaleString();
+  try{ return new Date(ms).toLocaleString(); }catch(e){ return '-'; }
 }
 
-// 24h check
 function canClaimNow(fid){
   const rec = loadLocal(fid);
   if(!rec || !rec.lastClaim) return true;
@@ -160,14 +153,6 @@ function msToDHMS(ms){
   if(h>0) return `${h}h ${m}m`;
   if(m>0) return `${m}m ${sec}s`;
   return `${sec}s`;
-}
-
-// streak logic: if previous claim gap < 48h => continue streak else reset
-function computeStreak(previousLastMs){
-  if(!previousLastMs) return 1;
-  const gap = nowMs() - previousLastMs;
-  const twoDays = 48 * 60 * 60 * 1000;
-  return (gap <= twoDays) ? null : 1; // null means "increment"
 }
 
 function updateUIFor(fid){
@@ -210,57 +195,59 @@ function updateUIFor(fid){
 }
 
 function showMsg(text, type='ok'){
+  console.log('UI message:', type, text);
   msgEl.style.display = 'block';
   msgEl.className = 'msg ' + (type==='ok' ? 'ok' : 'err');
   msgEl.textContent = text;
-  // hide after 6s
   setTimeout(()=>{ msgEl.style.display='none'; }, 6000);
 }
 
-// add daily record for weekly logic
+// keep daily list for weekly logic (not used now but handy)
 function addDailyRecord(fid){
-  const key = getLocalKey(fid) + '_days';
-  const arr = JSON.parse(localStorage.getItem(key) || '[]');
-  const today = toIsoDate(nowMs());
-  if(!arr.includes(today)) arr.push(today);
-  // keep only last 30 days for safety
-  const trimmed = arr.slice(-30);
-  localStorage.setItem(key, JSON.stringify(trimmed));
-  return trimmed;
+  try{
+    const key = getLocalKey(fid) + '_days';
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    const today = toIsoDate(nowMs());
+    if(!arr.includes(today)) arr.push(today);
+    const trimmed = arr.slice(-30);
+    localStorage.setItem(key, JSON.stringify(trimmed));
+    return trimmed;
+  }catch(e){ console.error('addDailyRecord', e); return []; }
 }
 
 function claimNow(){
-  const fid = (fidInput.value || 'anon').trim();
-  if(!fid){
-    showMsg('Enter a valid FID', 'err'); return;
+  try{
+    const fid = (fidInput.value || 'anon').trim();
+    if(!fid){
+      showMsg('Enter a valid FID', 'err'); return;
+    }
+    if(!canClaimNow(fid)){
+      showMsg('You already claimed in the last 24 hours. Wait and try again.', 'err');
+      return;
+    }
+    const prev = loadLocal(fid);
+    let newStreak = 1;
+    if(prev && prev.lastClaim){
+      const gap = nowMs() - prev.lastClaim;
+      const twoDays = 48 * 60 * 60 * 1000;
+      newStreak = (gap <= twoDays) ? ((prev.streak||0) + 1) : 1;
+    }
+    const newTotal = (prev ? (prev.total || 0) : 0) + 1;
+    const rec = {
+      fid,
+      lastClaim: nowMs(),
+      streak: newStreak,
+      total: newTotal
+    };
+    rec.days = addDailyRecord(fid);
+    saveLocal(fid, rec);
+    updateUIFor(fid);
+    showMsg('Badge claimed. Streak updated.', 'ok');
+    console.log('Claim saved:', rec);
+  }catch(err){
+    console.error('claimNow error', err);
+    showMsg('Claim failed (see console)', 'err');
   }
-  if(!canClaimNow(fid)){
-    showMsg('You already claimed in the last 24 hours. Wait and try again.', 'err');
-    return;
-  }
-  const key = getLocalKey(fid);
-  const prev = loadLocal(fid);
-  // compute new streak:
-  let newStreak = 1;
-  if(prev && prev.lastClaim){
-    const gap = nowMs() - prev.lastClaim;
-    const twoDays = 48 * 60 * 60 * 1000;
-    if(gap <= twoDays) newStreak = (prev.streak || 0) + 1;
-    else newStreak = 1;
-  }
-  const newTotal = (prev ? (prev.total || 0) : 0) + 1;
-  const rec = {
-    fid,
-    lastClaim: nowMs(),
-    streak: newStreak,
-    total: newTotal
-  };
-  // add daily list for weekly tracking
-  const days = addDailyRecord(fid);
-  rec.days = days;
-  saveLocal(fid, rec);
-  updateUIFor(fid);
-  showMsg('Badge claimed. Streak updated.', 'ok');
 }
 
 claimBtn.addEventListener('click', claimNow);
@@ -271,18 +258,17 @@ fidInput.addEventListener('input', ()=>{
   updateUIFor(fid);
 });
 badgeTypeInput.addEventListener('input', ()=>{
+  // ignore — readonly by design; just reflect
   pillType.textContent = badgeTypeInput.value || 'Daily Check-in';
 });
 
-// download SVG of simple badge
+// download SVG
 downloadBtn.addEventListener('click', ()=>{
   const fid = (fidInput.value || 'anon').trim();
   const type = badgeTypeInput.value || 'Daily Check-in';
   const date = new Date().toLocaleDateString();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300">
-    <defs>
-      <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ffcc33"/></linearGradient>
-    </defs>
+    <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ffcc33"/></linearGradient></defs>
     <rect width="100%" height="100%" rx="16" fill="url(#g)"/>
     <text x="50%" y="45%" font-family="Inter, Arial" font-size="42" text-anchor="middle" fill="#061018">${escapeXml(fid)}</text>
     <text x="50%" y="72%" font-family="Inter, Arial" font-size="22" text-anchor="middle" fill="#061018">${escapeXml(type)} — ${escapeXml(date)}</text>
@@ -290,27 +276,28 @@ downloadBtn.addEventListener('click', ()=>{
   const blob = new Blob([svg], {type:'image/svg+xml'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `${fid}_badge.svg`; document.body.appendChild(a); a.click();
+  a.href = url; a.download = `${(fid||'anon')}_badge.svg`; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
 });
 
 function escapeXml(s){ return (''+s).replace(/[&<>'"]/g, (c)=>{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]); }
 
-// on load: default fid from localStorage or 'anon'
+// init
 (function init(){
-  const lastUsed = localStorage.getItem('badgehub_last_fid') || '';
-  if(lastUsed) fidInput.value = lastUsed;
-  const fid = (fidInput.value || 'anon').trim();
-  localKeyEl.textContent = getLocalKey(fid);
-  updateUIFor(fid);
+  try{
+    const lastUsed = localStorage.getItem('badgehub_last_fid') || '';
+    if(lastUsed) fidInput.value = lastUsed;
+    const fid = (fidInput.value || 'anon').trim();
+    localKeyEl.textContent = getLocalKey(fid);
+    updateUIFor(fid);
+    console.log('Badgehub UI ready for', fid);
+  }catch(e){ console.error('init error', e); }
 })();
 
-// persist last used fid
 fidInput.addEventListener('blur', ()=> {
   const v = (fidInput.value || '').trim();
   if(v) localStorage.setItem('badgehub_last_fid', v);
 });
-
 </script>
 
 </body>
