@@ -1,193 +1,352 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Badgehub — DEBUG claim button</title>
-<style>
-  body{font-family:Arial,Helvetica,sans-serif;background:#07101a;color:#e9f0f6;margin:20px}
-  .box{max-width:820px;margin:0 auto;display:flex;gap:20px;flex-wrap:wrap}
-  .panel{background:#0b1320;padding:18px;border-radius:10px;flex:1;min-width:300px}
-  h2{color:#ffb347;margin:0 0 12px 0}
-  label{display:block;color:#9fb0bf;margin-top:8px;font-size:13px}
-  input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);color:inherit}
-  button{margin-top:12px;padding:10px 14px;border-radius:10px;border:none;cursor:pointer}
-  .claim{background:linear-gradient(90deg,#ffb347,#ffcc33);color:#071018;font-weight:700}
-  .msg{margin-top:12px;padding:10px;border-radius:8px;display:none}
-  .ok{background:rgba(46,204,113,0.08);color:#2ecc71}
-  .err{background:rgba(255,107,107,0.06);color:#ff6b6b}
-  .preview{background:rgba(255,255,255,0.01);padding:10px;border-radius:8px;margin-top:10px}
-  .small{color:#9fb0bf;font-size:13px}
-  pre{background:transparent;color:#9fb0bf;white-space:pre-wrap}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Badgehub — Daily Check-in (local 24h)</title>
+
+  <style>
+    /* Simple, readable styling (keeps old look-ish, but compact) */
+    :root {
+      --bg: #0b0f14;
+      --card: #0f1720;
+      --accent: #ffb347;
+      --muted: #9aa4b2;
+      --text: #e6eef6;
+      --green: #27b26a;
+      --danger: #ff6b6b;
+      --btn: #1687d9;
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;}
+    body{background:linear-gradient(180deg,#05060a 0%, #07111a 100%);color:var(--text);padding:28px;box-sizing:border-box;}
+    .wrap{max-width:1080px;margin:0 auto;display:flex;gap:28px;align-items:flex-start}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:22px;border-radius:12px;box-shadow:0 10px 30px rgba(3,6,10,0.6);flex:0 0 420px}
+    h1{margin:0 0 8px;font-size:20px;color:var(--accent);}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:12px;margin-bottom:6px;}
+    input[type="text"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+    select,button{padding:10px 14px;border-radius:10px;border:none;background:var(--btn);color:white;cursor:pointer}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+    .big{display:inline-block;margin-top:18px;padding:14px 20px;font-weight:600;border-radius:14px;background:linear-gradient(90deg,var(--accent),#ff7a59);color:#08131b}
+    .muted{color:var(--muted);font-size:13px}
+    .preview{flex:1;background:transparent;padding:22px;border-radius:12px}
+    .cardPreview{background:linear-gradient(90deg,#ffb347,#ff7a59);height:220px;border-radius:12px;color:#08131b;display:flex;align-items:flex-end;padding:20px;box-sizing:border-box}
+    .meta{margin-top:10px;font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center}
+    .smallBtn{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);cursor:pointer}
+    .greenText{color:var(--green)}
+    .dangerText{color:var(--danger)}
+    .infoBox{margin-top:12px;padding:10px;border:1px dashed rgba(255,255,255,0.03);border-radius:8px;color:var(--muted);font-size:13px}
+    .footer{margin-top:18px;color:var(--muted);font-size:13px}
+    .disabled { opacity:0.45; cursor:not-allowed; }
+    .rightStats{margin-top:12px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px}
+  </style>
 </head>
 <body>
-  <div class="box">
-    <div class="panel">
-      <h2>Badgehub — Local Claim (debug)</h2>
+  <div class="wrap">
+    <!-- Left panel: controls -->
+    <div class="panel" id="controls">
+      <h1>BADGEHUB</h1>
+      <div class="muted">Daily Check-in — Local (24h)</div>
 
-      <label for="fid">Your FID / name</label>
-      <input id="fid" type="text" placeholder="enter your FID (e.g. anon)" value="anon"/>
+      <label for="fidInput">Your name / FID</label>
+      <input id="fidInput" type="text" placeholder="enter your FID (e.g. anon)" value="anon" />
 
-      <label for="badge">Badge type (fixed)</label>
-      <input id="badge" type="text" value="Daily Check-in" readonly/>
+      <label>Badge Type</label>
+      <!-- fixed badge type (not editable) -->
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="smallBtn" id="badgeType" style="background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 12px;">Daily Check-in</div>
+        <div class="muted" style="font-size:12px;">(fixed)</div>
+      </div>
 
-      <button id="claimBtn" class="claim" type="button">Claim today's badge</button>
-      <div id="msg" class="msg"></div>
+      <div style="margin-top:14px" />
+      <button id="claimBtn" class="big">Claim today's badge</button>
 
-      <div class="small" style="margin-top:8px">Status / local key</div>
-      <div class="small" id="localKey"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="shareX" class="smallBtn">Share on X</button>
+        <button id="shareFarcaster" class="smallBtn">Share on Farcaster</button>
+        <button id="copyCaption" class="smallBtn">Copy caption</button>
+      </div>
 
-      <div class="preview">
-        <div class="small">Preview</div>
-        <div id="badgeArea" style="margin-top:8px;padding:12px;border-radius:8px;background:#112233;color:#fff;text-align:center">
-          — no badge yet —
-        </div>
-        <div style="margin-top:8px" class="small">
-          Streak: <strong id="streak">0</strong> | Total: <strong id="total">0</strong> | Last claim: <span id="last">-</span>
-        </div>
-        <pre id="raw">-</pre>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button id="downloadSVG" class="smallBtn">Download SVG</button>
+        <button id="connectBtn" class="smallBtn">Connect Wallet</button>
+        <button id="onchainMint" class="smallBtn" disabled title="Onchain mint disabled until contract set">Onchain mint</button>
+      </div>
+
+      <div class="infoBox" id="statusBox">
+        <div id="statusMessage" class="muted">Tip: This demo stores claim data locally (for testing). 24h rate limit enforced.</div>
+        <div id="uiStatus" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="footer">
+        <div id="streakInfo">Streak: 0 | Total: 0 | Last claim: -</div>
+        <div id="countdown" style="margin-top:8px"></div>
+        <div style="margin-top:8px;color:var(--muted)">Local storage key: <span id="lsKey" class="muted"></span></div>
       </div>
     </div>
 
-    <div class="panel">
-      <h2>Debug console logs</h2>
-      <div class="small">Open browser DevTools → Console to see logs. If claim fails paste the console output here.</div>
-      <pre id="log" style="height:360px;overflow:auto;"></pre>
+    <!-- Right panel: preview -->
+    <div class="preview">
+      <div class="cardPreview" id="badgeCard">
+        <div style="flex:1">
+          <div style="font-size:28px;font-weight:700">— no badge yet —</div>
+          <div style="height:8px"></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700" id="cardName">anon</div>
+          <div class="meta" id="cardMeta">Daily Check-in</div>
+        </div>
+      </div>
+
+      <div class="rightStats">
+        <div style="font-size:14px;font-weight:600" id="previewTitle">Preview / Status</div>
+        <div id="previewText" style="margin-top:8px;color:var(--muted)">-</div>
+      </div>
     </div>
   </div>
 
 <script>
-/* Minimal working local-only claim with 24h lock. Lots of logs to help debug. */
+/*
+  Badgehub local 24h logic
+  - stores claim info in localStorage per fid+badgeType
+  - lastClaim (ms timestamp), streak (number), total (number)
+  - claim disabled for 24h since lastClaim
+*/
 
+const DAY_MS = 24 * 60 * 60 * 1000;
 const claimBtn = document.getElementById('claimBtn');
-const fidInput = document.getElementById('fid');
-const badgeInput = document.getElementById('badge');
-const msg = document.getElementById('msg');
-const badgeArea = document.getElementById('badgeArea');
-const raw = document.getElementById('raw');
-const streakEl = document.getElementById('streak');
-const totalEl = document.getElementById('total');
-const lastEl = document.getElementById('last');
-const localKeyEl = document.getElementById('localKey');
-const logEl = document.getElementById('log');
+const fidInput = document.getElementById('fidInput');
+const badgeTypeEl = document.getElementById('badgeType');
+const previewText = document.getElementById('previewText');
+const cardName = document.getElementById('cardName');
+const cardMeta = document.getElementById('cardMeta');
+const streakInfo = document.getElementById('streakInfo');
+const countdownEl = document.getElementById('countdown');
+const lsKeyEl = document.getElementById('lsKey');
+const uiStatus = document.getElementById('uiStatus');
+const statusMessage = document.getElementById('statusMessage');
 
-function log(...args){
-  console.log(...args);
+let countdownInterval = null;
+
+// helper to build storage key
+function storageKeyFor(fid, badgeType) {
+  return `badgehub_claim_${fid.trim().toLowerCase()}_${badgeType.trim().toLowerCase().replace(/\s+/g,'_')}`;
+}
+
+// read claim info (fallback to defaults)
+function readClaimInfo(fid, badgeType) {
+  const key = storageKeyFor(fid, badgeType);
+  const raw = localStorage.getItem(key);
+  if (!raw) return { lastClaim: 0, streak: 0, total: 0, key };
   try {
-    const text = args.map(a => (typeof a==='object'? JSON.stringify(a): String(a))).join(' ');
-    logEl.textContent = text + '\n' + logEl.textContent;
-  } catch(e){}
-}
-
-function localKeyFor(fid){
-  return 'badgehub_debug_' + (fid||'anon').trim().replace(/\s+/g,'_').toLowerCase();
-}
-
-function readRecord(fid){
-  try{
-    const v = localStorage.getItem(localKeyFor(fid));
-    log('readRecord key:', localKeyFor(fid), 'raw:', v);
-    return v ? JSON.parse(v) : null;
-  }catch(e){ log('readRecord error', e); return null; }
-}
-function writeRecord(fid, rec){
-  try{
-    localStorage.setItem(localKeyFor(fid), JSON.stringify(rec));
-    log('writeRecord stored', rec);
-  }catch(e){ log('writeRecord error', e); }
-}
-
-function now(){ return Date.now(); }
-const DAY = 24*60*60*1000;
-
-function canClaim(fid){
-  const r = readRecord(fid);
-  if(!r) return true;
-  if(!r.last) return true;
-  return (now() - r.last) >= DAY;
-}
-
-function timeLeftMs(fid){
-  const r = readRecord(fid);
-  if(!r || !r.last) return 0;
-  const left = DAY - (now() - r.last);
-  return left>0 ? left : 0;
-}
-
-function updateUI(){
-  const fid = (fidInput.value||'anon').trim();
-  const r = readRecord(fid);
-  localKeyEl.textContent = localKeyFor(fid);
-  if(r){
-    badgeArea.textContent = (r.fid||fid).toUpperCase() + ' — ' + r.total + ' times';
-    streakEl.textContent = r.streak || 0;
-    totalEl.textContent = r.total || 0;
-    lastEl.textContent = r.last ? new Date(r.last).toLocaleString() : '-';
-    raw.textContent = JSON.stringify(r, null, 2);
-  } else {
-    badgeArea.textContent = '— no badge yet —';
-    streakEl.textContent = '0';
-    totalEl.textContent = '0';
-    lastEl.textContent = '-';
-    raw.textContent = '-';
+    const obj = JSON.parse(raw);
+    return { lastClaim: obj.lastClaim || 0, streak: obj.streak || 0, total: obj.total || 0, key };
+  } catch(e) {
+    return { lastClaim: 0, streak: 0, total: 0, key };
   }
-  if(canClaim(fid)){
-    claimBtn.disabled = false;
-    claimBtn.textContent = "Claim today's badge";
+}
+function writeClaimInfo(key, obj) {
+  localStorage.setItem(key, JSON.stringify({ lastClaim: obj.lastClaim, streak: obj.streak, total: obj.total }));
+}
+
+function formatDate(ms) {
+  if (!ms) return '-';
+  const d = new Date(ms);
+  return d.toLocaleString();
+}
+
+// update UI state based on fid/badgeType and storage
+function updateUI() {
+  const fid = fidInput.value.trim() || 'anon';
+  const badgeType = badgeTypeEl.textContent.trim();
+  const { lastClaim, streak, total, key } = readClaimInfo(fid, badgeType);
+
+  lsKeyEl.textContent = key;
+  cardName.textContent = fid;
+  cardMeta.textContent = badgeType;
+
+  previewText.innerHTML = `
+    <div style="margin-bottom:8px">#${escapeHtml(fid)} ${badgeType} badge earned</div>
+    <div class="muted">Streak: ${streak} | Total: ${total}</div>
+    <div style="margin-top:8px;color:var(--muted)">Last claim: ${formatDate(lastClaim)}</div>
+  `;
+  streakInfo.textContent = `Streak: ${streak} | Total: ${total} | Last claim: ${formatDate(lastClaim)}`;
+
+  const now = Date.now();
+  const remaining = (lastClaim ? Math.max(0, (lastClaim + DAY_MS) - now) : 0);
+
+  if (remaining > 0) {
+    startCountdown(remaining);
+    setClaimDisabled(true);
+    uiStatus.innerHTML = `<div class="dangerText">Already claimed in last 24 hours</div>`;
   } else {
+    stopCountdown();
+    setClaimDisabled(false);
+    uiStatus.innerHTML = `<div class="greenText">You can claim now.</div>`;
+    countdownEl.textContent = '';
+  }
+}
+
+// enable/disable claim button visually
+function setClaimDisabled(disabled) {
+  if (disabled) {
+    claimBtn.classList.add('disabled');
     claimBtn.disabled = true;
-    const ms = timeLeftMs(fid);
-    claimBtn.textContent = "Locked for " + Math.ceil(ms/1000) + "s";
-    // optional visual countdown in console
-    log('Locked ms left:', ms);
+  } else {
+    claimBtn.classList.remove('disabled');
+    claimBtn.disabled = false;
   }
 }
 
-function showMessage(text, type='ok'){
-  msg.style.display = 'block';
-  msg.className = 'msg ' + (type==='ok' ? 'ok' : 'err');
-  msg.textContent = text;
-  setTimeout(()=>{ msg.style.display = 'none'; }, 4000);
+// claim action (local)
+function claimBadgeLocal() {
+  const fid = fidInput.value.trim();
+  if (!fid) { alert('Enter your FID first'); return; }
+  const badgeType = badgeTypeEl.textContent.trim();
+  const { lastClaim, streak, total, key } = readClaimInfo(fid, badgeType);
+  const now = Date.now();
+
+  if (lastClaim && (now - lastClaim) < DAY_MS) {
+    alert('Already claimed in last 24 hours.');
+    updateUI();
+    return;
+  }
+
+  // increment streak logic: if lastClaim was within 48h and >24h then continue streak? For simplicity:
+  const newStreak = (lastClaim && (now - lastClaim) < (2*DAY_MS)) ? (streak + 1) : 1;
+  const newTotal = total + 1;
+
+  const obj = { lastClaim: now, streak: newStreak, total: newTotal };
+  writeClaimInfo(key, obj);
+
+  // UI updates
+  updateUI();
+  statusMessage.textContent = 'Badge claimed. Streak updated.';
+  statusMessage.classList.remove('muted');
+  statusMessage.classList.add('greenText');
+
+  // quick preview effect
+  cardName.textContent = fid;
+  previewText.innerHTML = `
+    <div style="margin-bottom:8px">#${escapeHtml(fid)} ${badgeType} badge earned</div>
+    <div class="muted">Streak: ${newStreak} | Total: ${newTotal}</div>
+    <div style="margin-top:8px;color:var(--muted)">Last claim: ${formatDate(now)}</div>
+  `;
 }
 
-claimBtn.addEventListener('click', function(e){
-  log('claim button clicked', {fid: fidInput.value});
-  try{
-    const fid = (fidInput.value||'anon').trim();
-    if(!fid){ showMessage('Please enter FID', 'err'); log('empty fid'); return; }
-    if(!canClaim(fid)){ showMessage('Already claimed in last 24h', 'err'); log('cannot claim yet'); updateUI(); return; }
-    const prev = readRecord(fid) || {fid, streak:0, total:0, last:0};
-    // if gap <= 48h count as consecutive streak, else reset streak
-    const gap = now() - (prev.last || 0);
-    const consecutive = (prev.last && gap <= (2*DAY));
-    const newStreak = consecutive ? (prev.streak||0) + 1 : 1;
-    const newTotal = (prev.total||0) + 1;
-    const rec = { fid, streak: newStreak, total: newTotal, last: now() };
-    writeRecord(fid, rec);
-    updateUI();
-    showMessage('Claim saved — streak ' + newStreak, 'ok');
-    log('claim saved', rec);
-  }catch(err){
-    log('claim handler error', err);
-    showMessage('Claim failed (see console)', 'err');
+// countdown display (ms)
+function startCountdown(msRemaining) {
+  stopCountdown();
+  updateCountdownDisplay(msRemaining);
+  countdownInterval = setInterval(() => {
+    msRemaining -= 1000;
+    if (msRemaining <= 0) {
+      stopCountdown();
+      updateUI(); // enable
+    } else {
+      updateCountdownDisplay(msRemaining);
+    }
+  }, 1000);
+}
+function stopCountdown() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+}
+function updateCountdownDisplay(ms) {
+  const s = Math.floor(ms/1000);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s % 60;
+  countdownEl.textContent = `Next claim available in ${h}h ${m}m ${sec}s`;
+}
+
+// safe HTML escape for preview
+function escapeHtml(s) {
+  return (s+'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// connect wallet (basic)
+const connectBtn = document.getElementById('connectBtn');
+connectBtn.addEventListener('click', async () => {
+  if (!window.ethereum) {
+    alert('MetaMask (or other wallet) not detected in this browser.');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    connectBtn.textContent = `Connected ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`;
+    connectBtn.disabled = true;
+    connectBtn.classList.add('disabled');
+    console.log('Connected account:', accounts[0]);
+  } catch (e) {
+    console.error('connect error', e);
+    alert('Connection failed or rejected.');
   }
 });
 
-// when fid input changes update UI
-fidInput.addEventListener('input', updateUI);
+// share helpers
+document.getElementById('copyCaption').addEventListener('click', () => {
+  const fid = fidInput.value.trim() || 'anon';
+  const badgeType = badgeTypeEl.textContent.trim();
+  const caption = `#${fid} ${badgeType} badge earned\n\nStreak: ${readClaimInfo(fid,badgeType).streak} | Total: ${readClaimInfo(fid,badgeType).total}\n#Badgehub #Base`;
+  navigator.clipboard.writeText(caption).then(()=> {
+    uiStatus.innerHTML = `<div class="greenText">Caption copied to clipboard.</div>`;
+  }, ()=> {
+    alert('Failed to copy — maybe permission denied.');
+  });
+});
 
-// initial load
-(function init(){
-  try{
-    log('Init start, localStorage available?', typeof localStorage !== 'undefined');
-    updateUI();
-    log('Init done');
-  }catch(e){
-    log('Init error', e);
-    showMessage('Init error (see console)', 'err');
-  }
-})();
+// simple open share for X (twitter) and Farcaster
+document.getElementById('shareX').addEventListener('click', () => {
+  const fid = encodeURIComponent(fidInput.value.trim() || 'anon');
+  const badgeType = encodeURIComponent(badgeTypeEl.textContent.trim());
+  const text = `#${fid} ${badgeType} badge earned\n\n${'#Badgehub #Base'}`;
+  const url = `https://twitter.com/intent/tweet?text=${text}`;
+  window.open(url, '_blank');
+});
+document.getElementById('shareFarcaster').addEventListener('click', () => {
+  // scheme: farcaster://cast?text=... — will open app if installed, otherwise browser might do nothing
+  const fid = encodeURIComponent(fidInput.value.trim() || 'anon');
+  const badgeType = encodeURIComponent(badgeTypeEl.textContent.trim());
+  const text = `#${fid} ${badgeType} badge earned\n\n${'#Badgehub #Base'}`;
+  const url = `farcaster://cast?text=${text}`;
+  // fallback: try to open, if blocked maybe show message and give text
+  window.location.href = url;
+  // If nothing happens, user can use copy caption
+});
+
+// download SVG
+document.getElementById('downloadSVG').addEventListener('click', () => {
+  const fid = fidInput.value.trim() || 'anon';
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="600">
+      <rect width="100%" height="100%" fill="#ffb347" rx="20" />
+      <text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-size="64" font-family="sans-serif" fill="#08131b">${escapeHtml(fid)}</text>
+      <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-size="28" font-family="sans-serif" fill="#08131b">Daily Check-in</text>
+    </svg>`;
+  const blob = new Blob([svg], {type: 'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${fid}_daily_badge.svg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// main claim button
+claimBtn.addEventListener('click', () => {
+  claimBadgeLocal();
+});
+
+// update UI on input change
+fidInput.addEventListener('input', () => updateUI());
+window.addEventListener('load', () => {
+  // initial UI
+  updateUI();
+  // fallback status
+  uiStatus.innerHTML = `<div class="muted">UI ready. Local 24h rate-limit active.</div>`;
+});
 </script>
 </body>
 </html>
