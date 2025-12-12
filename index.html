@@ -2,10 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Badgehub — Onchain (connect + claim)</title>
+  <title>Badgehub — Onchain (CDN-fallback)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- Ethers v5 UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js"></script>
   <style>
     body{font-family:Inter,system-ui,Arial; background:#0b0f14; color:#e6eef6; margin:0; padding:18px;}
     .card{max-width:920px;margin:20px auto;padding:20px;border-radius:12px;background:linear-gradient(180deg,#061018 0%, #071722 100%);box-shadow:0 6px 30px rgba(0,0,0,.6);}
@@ -20,11 +18,13 @@
     .error{color:#ff6b6b;margin-top:10px}
     .success{color:#7ee5a6;margin-top:10px}
     small{color:#9fb0c3}
+    .center{text-align:center}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Badgehub — Onchain</h1>
+    <h1>Badgehub — Onchain (CDN fallback)</h1>
+
     <div class="row" style="align-items:center;margin-bottom:10px">
       <button id="connectBtn" class="btn-primary">Connect Wallet</button>
       <button id="refreshBtn" class="btn-ghost">Refresh</button>
@@ -67,7 +67,84 @@
   </div>
 
 <script>
-(async function(){
+/*
+  CDNs to try (UMD build for ethers v5)
+  Order: jsdelivr -> unpkg -> skypack
+*/
+const ETHERS_CDNS = [
+  "https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js",
+  "https://unpkg.com/ethers@5.7.umd/dist/ethers.umd.min.js",
+  "https://cdn.skypack.dev/ethers@5.7.0?min"
+];
+
+function loadScript(url){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = url;
+    s.async = true;
+    s.onload = ()=>resolve(url);
+    s.onerror = ()=>reject(new Error('failed to load '+url));
+    document.head.appendChild(s);
+  });
+}
+
+/*
+ try loading CDNs sequentially until window.ethers is available.
+ timeoutPer = ms to wait after each script (gives browser time to init).
+*/
+async function ensureEthersLoaded(timeoutPer = 2500){
+  for(const u of ETHERS_CDNS){
+    try{
+      await loadScript(u);
+      // wait a bit for UMD to attach
+      const start = Date.now();
+      while((typeof window.ethers === 'undefined') && (Date.now()-start < timeoutPer)){
+        await new Promise(r=>setTimeout(r, 80));
+      }
+      if(typeof window.ethers !== 'undefined'){
+        console.log('Loaded ethers from', u);
+        return true;
+      } else {
+        console.warn('Script loaded but window.ethers still undefined:', u);
+      }
+    }catch(e){
+      console.warn('Failed to load', u, e);
+    }
+  }
+  return false;
+}
+
+/* main app starts only after ethers is available or a clear error shown */
+(async function boot(){
+  const ok = await ensureEthersLoaded(2200);
+  if(!ok){
+    // show helpful instructions and stop
+    const uiMsg = document.getElementById('uiMsg');
+    uiMsg.innerHTML = `<div class="error">
+      ethers library could not be loaded from public CDNs. Possible reasons:
+      <ul>
+        <li>Your network blocks CDNs (common on some VPNs / corporate networks / Brave privacy settings).</li>
+        <li>Browser blocked mixed content / third-party scripts.</li>
+      </ul>
+      <strong>Quick fixes:</strong>
+      <ol>
+        <li>Try opening the page in a different browser (Chrome) or disable strict privacy extensions.</li>
+        <li>OR download <code>ethers.umd.min.js</code> manually and place it in the same folder as this HTML:
+          <br><code>https://cdn.jsdelivr.net/npm/ethers@5.7.umd.min.js</code> (save this file)
+        </li>
+        <li>Then add this tag above the closing &lt;head&gt;: <br>
+          <code>&lt;script src="./ethers.umd.min.js"&gt;&lt;/script&gt;</code>
+        </li>
+      </ol>
+      After that reload this page.
+      </div>`;
+    return;
+  }
+  // ethers loaded — proceed to app
+  startApp();
+})();
+
+function startApp(){
   // --------------------------
   // CONFIG: contract + ABI
   // --------------------------
@@ -91,7 +168,6 @@
   const totalDisplay = document.getElementById('totalDisplay');
   const claimBtn = document.getElementById('claimBtn');
   const uiMsg = document.getElementById('uiMsg');
-
   contractAddrEl.textContent = CONTRACT_ADDRESS;
 
   let provider, signer, contract;
@@ -112,10 +188,9 @@
   // Initialize provider+contract when wallet connected
   async function initProvider(){
     try{
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new window.ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
-      contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-      // detect account if available
+      contract = new window.ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
       const accounts = await provider.listAccounts();
       if(accounts && accounts.length>0){
         currentAccount = accounts[0];
@@ -151,7 +226,6 @@
     return a.slice(0,6)+'…'+a.slice(-4);
   }
 
-  // format timestamp (seconds) to human
   function formatTSSec(ts){
     if(!ts || ts==0) return 'Never';
     try{
@@ -181,10 +255,9 @@
       addrEl.textContent = shortAddr(currentAccount);
       // call getUser(currentAccount)
       const r = await contract.getUser(currentAccount);
-      // r -> [last, streak, total]
-      const last = r.last ? r.last.toNumber?.() ?? Number(r.last) : 0;
-      const streak = r.streak ? r.streak.toNumber?.() ?? Number(r.streak) : 0;
-      const total = r.total ? r.total.toNumber?.() ?? Number(r.total) : 0;
+      const last = r.last ? (r.last.toNumber ? r.last.toNumber() : Number(r.last)) : 0;
+      const streak = r.streak ? (r.streak.toNumber ? r.streak.toNumber() : Number(r.streak)) : 0;
+      const total = r.total ? (r.total.toNumber ? r.total.toNumber() : Number(r.total)) : 0;
 
       fidDisplay.textContent = currentAccount;
       subText.textContent = 'Daily Check-in • onchain';
@@ -192,7 +265,7 @@
       streakDisplay.textContent = 'Streak: ' + streak;
       totalDisplay.textContent = 'Total claimed: ' + total;
 
-      // 24h rate limit logic (client-side UI only)
+      // 24h client-side UI gating
       const nowS = Math.floor(Date.now()/1000);
       const secondsSince = last ? (nowS - last) : 9999999;
       const secondsLeft = Math.max(0, 24*3600 - secondsSince);
@@ -205,7 +278,6 @@
         claimBtn.textContent = `Claim disabled: ${formatTimeLeft(secondsLeft)} left`;
       }
 
-      clearMsg();
     }catch(err){
       console.error('refreshUI err',err);
       showError('Failed to read contract: '+ (err.message||err));
@@ -233,17 +305,14 @@
       showSuccess('Transaction sent. Waiting confirmation...');
       await tx.wait();
       showSuccess('Claim successful! Tx confirmed.');
-      // refresh UI after claim
       setTimeout(()=>refreshUI(), 1200);
     }catch(err){
       console.error('claim err',err);
       showError('Claim failed: '+(err && err.message ? err.message : err));
-      // refresh UI to re-enable button state
       setTimeout(()=>refreshUI(), 800);
     }
   }
 
-  // Download an example SVG (preview) — simple placeholder
   function downloadSVG(){
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='450'><rect width='100%' height='100%' rx='20' fill='#ffb24a'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='40' fill='#08202a'>Badgehub</text></svg>`;
     const blob = new Blob([svg], {type:'image/svg+xml'});
@@ -264,21 +333,18 @@
   claimBtn.addEventListener('click', claimBadge);
   document.getElementById('downloadSvg').addEventListener('click', downloadSVG);
 
-  // listen account/network changes
+  // external wallet events
   window.ethereum.on && window.ethereum.on('accountsChanged', (accs) => {
     currentAccount = accs && accs.length ? accs[0] : null;
     initProvider().then(()=>refreshUI());
   });
   window.ethereum.on && window.ethereum.on('chainChanged', (chainId) => {
-    // simple refresh on chain change
     initProvider().then(()=>refreshUI());
   });
 
-  // init on load
-  await initProvider();
-  await refreshUI();
-
-})();
+  // init
+  initProvider().then(()=>refreshUI());
+}
 </script>
 </body>
 </html>
