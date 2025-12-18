@@ -21,7 +21,14 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== CONNECT WALLET =====
+// ===== DEFAULT UI STATE (STEP 1A) =====
+document.addEventListener("DOMContentLoaded", () => {
+  connectBtn.disabled = false;
+  claimBtn.disabled = true;
+  statusBox.innerText = "Not connected";
+});
+
+// ===== CONNECT WALLET (STEP 1B) =====
 connectBtn.onclick = async () => {
   if (!window.ethereum) {
     alert("MetaMask not installed");
@@ -29,7 +36,10 @@ connectBtn.onclick = async () => {
   }
 
   try {
-    // 👉 THIS ALWAYS TRIGGERS METAMASK POPUP
+    connectBtn.disabled = true;
+    statusBox.innerText = "Connecting wallet...";
+
+    // Always triggers MetaMask popup
     await window.ethereum.request({
       method: "eth_requestAccounts"
     });
@@ -44,12 +54,18 @@ connectBtn.onclick = async () => {
       signer
     );
 
-    statusBox.innerText = "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
+    // UI update after connect
+    statusBox.innerText =
+      "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
+
     claimBtn.disabled = false;
+    connectBtn.innerText = "Wallet Connected";
+    connectBtn.style.opacity = "0.6";
 
   } catch (err) {
     console.error(err);
     statusBox.innerText = "Wallet connection failed";
+    connectBtn.disabled = false;
   }
 };
 
@@ -58,14 +74,19 @@ claimBtn.onclick = async () => {
   if (!contract) return;
 
   try {
+    claimBtn.disabled = true;
     statusBox.innerText = "Minting badge...";
+
     const tx = await contract.claimBadge();
     await tx.wait();
 
     statusBox.innerText = "✅ Badge claimed successfully";
+    claimBtn.innerText = "Badge Claimed";
+    claimBtn.style.opacity = "0.6";
 
   } catch (err) {
     console.error(err);
     statusBox.innerText = "❌ Transaction failed";
+    claimBtn.disabled = false;
   }
 };
