@@ -21,16 +21,16 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI STATE (STEP 1A + STEP 2B PART 1) =====
+// ===== DEFAULT UI STATE =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
 
   statusBox.innerText = "Not connected";
-  statusBox.className = "status-idle"; // 👈 GRAY STATUS
+  statusBox.className = "status-idle";
 });
 
-// ===== CONNECT WALLET (STEP 1B) =====
+// ===== CONNECT WALLET =====
 connectBtn.onclick = async () => {
   if (!window.ethereum) {
     alert("MetaMask not installed");
@@ -40,6 +40,7 @@ connectBtn.onclick = async () => {
   try {
     connectBtn.disabled = true;
     statusBox.innerText = "Connecting wallet...";
+    statusBox.className = "status-idle";
 
     await window.ethereum.request({
       method: "eth_requestAccounts"
@@ -58,9 +59,7 @@ connectBtn.onclick = async () => {
     statusBox.innerText =
       "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
     statusBox.style.color = "#4ade80";
-
     statusBox.className = "status-success";
-
 
     claimBtn.disabled = false;
     connectBtn.innerText = "Wallet Connected";
@@ -69,6 +68,7 @@ connectBtn.onclick = async () => {
   } catch (err) {
     console.error(err);
     statusBox.innerText = "Wallet connection failed";
+    statusBox.className = "status-error";
     connectBtn.disabled = false;
   }
 };
@@ -80,17 +80,25 @@ claimBtn.onclick = async () => {
   try {
     claimBtn.disabled = true;
     statusBox.innerText = "Minting badge...";
+    statusBox.className = "status-idle";
 
     const tx = await contract.claimBadge();
     await tx.wait();
 
-    statusBox.innerText = "✅ Badge claimed successfully";
-    claimBtn.innerText = "Badge Claimed";
-    claimBtn.style.opacity = "0.6";
+    // ✅ STEP 3A – FINAL SUCCESS STATE
+    statusBox.innerText = "✅ Badge claimed today";
+    statusBox.style.color = "#4ade80";
+    statusBox.className = "status-success";
+
+    claimBtn.innerText = "Badge Claimed Today";
+    claimBtn.disabled = true;
+    claimBtn.style.opacity = "0.5";
+    claimBtn.style.cursor = "not-allowed";
 
   } catch (err) {
     console.error(err);
     statusBox.innerText = "❌ Transaction failed";
+    statusBox.className = "status-error";
     claimBtn.disabled = false;
   }
 };
