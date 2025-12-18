@@ -57,6 +57,8 @@ connectBtn.onclick = async () => {
 
     statusBox.innerText =
       "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
+    statusBox.className = "status-success";
+
 
     claimBtn.disabled = false;
     connectBtn.innerText = "Wallet Connected";
