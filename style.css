@@ -54,142 +54,8 @@ body.theme-choco {
   padding: 24px;
 }
 
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1040px;
-  margin: 0 auto 16px;
-}
-
-.app-title {
-  font-size: 22px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.app-title span {
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-.header-right {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Layout panels */
-.layout {
-  max-width: 1040px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
-  gap: 20px;
-}
-
-.panel {
-  background: rgba(15, 23, 42, 0.9);
-  border-radius: 24px;
-  padding: 18px 18px 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(16px);
-}
-
-body.theme-yellow .panel {
-  background: rgba(254, 243, 199, 0.94);
-  color: #1f2933;
-}
-
-body.theme-sky .panel {
-  background: rgba(15, 23, 42, 0.96);
-}
-
-body.theme-choco .panel {
-  background: rgba(30, 64, 175, 0.1);
-}
-
-/* Form controls */
-.field-group {
-  margin-bottom: 14px;
-}
-
-.field-row {
-  display: flex;
-  gap: 12px;
-}
-
-.field-row > .field-group {
-  flex: 1;
-}
-
-.field-label {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 4px;
-  opacity: 0.75;
-}
-
-.input,
-.select {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.9);
-  color: inherit;
-  font-size: 13px;
-  outline: none;
-}
-
-.input::placeholder {
-  opacity: 0.6;
-}
-
-body.theme-yellow .input,
-body.theme-yellow .select {
-  background: rgba(255, 251, 235, 0.95);
-}
-
-body.theme-sky .input,
-body.theme-sky .select {
-  background: rgba(15, 23, 42, 0.94);
-}
-
-body.theme-choco .input,
-body.theme-choco .select {
-  background: rgba(17, 24, 39, 0.96);
-}
-
-/* Buttons */
-.buttons-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.btn {
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.95);
-  color: #e5e7eb;
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.btn.primary {
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
-  border-color: transparent;
-  color: #0b1120;
-  font-weight: 600;
-}
-
 /* ===============================
-   STATUS TEXT COLORS (ADDED)
+   STATUS TEXT (FINAL FIX)
    =============================== */
 
 #status {
@@ -198,25 +64,22 @@ body.theme-choco .select {
   opacity: 0.9;
 }
 
-.status-idle {
+/* ID + CLASS = strong priority */
+#status.status-idle {
   color: #9ca3af; /* gray */
 }
 
-.status-success {
+#status.status-success {
   color: #4ade80; /* green */
 }
 
-.status-error {
+#status.status-error {
   color: #f87171; /* red */
 }
 
 /* Responsive */
 @media (max-width: 840px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .panel {
-    padding: 16px;
+  .app-card {
+    margin: 40px 16px;
   }
 }
