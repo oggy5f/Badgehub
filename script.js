@@ -57,6 +57,8 @@ connectBtn.onclick = async () => {
 
     statusBox.innerText =
       "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
+    statusBox.style.color = "#4ade80";
+
     statusBox.className = "status-success";
 
 
