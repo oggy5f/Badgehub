@@ -21,11 +21,13 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI STATE (STEP 1A) =====
+// ===== DEFAULT UI STATE (STEP 1A + STEP 2B PART 1) =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
+
   statusBox.innerText = "Not connected";
+  statusBox.className = "status-idle"; // 👈 GRAY STATUS
 });
 
 // ===== CONNECT WALLET (STEP 1B) =====
@@ -39,7 +41,6 @@ connectBtn.onclick = async () => {
     connectBtn.disabled = true;
     statusBox.innerText = "Connecting wallet...";
 
-    // Always triggers MetaMask popup
     await window.ethereum.request({
       method: "eth_requestAccounts"
     });
@@ -54,7 +55,6 @@ connectBtn.onclick = async () => {
       signer
     );
 
-    // UI update after connect
     statusBox.innerText =
       "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
 
