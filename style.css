@@ -15,9 +15,10 @@ body {
 
 /* Themes – background + text */
 body.theme-dark {
-  background: radial-gradient(circle at top, #1f2933, #020617 55%);
+  background: linear-gradient(180deg, #0f0f14, #181825);
   color: #e5e7eb;
 }
+
 
 body.theme-yellow {
   background: radial-gradient(circle at top, #facc15, #451a03 60%);
