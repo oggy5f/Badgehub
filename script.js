@@ -87,6 +87,9 @@ connectBtn.onclick = async () => {
 
     connectBtn.innerText = "Wallet Connected";
     connectBtn.style.opacity = "0.6";
+    connectBtn.disabled = true;
+connectBtn.style.cursor = "not-allowed";
+
 
   } catch (err) {
     console.error(err);
