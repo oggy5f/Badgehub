@@ -10,42 +10,82 @@
   <script src="./script.js" defer></script>
 
   <style>
+    /* ===== Page background ===== */
     body {
-      background: #0e0e0e;
-      color: white;
-      font-family: Arial, sans-serif;
-      max-width: 500px;
-      margin: auto;
-      padding: 20px;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0f0f14, #181825);
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* ===== Center card ===== */
+    .app-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       text-align: center;
     }
+
+    h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      opacity: 0.75;
+    }
+
+    /* ===== Buttons ===== */
     button {
       width: 100%;
       padding: 14px;
       margin-top: 12px;
-      font-size: 16px;
-      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 12px;
       border: none;
       cursor: pointer;
-      background: #ffb300;
-      color: black;
-      font-weight: bold;
+      background: linear-gradient(180deg, #f5c542, #e0aa1c);
+      color: #111;
     }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ===== Status text ===== */
     #status {
       margin-top: 16px;
       font-size: 14px;
-      opacity: 0.9;
+      opacity: 0.85;
     }
   </style>
 </head>
 
 <body>
-  <h2>Badgehub</h2>
-  <p>Daily Onchain Badge</p>
 
-  <button id="connectBtn">Connect Wallet</button>
-  <button id="claimBtn" disabled>Claim Badge (Onchain)</button>
+  <!-- 👇 YAHI APP CARD HAI -->
+  <div class="app-card">
+    <h2>Badgehub</h2>
+    <div class="subtitle">Daily Onchain Badge</div>
 
-  <div id="status">Not connected</div>
+    <button id="connectBtn">Connect Wallet</button>
+    <button id="claimBtn" disabled>Claim Badge (Onchain)</button>
+
+    <div id="status">Not connected</div>
+  </div>
+
 </body>
 </html>
