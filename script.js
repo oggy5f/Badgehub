@@ -11,6 +11,12 @@ const ABI = [
   }
 ];
 
+// ===== HELPERS =====
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
 // ===== STATE =====
 let provider;
 let signer;
@@ -21,13 +27,26 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI STATE =====
+// ===== DEFAULT UI STATE + CLAIM CHECK =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
 
-  statusBox.innerText = "Not connected";
-  statusBox.className = "status-idle";
+  const claimedDate = localStorage.getItem("badgehub_claimed");
+
+  if (claimedDate === todayKey()) {
+    statusBox.innerText = "✅ Badge already claimed today";
+    statusBox.style.color = "#4ade80";
+    statusBox.className = "status-success";
+
+    claimBtn.innerText = "Badge Claimed Today";
+    claimBtn.disabled = true;
+    claimBtn.style.opacity = "0.5";
+    claimBtn.style.cursor = "not-allowed";
+  } else {
+    statusBox.innerText = "Not connected";
+    statusBox.className = "status-idle";
+  }
 });
 
 // ===== CONNECT WALLET =====
@@ -61,7 +80,11 @@ connectBtn.onclick = async () => {
     statusBox.style.color = "#4ade80";
     statusBox.className = "status-success";
 
-    claimBtn.disabled = false;
+    // Enable claim only if not claimed today
+    if (localStorage.getItem("badgehub_claimed") !== todayKey()) {
+      claimBtn.disabled = false;
+    }
+
     connectBtn.innerText = "Wallet Connected";
     connectBtn.style.opacity = "0.6";
 
@@ -85,7 +108,9 @@ claimBtn.onclick = async () => {
     const tx = await contract.claimBadge();
     await tx.wait();
 
-    // ✅ STEP 3A – FINAL SUCCESS STATE
+    // ✅ SAVE CLAIM STATE (IMPORTANT)
+    localStorage.setItem("badgehub_claimed", todayKey());
+
     statusBox.innerText = "✅ Badge claimed today";
     statusBox.style.color = "#4ade80";
     statusBox.className = "status-success";
