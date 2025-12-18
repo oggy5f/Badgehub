@@ -1,73 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Badgehub — Onchain</title>
+  <meta charset="UTF-8">
+  <title>Badgehub Mini App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <link rel="stylesheet" href="./style.css" />
-
-  <!-- Load ethers locally (NOT CDN) -->
+  <!-- Local ethers (NO CDN) -->
   <script src="./ethers.umd.min.js"></script>
-
-  <!-- App logic -->
   <script src="./script.js" defer></script>
 
   <style>
     body {
-      background: #0d0d0d;
+      background: #0e0e0e;
       color: white;
       font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 700px;
+      max-width: 500px;
       margin: auto;
+      padding: 20px;
+      text-align: center;
     }
-    .btn {
-      background: orange;
-      padding: 10px 16px;
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      font-size: 16px;
       border-radius: 8px;
-      margin: 10px 0;
+      border: none;
       cursor: pointer;
-      display: inline-block;
+      background: #ffb300;
+      color: black;
+      font-weight: bold;
     }
-    .disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    .error {
-      color: #ff4b4b;
-      margin-top: 10px;
+    #status {
+      margin-top: 16px;
+      font-size: 14px;
+      opacity: 0.9;
     }
   </style>
 </head>
 
 <body>
+  <h2>Badgehub</h2>
+  <p>Daily Onchain Badge</p>
 
-  <h1>Badgehub — Onchain</h1>
+  <button id="connectBtn">Connect Wallet</button>
+  <button id="claimBtn" disabled>Claim Badge (Onchain)</button>
 
-  <button id="connectBtn" class="btn">Connect Wallet</button>
-  <button id="refreshBtn" class="btn">Refresh</button>
-
-  <p id="connStatus">Not connected</p>
-
-  <p><b>Contract (onchain)</b><br>
-    <span id="contractAddress">0xD64a64a8741B1C998C197dCF227Bc1628Eb97b43</span>
-  </p>
-
-  <hr>
-
-  <p><b>Address / preview</b><br>
-    <span id="userAddr">-</span>
-  </p>
-
-  <p><b>Last claim</b><br>
-    <span id="lastClaim">-</span>
-  </p>
-
-  <button id="claimBtn" class="btn">Claim Badge (onchain)</button>
-  <button id="svgBtn" class="btn">Download SVG</button>
-
-  <p id="errBox" class="error"></p>
-
+  <div id="status">Not connected</div>
 </body>
 </html>
