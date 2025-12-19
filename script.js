@@ -3,13 +3,7 @@ const CONTRACT_ADDRESS = "0x5be06071239D6b39764D238F7cB7382c02ac5249";
 
 const ABI = [
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "tokenURI",
-        "type": "string"
-      }
-    ],
+    "inputs": [],
     "name": "claimBadge",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -23,28 +17,6 @@ function todayKey() {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
 }
 
-function generateMetadata(userAddress) {
-  const today = todayKey();
-
-  const metadata = {
-    name: "Badgehub Daily Badge",
-    description: "Daily onchain badge claimed on Base",
-    image: "https://placehold.co/600x600/0f172a/4ade80?text=Badgehub+Badge",
-    attributes: [
-      {
-        trait_type: "Date",
-        value: today
-      },
-      {
-        trait_type: "Claimer",
-        value: userAddress
-      }
-    ]
-  };
-
-  return "data:application/json;base64," + btoa(JSON.stringify(metadata));
-}
-
 // ===== STATE =====
 let provider;
 let signer;
@@ -55,7 +27,7 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI STATE =====
+// ===== DEFAULT UI =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
@@ -68,8 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     claimBtn.innerText = "Badge Claimed Today";
     claimBtn.disabled = true;
-    claimBtn.style.opacity = "0.5";
-    claimBtn.style.cursor = "not-allowed";
   } else {
     statusBox.innerText = "Not connected";
     statusBox.className = "status-idle";
@@ -86,13 +56,10 @@ connectBtn.onclick = async () => {
   try {
     connectBtn.disabled = true;
     statusBox.innerText = "Connecting wallet...";
-    statusBox.className = "status-idle";
-
-    await window.ethereum.request({ method: "eth_requestAccounts" });
 
     provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
 
-    // ✅ BASE NETWORK CHECK (IMPORTANT)
     const network = await provider.getNetwork();
     if (network.chainId !== 8453) {
       alert("Please switch to Base Mainnet");
@@ -116,7 +83,6 @@ connectBtn.onclick = async () => {
     connectBtn.innerText = "Wallet Connected";
     connectBtn.disabled = true;
     connectBtn.style.opacity = "0.6";
-    connectBtn.style.cursor = "not-allowed";
 
   } catch (err) {
     console.error(err);
@@ -133,12 +99,8 @@ claimBtn.onclick = async () => {
   try {
     claimBtn.disabled = true;
     statusBox.innerText = "Minting badge...";
-    statusBox.className = "status-idle";
 
-    const userAddress = await signer.getAddress();
-    const tokenURI = generateMetadata(userAddress);
-
-    const tx = await contract.claimBadge(tokenURI);
+    const tx = await contract.claimBadge();
     await tx.wait();
 
     localStorage.setItem("badgehub_claimed", todayKey());
@@ -148,8 +110,6 @@ claimBtn.onclick = async () => {
 
     claimBtn.innerText = "Badge Claimed Today";
     claimBtn.disabled = true;
-    claimBtn.style.opacity = "0.5";
-    claimBtn.style.cursor = "not-allowed";
 
   } catch (err) {
     console.error(err);
