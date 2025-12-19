@@ -5,8 +5,13 @@
   <title>Badgehub Mini App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- ✅ Farcaster Frame SDK (AUTO WALLET CONTEXT) -->
+  <script src="https://unpkg.com/@farcaster/frame-sdk/dist/index.umd.js"></script>
+
   <!-- Local ethers (NO CDN) -->
   <script src="./ethers.umd.min.js"></script>
+
+  <!-- App logic -->
   <script src="./script.js" defer></script>
 
   <style>
@@ -71,12 +76,17 @@
       font-size: 14px;
       opacity: 0.85;
     }
+
+    .helper-text {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- 👇 YAHI APP CARD HAI -->
   <div class="app-card">
     <h2>Badgehub</h2>
     <div class="subtitle">Daily Onchain Badge</div>
@@ -84,7 +94,6 @@
     <button id="connectBtn">Connect Wallet</button>
     <button id="claimBtn" disabled>Claim Badge (Onchain)</button>
     <div class="helper-text">One badge per wallet per day</div>
-
 
     <div id="status">Not connected</div>
   </div>
