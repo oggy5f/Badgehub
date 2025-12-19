@@ -17,8 +17,6 @@ const ABI = [
   }
 ];
 
-
-
 // ===== HELPERS =====
 function todayKey() {
   const d = new Date();
@@ -57,7 +55,7 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI STATE + CLAIM CHECK =====
+// ===== DEFAULT UI STATE =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
@@ -93,6 +91,15 @@ connectBtn.onclick = async () => {
     await window.ethereum.request({ method: "eth_requestAccounts" });
 
     provider = new ethers.providers.Web3Provider(window.ethereum);
+
+    // ✅ BASE NETWORK CHECK (IMPORTANT)
+    const network = await provider.getNetwork();
+    if (network.chainId !== 8453) {
+      alert("Please switch to Base Mainnet");
+      connectBtn.disabled = false;
+      return;
+    }
+
     signer = provider.getSigner();
     const address = await signer.getAddress();
 
