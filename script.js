@@ -1,9 +1,16 @@
 // ===== CONFIG =====
 const CONTRACT_ADDRESS = "0x5be06071239D6b39764D238F7cB7382c02ac5249";
 
+// ✅ CORRECT ABI (tokenURI required)
 const ABI = [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tokenURI",
+        "type": "string"
+      }
+    ],
     "name": "claimBadge",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -11,41 +18,14 @@ const ABI = [
   }
 ];
 
+// ✅ IPFS METADATA URI (FINAL)
+const TOKEN_URI =
+  "ipfs://bafybeifie26xdk3bu7pggtxkpxweuuahrr6u3f3snzav27ppahwjvriz5q";
+
 // ===== HELPERS =====
 function todayKey() {
   const d = new Date();
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
-}
-
-function generateMetadata(userAddress) {
-  const today = todayKey();
-
-  const metadata = {
-    name: "Badgehub Daily Badge",
-    description: "Daily onchain badge claimed on Base",
-    image: "https://placehold.co/600x600/0f172a/4ade80?text=Badgehub+Badge",
-
-    // ✅ STEP 2A – improvement
-    external_url: "https://oggy5f.github.io/base-mini-app/",
-    background_color: "0f172a",
-
-    attributes: [
-      {
-        trait_type: "Date",
-        value: today
-      },
-      {
-        trait_type: "Claimer",
-        value: userAddress
-      },
-      {
-        trait_type: "Network",
-        value: "Base"
-      }
-    ]
-  };
-
-  return "data:application/json;base64," + btoa(JSON.stringify(metadata));
 }
 
 // ===== STATE =====
@@ -63,9 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
 
-  const claimedDate = localStorage.getItem("badgehub_claimed");
-
-  if (claimedDate === todayKey()) {
+  if (localStorage.getItem("badgehub_claimed") === todayKey()) {
     statusBox.innerText = "✅ Badge already claimed today";
     statusBox.className = "status-success";
 
@@ -130,10 +108,8 @@ claimBtn.onclick = async () => {
     claimBtn.disabled = true;
     statusBox.innerText = "Minting badge...";
 
-    const userAddress = await signer.getAddress();
-    const tokenURI = generateMetadata(userAddress);
-
-    const tx = await contract.claimBadge();
+    // ✅ CORRECT CALL (tokenURI passed)
+    const tx = await contract.claimBadge(TOKEN_URI);
     await tx.wait();
 
     localStorage.setItem("badgehub_claimed", todayKey());
