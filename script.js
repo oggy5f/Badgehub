@@ -17,6 +17,37 @@ function todayKey() {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
 }
 
+function generateMetadata(userAddress) {
+  const today = todayKey();
+
+  const metadata = {
+    name: "Badgehub Daily Badge",
+    description: "Daily onchain badge claimed on Base",
+    image: "https://placehold.co/600x600/0f172a/4ade80?text=Badgehub+Badge",
+
+    // ✅ STEP 2A – improvement
+    external_url: "https://oggy5f.github.io/base-mini-app/",
+    background_color: "0f172a",
+
+    attributes: [
+      {
+        trait_type: "Date",
+        value: today
+      },
+      {
+        trait_type: "Claimer",
+        value: userAddress
+      },
+      {
+        trait_type: "Network",
+        value: "Base"
+      }
+    ]
+  };
+
+  return "data:application/json;base64," + btoa(JSON.stringify(metadata));
+}
+
 // ===== STATE =====
 let provider;
 let signer;
@@ -27,7 +58,7 @@ const connectBtn = document.getElementById("connectBtn");
 const claimBtn = document.getElementById("claimBtn");
 const statusBox = document.getElementById("status");
 
-// ===== DEFAULT UI =====
+// ===== DEFAULT UI STATE =====
 document.addEventListener("DOMContentLoaded", () => {
   connectBtn.disabled = false;
   claimBtn.disabled = true;
@@ -40,6 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     claimBtn.innerText = "Badge Claimed Today";
     claimBtn.disabled = true;
+    claimBtn.style.opacity = "0.5";
   } else {
     statusBox.innerText = "Not connected";
     statusBox.className = "status-idle";
@@ -81,13 +113,11 @@ connectBtn.onclick = async () => {
     }
 
     connectBtn.innerText = "Wallet Connected";
-    connectBtn.disabled = true;
     connectBtn.style.opacity = "0.6";
 
   } catch (err) {
     console.error(err);
     statusBox.innerText = "Wallet connection failed";
-    statusBox.className = "status-error";
     connectBtn.disabled = false;
   }
 };
@@ -100,6 +130,9 @@ claimBtn.onclick = async () => {
     claimBtn.disabled = true;
     statusBox.innerText = "Minting badge...";
 
+    const userAddress = await signer.getAddress();
+    const tokenURI = generateMetadata(userAddress);
+
     const tx = await contract.claimBadge();
     await tx.wait();
 
@@ -110,11 +143,11 @@ claimBtn.onclick = async () => {
 
     claimBtn.innerText = "Badge Claimed Today";
     claimBtn.disabled = true;
+    claimBtn.style.opacity = "0.5";
 
   } catch (err) {
     console.error(err);
     statusBox.innerText = "❌ Transaction failed";
-    statusBox.className = "status-error";
     claimBtn.disabled = false;
   }
 };
