@@ -1,1 +1,15 @@
-
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "miniapp": {
+    "name": "Badgehub",
+    "description": "Daily onchain badge on Base",
+    "iconUrl": "https://oggy5f.github.io/Badgehub/icon.png",
+    "homeUrl": "https://oggy5f.github.io/Badgehub/",
+    "splashImageUrl": "https://oggy5f.github.io/Badgehub/icon.png",
+    "splashBackgroundColor": "#0f172a"
+  }
+}
