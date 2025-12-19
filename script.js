@@ -3,19 +3,14 @@ const CONTRACT_ADDRESS = "0x5be06071239D6b39764D238F7cB7382c02ac5249";
 
 const ABI = [
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "tokenURI",
-        "type": "string"
-      }
-    ],
+    "inputs": [],
     "name": "claimBadge",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   }
 ];
+
 
 // ===== HELPERS =====
 function todayKey() {
