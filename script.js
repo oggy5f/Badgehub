@@ -3,7 +3,13 @@ const CONTRACT_ADDRESS = "0xE38c7CBFD40fa858bDFB93488f035aF78a6EC797";
 
 const ABI = [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "tokenURI",
+        "type": "string"
+      }
+    ],
     "name": "claimBadge",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -36,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (claimedDate === todayKey()) {
     statusBox.innerText = "✅ Badge already claimed today";
-    statusBox.style.color = "#4ade80";
     statusBox.className = "status-success";
 
     claimBtn.innerText = "Badge Claimed Today";
@@ -61,35 +66,26 @@ connectBtn.onclick = async () => {
     statusBox.innerText = "Connecting wallet...";
     statusBox.className = "status-idle";
 
-    await window.ethereum.request({
-      method: "eth_requestAccounts"
-    });
+    await window.ethereum.request({ method: "eth_requestAccounts" });
 
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
     const address = await signer.getAddress();
 
-    contract = new ethers.Contract(
-      CONTRACT_ADDRESS,
-      ABI,
-      signer
-    );
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
     statusBox.innerText =
       "Connected: " + address.slice(0, 6) + "..." + address.slice(-4);
-    statusBox.style.color = "#4ade80";
     statusBox.className = "status-success";
 
-    // Enable claim only if not claimed today
     if (localStorage.getItem("badgehub_claimed") !== todayKey()) {
       claimBtn.disabled = false;
     }
 
     connectBtn.innerText = "Wallet Connected";
-    connectBtn.style.opacity = "0.6";
     connectBtn.disabled = true;
-connectBtn.style.cursor = "not-allowed";
-
+    connectBtn.style.opacity = "0.6";
+    connectBtn.style.cursor = "not-allowed";
 
   } catch (err) {
     console.error(err);
@@ -108,14 +104,16 @@ claimBtn.onclick = async () => {
     statusBox.innerText = "Minting badge...";
     statusBox.className = "status-idle";
 
-    const tx = await contract.claimBadge();
+    // 🔑 TOKEN URI (abhi static, next step me dynamic banayenge)
+    const tokenURI =
+      "ipfs://QmExampleCID/badgehub-" + todayKey() + ".json";
+
+    const tx = await contract.claimBadge(tokenURI);
     await tx.wait();
 
-    // ✅ SAVE CLAIM STATE (IMPORTANT)
     localStorage.setItem("badgehub_claimed", todayKey());
 
     statusBox.innerText = "✅ Badge claimed today";
-    statusBox.style.color = "#4ade80";
     statusBox.className = "status-success";
 
     claimBtn.innerText = "Badge Claimed Today";
