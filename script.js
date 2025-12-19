@@ -23,6 +23,28 @@ function todayKey() {
   return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
 }
 
+function generateMetadata(userAddress) {
+  const today = todayKey();
+
+  const metadata = {
+    name: "Badgehub Daily Badge",
+    description: "Daily onchain badge claimed on Base",
+    image: "https://placehold.co/600x600/0f172a/4ade80?text=Badgehub+Badge",
+    attributes: [
+      {
+        trait_type: "Date",
+        value: today
+      },
+      {
+        trait_type: "Claimer",
+        value: userAddress
+      }
+    ]
+  };
+
+  return "data:application/json;base64," + btoa(JSON.stringify(metadata));
+}
+
 // ===== STATE =====
 let provider;
 let signer;
@@ -104,9 +126,8 @@ claimBtn.onclick = async () => {
     statusBox.innerText = "Minting badge...";
     statusBox.className = "status-idle";
 
-    // 🔑 TOKEN URI (abhi static, next step me dynamic banayenge)
-    const tokenURI =
-      "ipfs://QmExampleCID/badgehub-" + todayKey() + ".json";
+    const userAddress = await signer.getAddress();
+    const tokenURI = generateMetadata(userAddress);
 
     const tx = await contract.claimBadge(tokenURI);
     await tx.wait();
