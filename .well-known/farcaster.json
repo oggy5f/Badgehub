@@ -1,9 +1,15 @@
 {
-  "name": "BadgeHub",
-  "description": "Daily check-in & badge generator for Farcaster communities.",
-  "start_url": "/Badgehub/index.html",
-  "icon": "/icon.png",
-  "author": "oggy5f",
-  "version": "0.1.0",
-  "domain": "oggy5f.github.io/Badgehub"
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "miniapp": {
+    "name": "Badgehub",
+    "description": "Daily onchain badge on Base",
+    "iconUrl": "https://oggy5f.github.io/base-mini-app/icon.png",
+    "homeUrl": "https://oggy5f.github.io/base-mini-app/",
+    "splashImageUrl": "https://oggy5f.github.io/base-mini-app/icon.png",
+    "splashBackgroundColor": "#0f172a"
+  }
 }
